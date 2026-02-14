@@ -1,0 +1,16 @@
+# STEP Protocol — 项目状态（由协议自动维护）
+project: "TODO"
+current_phase: "phase-0-discovery"
+last_updated: ""
+last_agent: ""
+last_session_summary: ""
+
+established_patterns: {}
+
+tasks:
+  completed: []
+  current: null
+  upcoming: []
+
+known_issues: []
+constraints_quick_ref: []

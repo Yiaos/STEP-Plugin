@@ -1,0 +1,17 @@
+# STEP Change Request 模板
+# 文件命名: YYYY-MM-DD-CR-xxx.yaml（以日期开头，便于查找）
+id: YYYY-MM-DD-CR-000
+type: feature  # feature | behavior_change | constraint_change
+description: "变更描述"
+reason: "变更原因"
+
+impacts:
+  baseline: "baseline.md 哪些部分受影响"
+  tasks: "需要新增/修改哪些任务"
+  existing_code: "哪些已有代码需要修改"
+
+conflicts_with: []  # 如果是 constraint_change，列出冲突的约束/ADR
+
+decision: pending  # pending | approved | rejected
+decided_by: ""
+decided_at: ""
