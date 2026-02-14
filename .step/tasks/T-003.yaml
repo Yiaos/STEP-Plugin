@@ -1,0 +1,77 @@
+# T-003: step-init.sh 检测逻辑增强（F-4）
+id: T-003
+title: "step-init.sh detect_project() 增强 — 识别非标准项目结构"
+status: planned
+depends_on: []
+goal: "detect_project() 能识别工具/插件类项目结构，不误判为 greenfield"
+non_goal:
+  - "不改变输出格式（仍然 existing/greenfield + 详情）"
+  - "不修改初始化流程（mkdir/cp 逻辑不变）"
+
+done_when:
+  - "bash tests/test-t003.sh"
+
+scenarios:
+  happy_path:
+    - id: S-003-01
+      given: "目录包含 scripts/ + agents/ + commands/（类似 STEP 项目结构）"
+      when: "运行 detect_project()"
+      then: "输出 existing，列出检测到的目录"
+      test_file: "tests/test-t003.sh"
+      test_name: "[S-003-01] 检测 STEP 类项目结构"
+      test_type: unit
+      status: not_run
+    - id: S-003-02
+      given: "目录包含 Makefile + requirements.txt（Python 项目）"
+      when: "运行 detect_project()"
+      then: "输出 existing，列出检测到的 manifest"
+      test_file: "tests/test-t003.sh"
+      test_name: "[S-003-02] 检测 Makefile/requirements.txt"
+      test_type: unit
+      status: not_run
+
+  edge_cases:
+    - id: S-003-03
+      given: "目录只有 .git 但无源码目录或 manifest"
+      when: "运行 detect_project()"
+      then: "输出 greenfield（.git 单独不算 existing）"
+      test_file: "tests/test-t003.sh"
+      test_name: "[S-003-03] 仅 .git 判定为 greenfield"
+      test_type: unit
+      status: not_run
+    - id: S-003-04
+      given: "目录包含空的 scripts/ 目录（0 个文件）"
+      when: "运行 detect_project()"
+      then: "空目录不计入信号，不影响判断"
+      test_file: "tests/test-t003.sh"
+      test_name: "[S-003-04] 空目录不计入信号"
+      test_type: unit
+      status: not_run
+
+  error_handling:
+    - id: S-003-05
+      given: "完全空的目录"
+      when: "运行 detect_project()"
+      then: "输出 greenfield，无报错"
+      test_file: "tests/test-t003.sh"
+      test_name: "[S-003-05] 空目录输出 greenfield"
+      test_type: integration
+      status: not_run
+
+  e2e:
+    - id: S-003-06
+      given: "在 STEP 项目根目录运行 step-init.sh（如果 .step 不存在）"
+      when: "检查 detect_project() 输出"
+      then: "正确识别为 existing，列出 scripts/, agents/ 等"
+      test_file: "tests/test-t003.sh"
+      test_name: "[S-003-06] STEP 项目自身被正确识别"
+      test_type: e2e
+      status: not_run
+
+coverage_requirements:
+  happy_path: 2
+  edge_cases: 2
+  error_handling: 1
+  e2e: 1
+
+rollback: "git checkout -- scripts/step-init.sh"

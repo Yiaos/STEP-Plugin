@@ -85,6 +85,7 @@ install() {
   chmod +x "$TARGET_DIR/scripts/gate.sh"
   chmod +x "$TARGET_DIR/scripts/scenario-check.sh"
   chmod +x "$TARGET_DIR/scripts/step-init.sh"
+  chmod +x "$TARGET_DIR/scripts/step-stop-check.sh"
   echo "  Set executable permissions"
 
   # 创建 symlinks
@@ -112,6 +113,7 @@ install() {
   echo "  ├── skills/step/SKILL.md    # Core protocol rules"
   echo "  ├── scripts/"
   echo "  │   ├── step-init.sh        # Project initialization"
+  echo "  │   ├── step-stop-check.sh  # Stop hook state check"
   echo "  │   ├── gate.sh             # Quality gate (quick/standard/full)"
   echo "  │   └── scenario-check.sh   # BDD scenario coverage check"
   echo "  ├── agents/                 # Role-based agent definitions"

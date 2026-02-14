@@ -1,3 +1,23 @@
+---
+name: step
+description: "STEP Protocol — Stateful Task Execution Protocol. 全生命周期开发协议，通过状态机、质量门禁和 Session 恢复保证 AI 编码代理的交付质量。"
+hooks:
+  PreToolUse:
+    - matcher: "Write|Edit|Bash"
+      hooks:
+        - type: command
+          command: "cat .step/state.yaml 2>/dev/null | head -25 || true"
+  PostToolUse:
+    - matcher: "Write|Edit"
+      hooks:
+        - type: command
+          command: "echo '[STEP] 文件已修改。如有阶段变化或重大决策，更新 .step/state.yaml 的 progress_log 和 key_decisions。'"
+  Stop:
+    - hooks:
+        - type: command
+          command: "bash scripts/step-stop-check.sh 2>/dev/null || echo '[STEP] 对话即将结束。必须更新 state.yaml: last_updated, progress_log（追加本次摘要）, next_action（精确到文件名和动作）。'"
+---
+
 # STEP Protocol — Core Rules
 
 > Stateful Task Execution Protocol. 完整规范见 `WORKFLOW.md`（STEP 插件根目录）。
@@ -32,6 +52,7 @@
 Step 1: 加载上下文 → 输出状态行
 Step 2: 写测试（按 config.yaml test_writing 模型） → 确认全部 FAIL (TDD RED)
 Step 3: 写实现（按模型路由） → 每场景跑 gate quick
+  ⚡ 每 2 次工具调用后，检查 progress_log / key_decisions 是否需要进度更新
 Step 4: Gate 验证 → gate.sh standard T-xxx
 Step 5: Review + Commit（每完成一个任务都执行）
 Step 6: 更新 state.yaml → 进入下一任务
@@ -47,6 +68,7 @@ Step 6: 更新 state.yaml → 进入下一任务
 3. **Gate 必过**: `./scripts/gate.sh standard T-xxx` 通过才能标 done
 4. **场景 100% 覆盖**: `scenario-check.sh` 验证每个场景 ID 都有对应测试
 5. **所有测试类型必须**: unit / integration / e2e 都是必须的，不可跳过
+6. **修改前必须 Read**: 修改任何文件前必须先用 Read 工具查看当前内容，不得凭记忆编辑
 
 ## Gate 失败处理
 
@@ -109,12 +131,24 @@ Gate 失败 → 强模型(Opus/Codex xhigh)分析根因
 - gate.sh 是真实可执行脚本（不是 checklist）
 - scenario-check.sh 用 grep 硬匹配（不是 LLM 判断）
 
+## 注意力管理
+
+当 PreToolUse hook 注入 state.yaml 内容时（你会看到以 `⚡` 开头的规则行）：
+
+1. **检查 progress_log** — 如果距上次更新已完成新的有意义工作，立即追加条目
+2. **检查 key_decisions** — 如果做了新的技术/架构决策，立即记录（decision + reason + phase + date）
+3. **检查 next_action** — 如果当前工作已偏离上次记录的 next_action，更新它
+4. **每 2 次工具调用** — 自省一次是否需要更新上述字段
+
+PostToolUse 提醒不可忽略：每次 Write/Edit 后评估是否触发了状态变化。
+
 ## Session 管理
 
 ### 对话结束时必须做
-1. 更新 `state.yaml`: last_updated, progress, next_action
+1. 更新 `state.yaml`: last_updated, progress_log（追加本次摘要）, next_action
 2. `next_action` 精确到文件名和具体动作
 3. **禁止写** "继续开发" / "后续处理"
+4. 如有重大决策，追加到 `key_decisions`（含 decision, reason, phase, date）
 
 ### 恢复 Session 时
 1. 读 state.yaml → 读当前 task → 读 baseline

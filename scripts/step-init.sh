@@ -19,7 +19,9 @@ detect_project() {
 
   # 包管理器 / 项目清单
   for f in package.json Cargo.toml go.mod pyproject.toml Gemfile \
-           build.gradle pom.xml composer.json pubspec.yaml; do
+           build.gradle pom.xml composer.json pubspec.yaml \
+           Makefile CMakeLists.txt requirements.txt setup.py setup.cfg \
+           deno.json bun.lockb mix.exs; do
     if [ -f "$f" ]; then
       signals=$((signals + 1))
       manifests="${manifests}   📄 ${f}\n"
@@ -27,7 +29,8 @@ detect_project() {
   done
 
   # 源码目录
-  for d in src lib app components pages api cmd pkg internal; do
+  for d in src lib app components pages api cmd pkg internal \
+           scripts agents commands hooks templates skills; do
     if [ -d "$d" ]; then
       local count
       count=$(find "$d" -type f 2>/dev/null | wc -l | tr -d ' ')

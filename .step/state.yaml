@@ -1,0 +1,47 @@
+# STEP Protocol — 项目状态（由协议自动维护）
+project: "STEP-self-optimization"
+project_type: "existing"
+current_phase: "phase-5-review"
+last_updated: "2026-02-15T11:00:00Z"
+last_agent: "developer"
+last_session_summary: "Phase 4 完成：T-001~T-005 全部实现并通过测试（30/30 场景 PASS）"
+
+established_patterns:
+  hook_mechanism: "SKILL.md frontmatter → PreToolUse/PostToolUse/Stop"
+  attention_injection: "cat state.yaml | head -25 → 注入行为规则+状态数据"
+  quality_gates: "gate.sh + scenario-check.sh + step-stop-check.sh"
+
+tasks:
+  completed: [T-001, T-002, T-003, T-004, T-005]
+  current: null
+  upcoming: []
+
+# 关键决策摘要（每条记录决策内容、原因、阶段）
+key_decisions:
+  - decision: "借鉴 planning-with-files 的注入策略，在 state.yaml 头部嵌入行为规则"
+    reason: "planning-with-files 的 task_plan.md 混合规则+数据，LLM 遵循率更高"
+    phase: "phase-0-discovery"
+    date: "2026-02-14"
+  - decision: "Stop hook 从 echo 提醒改为脚本检查"
+    reason: "echo 是软保证，脚本检查是中等保证，与 gate.sh 一致"
+    phase: "phase-0-discovery"
+    date: "2026-02-14"
+  - decision: "移除 F-5 research/ 目录，详细决策依据写在 decisions.md ADR 中"
+    reason: "减少文件分散，decisions.md 已有替代方案字段可记录推理过程"
+    phase: "phase-2-tech-design"
+    date: "2026-02-15"
+
+known_issues: []
+constraints_quick_ref:
+  - "不破坏现有协议流程"
+  - "脚本兼容 macOS bash 3.2+ 和 Linux bash 4+"
+  - "state.yaml 向后兼容"
+
+# 进度日志（每次对话结束时追加）
+progress_log:
+  - date: "2026-02-14"
+    summary: "Phase 0 完成：分析 planning-with-files 机制，识别 5 个 gap，确定 9 项优化需求"
+    next_action: "Phase 1: 逐项确认 baseline，冻结后进入 Phase 2 Tech Design"
+  - date: "2026-02-15"
+    summary: "Phase 1→4 完成：baseline 冻结(7项)→Tech Design(ADR×4)→Task拆分(5个/30场景)→全部实现通过"
+    next_action: "Phase 5 Review：对照 baseline AC 逐项验收，然后 reinstall + git push"

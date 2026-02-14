@@ -1,0 +1,87 @@
+# T-002: Stop hook 脚本化（F-3）
+id: T-002
+title: "Stop hook 真实检查 — step-stop-check.sh"
+status: planned
+depends_on: []
+goal: "Stop hook 从 echo 提醒升级为脚本检查，验证 state.yaml 更新状态，输出 pass/warn/fail"
+non_goal:
+  - "不阻断对话结束（检查结果是建议性的）"
+  - "不修改 state.yaml 数据结构"
+
+done_when:
+  - "test -x scripts/step-stop-check.sh"
+  - "grep 'step-stop-check' skills/step/SKILL.md"
+  - "bash tests/test-t002.sh"
+
+scenarios:
+  happy_path:
+    - id: S-002-01
+      given: "state.yaml last_updated 为今天，progress_log 有今日条目"
+      when: "运行 step-stop-check.sh"
+      then: "输出 [STEP STOP CHECK] PASS，exit 0"
+      test_file: "tests/test-t002.sh"
+      test_name: "[S-002-01] 状态完整时输出 PASS"
+      test_type: unit
+      status: not_run
+
+  edge_cases:
+    - id: S-002-02
+      given: "state.yaml last_updated 为昨天（未更新）"
+      when: "运行 step-stop-check.sh"
+      then: "输出 [STEP STOP CHECK] WARN: last_updated 不是今天"
+      test_file: "tests/test-t002.sh"
+      test_name: "[S-002-02] last_updated 过期时输出 WARN"
+      test_type: unit
+      status: not_run
+    - id: S-002-03
+      given: "state.yaml progress_log 无今日条目"
+      when: "运行 step-stop-check.sh"
+      then: "输出 [STEP STOP CHECK] WARN: progress_log 无今日条目"
+      test_file: "tests/test-t002.sh"
+      test_name: "[S-002-03] progress_log 缺失时输出 WARN"
+      test_type: unit
+      status: not_run
+    - id: S-002-04
+      given: "state.yaml last_updated 过期 且 progress_log 缺失"
+      when: "运行 step-stop-check.sh"
+      then: "输出 [STEP STOP CHECK] FAIL，两项都报告"
+      test_file: "tests/test-t002.sh"
+      test_name: "[S-002-04] 双项缺失时输出 FAIL"
+      test_type: unit
+      status: not_run
+
+  error_handling:
+    - id: S-002-05
+      given: "无 .step/state.yaml 文件"
+      when: "运行 step-stop-check.sh"
+      then: "输出 [STEP STOP CHECK] SKIP: 无 state.yaml，exit 0"
+      test_file: "tests/test-t002.sh"
+      test_name: "[S-002-05] 无 state.yaml 时 SKIP"
+      test_type: integration
+      status: not_run
+    - id: S-002-06
+      given: "state.yaml 格式损坏（非法 YAML）"
+      when: "运行 step-stop-check.sh"
+      then: "输出 WARN: 无法解析 state.yaml，不崩溃"
+      test_file: "tests/test-t002.sh"
+      test_name: "[S-002-06] 损坏 YAML 不崩溃"
+      test_type: integration
+      status: not_run
+
+  e2e:
+    - id: S-002-07
+      given: "SKILL.md Stop hook 已更新为调用 step-stop-check.sh"
+      when: "检查 SKILL.md frontmatter Stop 部分"
+      then: "command 包含 'step-stop-check.sh'"
+      test_file: "tests/test-t002.sh"
+      test_name: "[S-002-07] SKILL.md Stop hook 调用脚本"
+      test_type: e2e
+      status: not_run
+
+coverage_requirements:
+  happy_path: 1
+  edge_cases: 3
+  error_handling: 2
+  e2e: 1
+
+rollback: "rm -f scripts/step-stop-check.sh && git checkout -- skills/step/SKILL.md"

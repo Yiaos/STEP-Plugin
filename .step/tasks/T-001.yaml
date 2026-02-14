@@ -1,0 +1,80 @@
+# T-001: 注意力管理增强（F-1 + F-2）
+id: T-001
+title: "注意力管理增强 — state.yaml 行为规则 + SKILL.md 注意力段落"
+status: planned
+depends_on: []
+goal: "PreToolUse 注入内容同时包含行为规则和状态数据，SKILL.md 正文引导 LLM 响应注入"
+non_goal:
+  - "不修改 state.yaml 的数据字段结构"
+  - "不修改 PostToolUse hook"
+
+done_when:
+  - "head -25 templates/state.yaml 包含行为规则注释"
+  - "grep '注意力管理' skills/step/SKILL.md"
+  - "grep 'head -25' skills/step/SKILL.md"
+  - "bash tests/test-t001.sh"
+
+scenarios:
+  happy_path:
+    - id: S-001-01
+      given: "state.yaml 模板已更新，包含头部行为规则注释"
+      when: "执行 cat templates/state.yaml | head -25"
+      then: "输出前 25 行同时包含 '⚡' 规则行和 'project:' 数据行"
+      test_file: "tests/test-t001.sh"
+      test_name: "[S-001-01] state.yaml head-25 包含规则和数据"
+      test_type: unit
+      status: not_run
+    - id: S-001-02
+      given: "SKILL.md 已更新"
+      when: "检查 SKILL.md 正文"
+      then: "存在 '注意力管理' 段落，包含 progress_log 和 key_decisions 更新指引"
+      test_file: "tests/test-t001.sh"
+      test_name: "[S-001-02] SKILL.md 包含注意力管理段落"
+      test_type: unit
+      status: not_run
+
+  edge_cases:
+    - id: S-001-03
+      given: "state.yaml 模板包含规则注释"
+      when: "用 python3 -c 'import yaml; yaml.safe_load(...)' 验证"
+      then: "YAML 语法合法（注释不影响解析）"
+      test_file: "tests/test-t001.sh"
+      test_name: "[S-001-03] state.yaml 模板 YAML 语法合法"
+      test_type: unit
+      status: not_run
+    - id: S-001-04
+      given: "SKILL.md frontmatter 中 PreToolUse command 改为 head -25"
+      when: "解析 SKILL.md YAML frontmatter"
+      then: "command 字段包含 'head -25'"
+      test_file: "tests/test-t001.sh"
+      test_name: "[S-001-04] SKILL.md PreToolUse hook 使用 head -25"
+      test_type: unit
+      status: not_run
+
+  error_handling:
+    - id: S-001-05
+      given: "项目无 .step/state.yaml（未初始化）"
+      when: "PreToolUse hook 运行 cat .step/state.yaml | head -25"
+      then: "静默失败（|| true），不影响工具调用"
+      test_file: "tests/test-t001.sh"
+      test_name: "[S-001-05] 无 state.yaml 时 hook 静默失败"
+      test_type: integration
+      status: not_run
+
+  e2e:
+    - id: S-001-06
+      given: "step-init.sh 在临时目录运行完成"
+      when: "检查生成的 .step/state.yaml 头 25 行"
+      then: "包含行为规则注释 + 初始状态数据"
+      test_file: "tests/test-t001.sh"
+      test_name: "[S-001-06] init 后生成的 state.yaml 包含规则"
+      test_type: e2e
+      status: not_run
+
+coverage_requirements:
+  happy_path: 2
+  edge_cases: 2
+  error_handling: 1
+  e2e: 1
+
+rollback: "git checkout -- templates/state.yaml skills/step/SKILL.md"
