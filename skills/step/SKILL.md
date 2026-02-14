@@ -195,3 +195,53 @@ Post-MVP 变更**同样遵循 STEP 协议**，所有过程记录在 `.step/` 下
 - **约束变更**: 高影响 CR → 影响分析 → `.step/tasks/YYYY-MM-DD-T-MIGRATE-xxx.yaml` → Phase 4 执行 → gate full
 
 **命名规则**: CR 和 Hotfix 文件名以日期开头（`YYYY-MM-DD-`），便于按时间查找。
+
+## 自主操作规则
+
+**不需要确认，直接执行：**
+- git add / commit / push（不含 force push）
+- 文件 CRUD（方向已达成共识）
+- 运行 test / lint / build / gate
+- install.sh --force
+- 创建目录
+
+**需要确认：**
+- baseline 冻结（Phase 1 出口）
+- 技术方案选择（多选项时）
+- 需求变更（CR）
+- git push --force / rebase
+- 不可逆操作
+
+## Lite Mode（快速通道）
+
+小型任务（≤ 3 文件、无架构变更、有已有 baseline）使用 3 阶段快速流程：
+
+```
+L1 Quick Spec → L2 Execution → L3 Quick Review
+(一次确认)      (TDD+gate lite)  (自动化)
+```
+
+### 触发
+- 自动：短输入 + 范围关键词(fix/修复/加个/改下) + 无架构词 + 有 baseline
+- 显式：`/step lite` 或 `/step full`
+
+### L1: Quick Spec
+- 一次性输出 lite task spec → 用户确认 → 写入 `.step/lite/L-{seq}.yaml`
+- 不分段确认、不冻结 baseline、不做 ADR
+
+### L2: Execution
+- ✅ TDD 必须（测试先行）
+- ✅ BDD 场景 100% 覆盖必须
+- ✅ 场景 ID: `[S-Lxxx-xx]`
+- Gate: `gate.sh lite L-{seq}`（跳过 build）
+- e2e 按需
+
+### L3: Quick Review
+- Gate lite 通过 → 自动 commit → 更新 state.yaml
+- 不做人工 Review（除非用户要求）
+
+### 升级规则
+执行中发现复杂度超预期（影响 > 3 文件 / 需要新架构决策）→ **必须升级到 Full Mode**
+
+### 归档
+完成的任务移到 `.step/archive/YYYY-MM-DD-{id}.yaml`

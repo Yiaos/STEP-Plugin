@@ -139,4 +139,55 @@ gate:
   build: "pnpm build"
 ```
 
+## 7. Lite Mode（快速通道）
+
+对于小型任务（bug fix、小功能、配置变更），STEP 提供 Lite Mode，3 个阶段代替 6 个阶段：
+
+```
+L1 Quick Spec → L2 Execution → L3 Quick Review
+(一次确认)      (TDD+gate lite)  (自动化验证)
+```
+
+### 适用条件
+
+- 影响 ≤ 3 个文件
+- 不涉及架构变更
+- 已有 baseline 存在
+
+### 触发方式
+
+```bash
+# 显式指定 Lite Mode
+/step lite
+
+# 显式指定 Full Mode
+/step full
+
+# 自动检测（根据输入复杂度判断）
+/step
+```
+
+### 核心保留 vs 简化
+
+| | Full | Lite |
+|---|---|---|
+| TDD | ✅ | ✅ |
+| BDD 覆盖 | ✅ 100% | ✅ 100% |
+| Gate | standard | lite (跳 build) |
+| 确认轮数 | 多次 | 一次 |
+| Code Review | 人工 | 自动 |
+| 预计时间 | 65-110 min | 10-15 min |
+
+### 文件结构
+
+Lite 任务存放在 `.step/lite/`，完成后可归档到 `.step/archive/`：
+
+```
+.step/
+├── lite/
+│   └── L-001.yaml      # 活跃的 lite 任务
+└── archive/
+    └── 2026-02-15-L-001.yaml  # 归档的已完成任务
+```
+
 完整协议规范详见 [WORKFLOW.md](WORKFLOW.md)。

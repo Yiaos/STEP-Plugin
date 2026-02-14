@@ -85,7 +85,7 @@ PROJECT_TYPE=$(echo "$PROJECT_DETECT" | head -1)
 PROJECT_DETAILS=$(echo "$PROJECT_DETECT" | tail -n +2)
 
 # 创建目录结构
-mkdir -p .step/tasks .step/change-requests .step/evidence scripts
+mkdir -p .step/tasks .step/change-requests .step/evidence .step/lite .step/archive scripts
 
 # 复制模板文件
 cp "${TEMPLATES_DIR}/config.yaml" .step/config.yaml
@@ -123,6 +123,8 @@ echo "   ├── baseline.md          # 需求基线（Phase 1 冻结）"
 echo "   ├── decisions.md         # 架构决策日志"
 echo "   ├── state.yaml           # 项目状态机"
 echo "   ├── tasks/               # 任务定义"
+echo "   ├── lite/                # Lite Mode 任务"
+echo "   ├── archive/             # 已完成任务归档"
 echo "   ├── change-requests/     # 变更请求"
 echo "   └── evidence/            # gate 运行证据"
 echo ""

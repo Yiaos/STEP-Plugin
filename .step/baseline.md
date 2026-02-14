@@ -13,17 +13,17 @@
 ## MVP Scope（按优先级排序）
 
 ### P0 — Must Have
-- [ ] F-1: PreToolUse 注入内容增强 — state.yaml 头部嵌入行为规则（如"检查 progress_log 是否需要更新"），使 `cat | head -25` 同时注入规则和数据
-- [ ] F-2: SKILL.md 正文增加注意力规则 — 显式写明"当你看到 state.yaml 被注入时，检查是否需要更新 progress_log / key_decisions"
-- [ ] F-3: Stop hook 增加真实检查 — 将 echo 提醒改为脚本，检查 state.yaml 的 last_updated 是否为当天、progress_log 是否有本次条目
-- [ ] F-4: step-init.sh 检测逻辑增强 — 识别非标准项目结构（如 STEP 自身的 scripts/, agents/, commands/, hooks/）
+- [x] F-1: PreToolUse 注入内容增强 — state.yaml 头部嵌入行为规则（如"检查 progress_log 是否需要更新"），使 `cat | head -25` 同时注入规则和数据
+- [x] F-2: SKILL.md 正文增加注意力规则 — 显式写明"当你看到 state.yaml 被注入时，检查是否需要更新 progress_log / key_decisions"
+- [x] F-3: Stop hook 增加真实检查 — 将 echo 提醒改为脚本，检查 state.yaml 的 last_updated 是否为当天、progress_log 是否有本次条目
+- [x] F-4: step-init.sh 检测逻辑增强 — 识别非标准项目结构（如 STEP 自身的 scripts/, agents/, commands/, hooks/）
 
 ### P1 — Should Have
-- [ ] F-6: 2-Action Rule 文字强化 — SKILL.md Phase 4 段落显式写入"每 2 次工具调用后检查进度更新需求"
-- [ ] F-7: Pre-decision Read 规则 — SKILL.md 加入"修改文件前必须先 Read，不得凭记忆编辑"的显式规则
+- [x] F-6: 2-Action Rule 文字强化 — SKILL.md Phase 4 段落显式写入"每 2 次工具调用后检查进度更新需求"
+- [x] F-7: Pre-decision Read 规则 — SKILL.md 加入"修改文件前必须先 Read，不得凭记忆编辑"的显式规则
 
 ### P2 — Nice to Have
-- [ ] F-8: 对比文档修正 — 更新 STEP-vs-planning-with-files.md，修正"STEP 不处理遗忘问题"的错误描述
+- [x] F-8: 对比文档修正 — 更新 STEP-vs-planning-with-files.md，修正"STEP 不处理遗忘问题"的错误描述
 
 ## User Stories
 - US-1: 作为使用 STEP 的开发者，我希望 LLM 在长会话中自动被提醒更新进度，以便我在下次会话能恢复完整上下文

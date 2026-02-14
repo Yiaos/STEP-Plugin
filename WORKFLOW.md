@@ -1139,6 +1139,208 @@ echo "   请描述你的想法，我们开始讨论。"
 
 ---
 
+## 自主操作规则
+
+### 不需要用户确认（直接执行）
+
+| 操作 | 说明 |
+|------|------|
+| git add / commit / push | 常规提交（不含 force push） |
+| 文件创建、修改、删除 | 方向已在讨论中达成共识的 |
+| 运行测试、lint、build | gate.sh 及任何验证命令 |
+| install.sh --force | 重装 STEP 插件 |
+| 创建目录结构 | .step/ 子目录、scripts/ 等 |
+
+### 需要用户确认
+
+| 操作 | 原因 |
+|------|------|
+| baseline.md 冻结 | Phase 1 出口，不可逆契约 |
+| 技术方案选择 | 有多个可选方案时需用户决策 |
+| 需求变更（CR） | 影响 baseline 范围 |
+| git push --force / rebase | 可能丢失他人工作 |
+| 删除用户数据或不可逆操作 | 无法撤销 |
+
+---
+
+## Lite Mode（快速通道）
+
+> 针对小型任务（bug fix、小功能、配置变更等）的简化流程。
+> 3 个阶段代替 6 个阶段，保留核心质量保证，去掉重量级仪式。
+
+### 适用场景
+
+Lite Mode 适用于**满足以下全部条件**的任务：
+- 影响范围小（≤ 3 个文件）
+- 不涉及架构变更
+- 不需要新的技术方案评估
+- 已有 baseline 存在（不是新项目的第一个任务）
+
+### 触发方式
+
+1. **自动检测**：输入描述短（< 100 字）+ 范围关键词（fix, 修复, 加个, 改下, tweak, patch）+ 无架构关键词（架构, 重构, 迁移, redesign）+ 已有 baseline
+2. **显式指定**：`/step lite` 或在对话中说"用 lite 模式"
+3. **强制 Full**：`/step full` 或在对话中说"用完整模式"
+4. **模式切换**：执行中发现复杂度超预期 → 升级到 Full Mode（反之不行）
+
+### 3 阶段流程
+
+```
+L1 Quick Spec          L2 Execution           L3 Quick Review
+(合并 Phase 0+1+2)  →  (TDD + gate lite)  →  (自动化验证)
+一次确认即可            测试先行                 无需人工审查
+```
+
+#### L1: Quick Spec（一次确认）
+
+```
+用户: "修复 XXX 的 bug" / "给 YYY 加个 ZZZ 功能"
+
+LLM 输出（一次性，不分段）:
+  📋 Lite Task L-{seq}
+  ├── 目标: 一句话
+  ├── 影响文件: [file1, file2]
+  ├── BDD 场景:
+  │   ├── S-L{seq}-01: happy path
+  │   ├── S-L{seq}-02: edge case
+  │   └── S-L{seq}-03: error case
+  ├── 不做: [明确排除项]
+  └── 验证: gate lite
+
+用户: "可以" / 修改后确认
+
+→ 写入 .step/lite/L-{seq}.yaml
+→ 进入 L2
+```
+
+**与 Full Mode 的区别：**
+- 不创建 baseline.md（复用已有的）
+- 不做技术方案对比
+- 不分段确认（一次全部确认）
+- 不记录 ADR（除非涉及新决策）
+
+#### L2: Execution（TDD + Gate Lite）
+
+```
+Step 1: 写测试 → 确认全部 FAIL (TDD RED)
+Step 2: 写实现 → 测试通过 (TDD GREEN)
+Step 3: Gate Lite → gate.sh lite L-{seq}
+         lint + typecheck + test + scenario (跳过 build)
+```
+
+**核心保留：**
+- ✅ TDD（先测试后实现）— 必须
+- ✅ BDD 场景 100% 覆盖 — 必须
+- ✅ 场景 ID 绑定 (`[S-Lxxx-xx]`) — 必须
+
+**简化项：**
+- ⏭️ 跳过 build（gate lite 不含 build）
+- ⏭️ e2e 测试按需（不强制）
+- ⏭️ 不冻结 baseline
+- ⏭️ 不记录 ADR（除非新决策）
+
+#### L3: Quick Review（自动化）
+
+```
+Gate lite 通过后自动执行:
+  1. 检查: 场景覆盖 100%
+  2. 检查: 无 P0/P1 lint 问题
+  3. 自动 commit（提交信息含 lite task ID）
+     例: "fix(auth): L-003 修复空密码验证 [3/3 S]"
+  4. 更新 state.yaml
+```
+
+**与 Full Mode Review 的区别：**
+- 不做人工 Code Review（除非用户要求）
+- 不做需求合规全量检查（lite task 本身就是 spec）
+- 不做 SOLID 分析
+
+### Lite Task YAML 格式
+
+```yaml
+# .step/lite/L-{seq}.yaml
+id: L-001
+title: "修复空密码未报错"
+mode: lite
+status: planned  # planned | in_progress | done
+created: "2026-02-15"
+parent_baseline: ".step/baseline.md"  # 关联已有 baseline
+
+goal: "POST /api/register 空密码返回 400"
+non_goal:
+  - "不修改其他验证逻辑"
+
+affected_files:
+  - "src/auth/register.ts"
+  - "test/auth/register.test.ts"
+
+scenarios:
+  - id: S-L001-01
+    given: "password 为空字符串"
+    when: "POST /api/register"
+    then: "返回 400 + { error: 'password required' }"
+    test_file: "test/auth/register.test.ts"
+    test_name: "[S-L001-01] 空密码返回 400"
+    test_type: unit
+    status: not_run
+
+  - id: S-L001-02
+    given: "password 为 null"
+    when: "POST /api/register"
+    then: "返回 400"
+    test_file: "test/auth/register.test.ts"
+    test_name: "[S-L001-02] null 密码返回 400"
+    test_type: unit
+    status: not_run
+
+done_when:
+  - "gate.sh lite L-001"
+```
+
+### 任务归档
+
+完成的 Lite 任务可以归档到 `.step/archive/`，保持 `.step/lite/` 目录清洁：
+
+```
+完成 L-001 → 移动到 .step/archive/2026-02-15-L-001.yaml
+完成 T-003 → 移动到 .step/archive/2026-02-15-T-003.yaml
+```
+
+归档规则：
+- 任务 status 为 done 且 gate 通过
+- 文件名加日期前缀便于按时间查找
+- 归档不是删除，仍可 grep 搜索历史决策
+
+### Lite vs Full 对比
+
+| 维度 | Full Mode | Lite Mode |
+|------|-----------|-----------|
+| 阶段数 | 6 (Phase 0-5) | 3 (L1-L3) |
+| 确认轮数 | 多次分段确认 | 一次确认 |
+| Baseline | 创建 + 冻结 | 复用已有 |
+| ADR | 必须记录 | 按需 |
+| TDD | ✅ 必须 | ✅ 必须 |
+| BDD 覆盖 | ✅ 100% | ✅ 100% |
+| Gate | standard (含 build) | lite (跳过 build) |
+| e2e 测试 | ✅ 必须 | 按需 |
+| Code Review | 人工审查 | 自动化 |
+| 预计时间 | 65-110 min | 10-15 min |
+
+### 模式升级
+
+如果 L2 执行中发现：
+- 影响文件 > 3 个
+- 需要新的架构决策
+- 发现关联 bug 需要修复
+
+→ **必须升级到 Full Mode**：
+1. 将 lite task 转换为 Full task（创建 T-xxx.yaml）
+2. 补充 baseline 更新（如需要）
+3. 从 Phase 3 开始补完场景矩阵
+4. 后续按 Full Mode 执行
+
+---
+
 ## 9 个反馈逐一对应
 
 | # | 反馈 | 本文档如何处理 |

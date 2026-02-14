@@ -1,7 +1,8 @@
 #!/bin/bash
 # STEP Gate — 质量门禁
-# Usage: ./scripts/gate.sh [quick|standard|full] [TASK_ID]
+# Usage: ./scripts/gate.sh [quick|lite|standard|full] [TASK_ID]
 #   quick    — lint + typecheck only
+#   lite     — lint + typecheck + test + scenario coverage (no build)
 #   standard — lint + typecheck + test + scenario coverage (default)
 #   full     — standard + build
 
@@ -49,12 +50,12 @@ fi
 run_check "lint" "$LINT_CMD"
 run_check "typecheck" "$TC_CMD"
 
-# standard+: run tests
+# lite/standard/full: run tests
 if [ "$LEVEL" != "quick" ]; then
   run_check "test" "$TEST_CMD"
 fi
 
-# standard+: scenario coverage check (if task specified)
+# lite/standard/full: scenario coverage check (if task specified)
 if [ "$LEVEL" != "quick" ] && [ -n "$TASK_ID" ]; then
   SCENARIO_SCRIPT="./scripts/scenario-check.sh"
   if [ -f "$SCENARIO_SCRIPT" ]; then
@@ -64,7 +65,7 @@ if [ "$LEVEL" != "quick" ] && [ -n "$TASK_ID" ]; then
   fi
 fi
 
-# full: run build
+# full only: run build (lite explicitly skips build)
 if [ "$LEVEL" = "full" ]; then
   run_check "build" "$BUILD_CMD"
 fi
