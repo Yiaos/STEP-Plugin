@@ -63,10 +63,10 @@ if [ -f ".step/baseline.md" ]; then
   BASELINE_CONTENT=$(head -50 ".step/baseline.md" 2>&1 || echo "")
 fi
 
-# 读取 config.yaml 的 routing 部分（让 LLM 每次会话都看到路由表）
+# 读取完整 config.yaml（routing + file_routing + gate，32 行左右，完整注入避免截断风险）
 ROUTING_CONTENT=""
 if [ -f ".step/config.yaml" ]; then
-  ROUTING_CONTENT=$(grep -A 50 '^routing:' ".step/config.yaml" 2>/dev/null | head -30 || echo "")
+  ROUTING_CONTENT=$(cat ".step/config.yaml" 2>&1 || echo "")
 fi
 
 # 读取 SKILL.md 核心规则

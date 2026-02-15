@@ -365,6 +365,7 @@ Phase 4 执行时，编排器按 `.step/config.yaml` 的路由表选择 agent：
 routing:
   discovery:    { agent: step-pm }
   prd:          { agent: step-pm }
+  lite_spec:    { agent: step-pm, note: "Lite L1 Quick Spec，轻量需求确认" }
   tech_design:  { agent: step-architect }
   planning:     { agent: step-architect }
   scenario:     { agent: step-qa }
@@ -1087,7 +1088,7 @@ L1 Quick Spec          L2 Execution           L3 Review
 一次确认即可            测试先行                 需求合规 > 代码质量
 ```
 
-#### L1: Quick Spec（一次确认）
+#### L1: Quick Spec（一次确认，派发 @step-pm via routing.lite_spec）
 
 ```
 用户: "修复 XXX 的 bug" / "给 YYY 加个 ZZZ 功能"

@@ -6,6 +6,7 @@
 routing:
   discovery:    { agent: step-pm }
   prd:          { agent: step-pm }
+  lite_spec:    { agent: step-pm, note: "Lite L1 Quick Spec，轻量需求确认" }
   tech_design:  { agent: step-architect }
   planning:     { agent: step-architect }
   scenario:     { agent: step-qa }

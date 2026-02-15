@@ -46,6 +46,16 @@ model: openai/gpt-5.3-codex
 ### P3 - Low (风格 / 命名)
 ```
 
+### Step 5: Removal Candidates（废弃代码识别）
+- 识别未使用的代码、冗余逻辑、已关闭的 feature flag
+- 区分 **safe delete now**（无引用、有测试覆盖）vs **defer with plan**（有潜在引用、需验证）
+- 提供跟进计划：具体步骤 + 检查点（测试/指标）
+
+### Step 6: 大 Diff 策略
+- **>500 行变更**：先按文件输出摘要，再按模块/功能分批 Review
+- **混合关注点**：按逻辑功能分组发现，不按文件顺序
+- **Clean Review**（无问题）：仍需说明已检查范围 + 未覆盖区域 + 残留风险
+
 ## Critical Actions
 - ❌ 严禁不看 baseline 就审查代码——需求合规永远第一
 - ❌ 严禁空洞 APPROVE——必须列出至少 3 个具体发现（即使是 P3）

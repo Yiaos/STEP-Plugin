@@ -177,6 +177,7 @@ PostToolUse 提醒不可忽略：每次 Write/Edit 后评估是否触发了状�
 |------|-------|---------|
 | Phase 0 Discovery | @step-pm | routing.discovery |
 | Phase 1 PRD | @step-pm | routing.prd |
+| Lite L1 Quick Spec | @step-pm | routing.lite_spec |
 | Phase 2 Tech Design | @step-architect | routing.tech_design |
 | Phase 3 Plan | @step-architect | routing.planning |
 | Phase 3 场景补充 | @step-qa | routing.scenario |
@@ -248,8 +249,8 @@ L1 Quick Spec → L2 Execution → L3 Review
 - 自动：短输入 + 范围关键词(fix/修复/加个/改下) + 无架构词 + 有 baseline
 - 显式：`/step lite` 或 `/step full`
 
-### L1: Quick Spec
-- 一次性输出 lite task spec → 用户确认 → 写入 `.step/tasks/{slug}.yaml`
+### L1: Quick Spec（派发 @step-pm，routing.lite_spec）
+- 编排器派发 @step-pm 起草 lite task spec → 用户确认 → 写入 `.step/tasks/{slug}.yaml`
 - 批量任务: 一次展示多个 lite task → 一次确认 → 逐个执行
 - 不分段确认、不冻结 baseline、不做 ADR
 
