@@ -1,25 +1,29 @@
-# STEP Protocol — 项目配置
-# 根据项目实际情况修改
+# STEP Protocol — 项目配置（STEP 自身项目）
+# 本项目是纯 shell 脚本项目，无 lint/typecheck/build
 
-model_routing:
-  # Phase 0-3: 规划阶段
-  discovery: { model: "claude-opus" }
-  prd: { model: "claude-opus" }
-  tech_design: { model: "claude-opus" }
-  planning: { model: "claude-opus" }
+# 阶段 → Agent 路由
+routing:
+  discovery:    { agent: step-pm }
+  prd:          { agent: step-pm }
+  tech_design:  { agent: step-architect }
+  planning:     { agent: step-architect }
+  scenario:     { agent: step-qa }
+  test_writing: { agent: step-qa, note: "建议与 execution agent 不同，形成对抗性" }
+  execution:    { agent: step-developer }
+  review:       { agent: step-reviewer }
 
-  # Phase 4: 执行阶段
-  test_writing: { model: "codex", note: "可配置，建议与实现模型不同以形成对抗性" }
-  frontend: { model: "gemini", patterns: ["src/components/**", "**/*.tsx", "**/*.css"] }
-  backend: { model: "codex", patterns: ["src/api/**", "src/db/**", "src/lib/**"] }
-  complex_logic: { model: "claude-opus", note: "手动指定" }
+# Phase 4 文件模式路由
+file_routing:
+  frontend:
+    agent: step-designer
+    patterns: ["src/components/**", "**/*.tsx", "**/*.css", "**/*.vue"]
+  backend:
+    agent: step-developer
+    patterns: ["src/api/**", "src/db/**", "src/lib/**"]
 
-  # Phase 5: 审查阶段
-  review: { model: "claude-opus | codex", note: "可选，参考 code-review-expert skill" }
-
-# Gate 命令（根据项目包管理器和工具链修改）
+# Gate 命令（STEP 自身项目使用 bash 测试）
 gate:
-  lint: "pnpm lint --no-error-on-unmatched-pattern"
-  typecheck: "pnpm tsc --noEmit"
-  test: "pnpm vitest run"
-  build: "pnpm build"
+  lint: "echo 'no lint configured'"
+  typecheck: "echo 'no typecheck configured'"
+  test: "bash tests/test-t001.sh && bash tests/test-t002.sh && bash tests/test-t003.sh && bash tests/test-t004.sh && bash tests/test-t005.sh && bash tests/test-t006.sh && bash tests/test-t007.sh"
+  build: "echo 'no build configured'"

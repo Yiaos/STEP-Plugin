@@ -116,9 +116,9 @@ openspec/
 
 ```
 Step 1: 加载上下文 → 输出状态行
-Step 2: 写测试（按 config.yaml test_writing 模型） → 确认全部 FAIL (TDD RED)
-Step 3: 写实现 → 每场景跑 gate quick
-Step 4: Gate 验证 → gate.sh standard T-xxx
+Step 2: 写测试（按 routing.test_writing 派发 @step-qa） → 确认全部 FAIL (TDD RED)
+Step 3: 写实现（按 file_routing 选 agent） → 每场景跑 gate quick
+Step 4: Gate 验证 → gate.sh standard {slug}
 Step 5: Review + Commit
 Step 6: 更新 state.yaml → 进入下一任务
 ```

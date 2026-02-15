@@ -32,7 +32,103 @@ STEP 提供 6 阶段生命周期：
 - baseline 冻结 + Change Request 防漂移
 - Post-MVP 流程（CR、Hotfix、约束变更）同样遵循 STEP
 
-## 3. 安装（Installation）
+## 3. 整体架构（Architecture）
+
+### 执行流程
+
+```
+                    ┌──────────────────────────────────────────────────────┐
+                    │  opencode 启动                                       │
+                    │  ├── 加载 agents/*.md → 注册 6 个 subagent           │
+                    │  └── oh-my-opencode preset → 覆盖各 agent 的 model   │
+                    └──────────────────────────────────────────────────────┘
+                                          │
+                                          ▼
+                    ┌──────────────────────────────────────────────────────┐
+                    │  SessionStart Hook                                   │
+                    │  ├── 检测 .step/state.yaml → 注入状态到上下文        │
+                    │  ├── 注入 routing 表 → LLM 知道阶段→agent 映射       │
+                    │  └── 注入 SKILL.md → LLM 知道协议规则                │
+                    └──────────────────────────────────────────────────────┘
+                                          │
+                                          ▼
+  ┌─────────────────────────────────────────────────────────────────────────────────┐
+  │  Full Mode                                                                      │
+  │                                                                                 │
+  │  Phase 0 Discovery ─→ Phase 1 PRD ─→ Phase 2 Tech ─→ Phase 3 Plan              │
+  │  @step-pm (opus)       @step-pm       @step-architect   @step-architect          │
+  │  开放式讨论              选择题确认      开放式讨论         结构化确认               │
+  │                                        @step-designer                            │
+  │                                        (UI 方向时)                               │
+  │                                                               │                  │
+  │                                                               ▼                  │
+  │                                                        Phase 3 场景补充           │
+  │                                                        @step-qa (opus)           │
+  │                                                        追加 edge/error 场景       │
+  │                                                               │                  │
+  │                                                               ▼                  │
+  │  Phase 4 Execution ──────────────────────────────────────────────────             │
+  │  ├── 测试编写: @step-qa (routing.test_writing) ← 对抗性                           │
+  │  ├── 后端实现: @step-developer (file_routing.backend)                             │
+  │  ├── 前端实现: @step-designer (file_routing.frontend)                             │
+  │  ├── Gate: gate.sh standard {slug} ← 硬保证                                      │
+  │  └── Gate 失败: @step-qa 分析根因 → 分级修复（最多 3 轮）                          │
+  │                         │                                                        │
+  │                         ▼                                                        │
+  │  Phase 5 Review                                                                  │
+  │  @step-reviewer (codex)                                                          │
+  │  需求合规(P0) > 代码质量(P1-P3) → Commit → 更新 state.yaml                        │
+  └─────────────────────────────────────────────────────────────────────────────────┘
+
+  ┌─────────────────────────────────────────────────────────────────────────────────┐
+  │  Lite Mode                                                                      │
+  │                                                                                 │
+  │  L1 Quick Spec ──→ L2 Execution ──→ L3 Review                                  │
+  │  编排器自行处理     @step-qa(测试)     @step-reviewer                             │
+  │  (一次确认)         @step-developer    Commit → Check → 归档提示                  │
+  │                     @step-designer                                               │
+  │                     (自主执行)                                                    │
+  └─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 配置架构（5 层分离）
+
+```
+agent .md frontmatter   →  WHO    角色人设 + 默认模型
+config.yaml routing     →  WHEN   哪个阶段用哪个 agent
+config.yaml file_routing → WHERE  哪些文件用哪个 agent
+config.yaml gate        →  HOW    项目构建命令
+oh-my-opencode preset   →  WITH   用户环境的实际模型 ID
+```
+
+### Agent × Model × Phase 完整映射
+
+| Phase | 阶段 | Agent | 默认 Model | Routing Key |
+|-------|------|-------|-----------|-------------|
+| 0 | Discovery | @step-pm | claude-opus | routing.discovery |
+| 1 | PRD | @step-pm | claude-opus | routing.prd |
+| 2 | Tech Design | @step-architect | claude-opus | routing.tech_design |
+| 2 | UI 设计方向 | @step-designer | gemini | routing.tech_design（UI 部分） |
+| 3 | Planning | @step-architect | claude-opus | routing.planning |
+| 3 | 场景补充 | @step-qa | claude-opus | routing.scenario |
+| 4 | 测试编写 | @step-qa | claude-opus | routing.test_writing |
+| 4 | 后端实现 | @step-developer | codex | file_routing.backend |
+| 4 | 前端实现 | @step-designer | gemini | file_routing.frontend |
+| 4 | Gate 失败分析 | @step-qa | claude-opus | — |
+| 5 | Review | @step-reviewer | codex | routing.review |
+
+### 硬保证 vs 软保证
+
+| 层 | 机制 | 保证类型 |
+|----|------|---------|
+| gate.sh / scenario-check.sh | 脚本执行，退出码决定 pass/fail | **硬保证** |
+| Agent 模型绑定 | frontmatter + preset，框架层强制 | **硬保证** |
+| SessionStart Hook 注入 | bash 脚本，确定性执行 | **硬保证** |
+| 阶段流转 / TDD 先测试 | SKILL.md 规则 + agent Critical Actions | 软保证（prompt） |
+| 按 routing 表派发 agent | LLM 自主决策 | 软保证（prompt） |
+| baseline 冻结 | 契约 + CR 流程 | 软保证（无文件锁） |
+
+## 4. 安装（Installation）
 
 ```bash
 # 安装
@@ -68,24 +164,28 @@ bash uninstall.sh --project
 │   ├── pm.md               # 产品经理 (Phase 0-1)
 │   ├── architect.md        # 架构师 (Phase 2-3)
 │   ├── qa.md               # 质量工程师 (Phase 3/4/5)
-│   └── developer.md        # 开发者 (Phase 4)
+│   ├── developer.md        # 开发者 (Phase 4 后端)
+│   ├── designer.md         # UX 设计师 (Phase 2 UI + Phase 4 前端)
+│   └── reviewer.md         # Code Reviewer (Phase 5)
 └── templates/              # 项目文件模板
 ```
 
 ### 角色系统
 
-STEP 定义 4 个角色，每个角色对应一个 agent 定义（`agents/*.md`），在对应阶段使用不同模型和思维模式：
+STEP 定义 6 个角色，每个角色对应一个 agent 定义（`agents/*.md`），默认模型可通过 oh-my-opencode preset 覆盖：
 
-| 角色 | 阶段 | 思维模式 |
-| --- | --- | --- |
-| PM | Phase 0-1 | 用户视角、需求优先级、验收标准 |
-| Architect | Phase 2-3 | 技术权衡、系统设计、任务拆分 |
-| QA | Phase 3/4/5 | 对抗性测试思维、根因分析、需求合规 |
-| Developer | Phase 4 | TDD 实现、遵循 patterns、不越界 |
+| 角色 | Agent | 默认模型 | 阶段 | 思维模式 |
+| --- | --- | --- | --- | --- |
+| PM | @step-pm | claude-opus | Phase 0-1 | 用户视角、需求优先级、验收标准 |
+| Architect | @step-architect | claude-opus | Phase 2-3 | 技术权衡、系统设计、任务拆分 |
+| QA | @step-qa | claude-opus | Phase 3/4/5 | 对抗性测试思维、根因分析、需求合规 |
+| Developer | @step-developer | codex | Phase 4（后端） | TDD 实现、遵循 patterns、不越界 |
+| Designer | @step-designer | gemini | Phase 2 UI + Phase 4（前端） | 配色、布局、交互、UI 代码 |
+| Reviewer | @step-reviewer | codex | Phase 5 Review | 需求合规审查、代码质量评估 |
 
-角色之间形成制衡：PM 定义"做什么"、Architect 定义"怎么做"、QA 定义"怎么破坏它"、Developer 只做被定义的事。
+角色之间形成制衡：PM 定义"做什么"、Architect 定义"怎么做"、QA 定义"怎么破坏它"、Developer/Designer 只做被定义的事。
 
-## 4. 使用（Usage）
+## 5. 使用（Usage）
 
 ```
 # 在任何项目中启动 STEP
@@ -100,13 +200,13 @@ STEP 定义 4 个角色，每个角色对应一个 agent 定义（`agents/*.md`�
 /archive {slug}       # 归档指定任务
 ```
 
-## 5. 项目文件结构（Project Files）
+## 6. 项目文件结构（Project Files）
 
 `/step` 会在项目中创建：
 
 ```
 .step/
-├── config.yaml          # 模型路由 & gate 命令（可自定义）
+├── config.yaml          # agent 路由、文件路由、gate 命令
 ├── baseline.md          # 需求基线（Phase 1 冻结）
 ├── decisions.md         # 架构决策日志
 ├── state.yaml           # 项目状态机（Session 恢复核心）
@@ -133,26 +233,30 @@ scripts/
 | 场景 ID | `S-{slug}-{seq}` | `S-user-register-api-01` |
 | 归档 | `YYYY-MM-DD-{slug}.yaml` | `2026-02-15-user-register-api.yaml` |
 
-## 6. 配置（Configuration）
+## 7. 配置（Configuration）
 
-`.step/config.yaml` 控制模型路由与 gate 命令，所有模型与命令均可自定义。示例：
+`.step/config.yaml` 控制 agent 路由、文件分流与 gate 命令，均可自定义：
 
 ```yaml
-model_routing:
-  # 规划阶段
-  discovery: { model: "claude-opus" }
-  prd: { model: "claude-opus" }
-  tech_design: { model: "claude-opus" }
-  planning: { model: "claude-opus" }
+# 阶段 → Agent 路由（删除某行 = 编排器自己处理该阶段）
+routing:
+  discovery:    { agent: step-pm }
+  prd:          { agent: step-pm }
+  tech_design:  { agent: step-architect }
+  planning:     { agent: step-architect }
+  scenario:     { agent: step-qa }
+  test_writing: { agent: step-qa, note: "建议与 execution agent 不同，形成对抗性" }
+  execution:    { agent: step-developer }
+  review:       { agent: step-reviewer }
 
-  # 执行阶段（均可按项目需求修改）
-  test_writing: { model: "codex", note: "建议与实现模型不同以形成对抗性" }
-  frontend: { model: "gemini", patterns: ["src/components/**", "**/*.tsx"] }
-  backend: { model: "codex", patterns: ["src/api/**", "src/lib/**"] }
-  complex_logic: { model: "claude-opus" }
-
-  # 审查阶段
-  review: { model: "claude-opus | codex" }
+# Phase 4 文件模式路由（前端文件 → designer，其余 → developer）
+file_routing:
+  frontend:
+    agent: step-designer
+    patterns: ["src/components/**", "**/*.tsx", "**/*.css", "**/*.vue"]
+  backend:
+    agent: step-developer
+    patterns: ["src/api/**", "src/db/**", "src/lib/**"]
 
 # Gate 命令（根据项目工具链修改）
 gate:
@@ -162,7 +266,22 @@ gate:
   build: "pnpm build"
 ```
 
-## 7. Lite Mode（快速通道）
+### 模型配置
+
+Agent 默认模型在 `agents/*.md` frontmatter 中定义。用户可通过 oh-my-opencode preset 按 agent name 覆盖：
+
+```json
+{
+  "step-pm": { "model": "google/antigravity-claude-opus-4-6-thinking" },
+  "step-architect": { "model": "google/antigravity-claude-opus-4-6-thinking" },
+  "step-qa": { "model": "google/antigravity-claude-opus-4-6-thinking" },
+  "step-reviewer": { "model": "openai/gpt-5.3-codex" },
+  "step-developer": { "model": "openai/gpt-5.3-codex" },
+  "step-designer": { "model": "google/antigravity-gemini-3-pro" }
+}
+```
+
+## 8. Lite Mode（快速通道）
 
 对于小型任务（bug fix、小功能、配置变更），STEP 提供 Lite Mode，3 个阶段代替 6 个阶段：
 

@@ -33,7 +33,7 @@ superpowers：通过 prompt 级铁律形成软约束。
 
 ## 4. TDD 对比
 
-STEP：支持在协议层绑定测试书写与场景覆盖（例如 config.yaml 中 test_writing 模型配置、场景 ID 绑定与 BDD 矩阵）。
+STEP：支持在协议层绑定测试书写与场景覆盖（routing.test_writing 指定 @step-qa 写测试、场景 ID 绑定与 BDD 矩阵、QA 与 Developer 天然对抗性）。
 
 superpowers：强制 TDD 铁律，“无失败测试不得写生产代码”；若写了未覆盖代码，要求“全部删除并重来”。
 

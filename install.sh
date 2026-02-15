@@ -120,7 +120,9 @@ install() {
   echo "  │   ├── pm.md               # Product Manager (Phase 0-1)"
   echo "  │   ├── architect.md        # Architect (Phase 2-3)"
   echo "  │   ├── qa.md               # QA Engineer (Phase 3/4/5)"
-  echo "  │   └── developer.md        # Developer (Phase 4)"
+  echo "  │   ├── developer.md        # Developer (Phase 4)"
+  echo "  │   ├── designer.md         # Designer (Phase 2/3/4)"
+  echo "  │   └── reviewer.md         # Reviewer (Phase 5)"
   echo "  └── templates/              # Project file templates"
 }
 

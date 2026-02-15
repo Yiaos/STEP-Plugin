@@ -63,6 +63,12 @@ if [ -f ".step/baseline.md" ]; then
   BASELINE_CONTENT=$(head -50 ".step/baseline.md" 2>&1 || echo "")
 fi
 
+# 读取 config.yaml 的 routing 部分（让 LLM 每次会话都看到路由表）
+ROUTING_CONTENT=""
+if [ -f ".step/config.yaml" ]; then
+  ROUTING_CONTENT=$(grep -A 50 '^routing:' ".step/config.yaml" 2>/dev/null | head -30 || echo "")
+fi
+
 # 读取 SKILL.md 核心规则
 SKILL_CONTENT=""
 if [ -f "${PLUGIN_ROOT}/skills/step/SKILL.md" ]; then
@@ -72,13 +78,14 @@ fi
 STATE_ESC=$(escape_for_json "$STATE_CONTENT")
 TASK_ESC=$(escape_for_json "$TASK_CONTENT")
 BASELINE_ESC=$(escape_for_json "$BASELINE_CONTENT")
+ROUTING_ESC=$(escape_for_json "$ROUTING_CONTENT")
 SKILL_ESC=$(escape_for_json "$SKILL_CONTENT")
 
 cat <<EOF
 {
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
-    "additionalContext": "<STEP_PROTOCOL>\nSTEP 协议已激活。\n\n## 核心规则\n${SKILL_ESC}\n\n## state.yaml\n${STATE_ESC}\n\n## 当前任务\n${TASK_ESC}\n\n## Baseline (摘要)\n${BASELINE_ESC}\n\n## 恢复指令\n1. 根据 current_phase 进入对应阶段\n2. 输出状态行: 📍 Phase X | Task | Status | Next\n3. 从 next_action 继续工作\n4. 对话结束必须更新 state.yaml\n</STEP_PROTOCOL>"
+    "additionalContext": "<STEP_PROTOCOL>\nSTEP 协议已激活。\n\n## 核心规则\n${SKILL_ESC}\n\n## state.yaml\n${STATE_ESC}\n\n## 当前任务\n${TASK_ESC}\n\n## Baseline (摘要)\n${BASELINE_ESC}\n\n## Agent 路由表\n${ROUTING_ESC}\n\n## 恢复指令\n1. 根据 current_phase 和 routing 表选择对应 agent\n2. 输出状态行: 📍 Phase X | Task | Status | Next\n3. 从 next_action 继续工作\n4. Phase 4 按 file_routing 的 patterns 决定用 @step-developer 或 @step-designer\n5. 对话结束必须更新 state.yaml\n</STEP_PROTOCOL>"
   }
 }
 EOF

@@ -63,8 +63,8 @@ hooks:
 ### Phase 4: Execution（TDD + Gate）
 ```
 Step 1: 加载上下文 → 输出状态行
-Step 2: 写测试（按 config.yaml test_writing 模型） → 确认全部 FAIL (TDD RED)
-Step 3: 写实现（按模型路由） → 每场景跑 gate quick
+Step 2: 写测试（按 routing.test_writing 派发 @step-qa） → 确认全部 FAIL (TDD RED)
+Step 3: 写实现（按 file_routing 选 agent） → 每场景跑 gate quick
   ⚡ 每 2 次工具调用后，检查 progress_log / key_decisions 是否需要进度更新
 Step 4: Gate 验证 → gate.sh standard {slug}
 Step 5: Review + Commit（每完成一个任务都执行）
@@ -76,7 +76,7 @@ Step 6: 更新 state.yaml + baseline.md 对应项 [ ] → [x] → 进入下一�
 
 ## Execution 硬规则
 
-1. **测试先行**: 按 `config.yaml` 中 `test_writing.model` 指定的模型写测试 → 确认 FAIL → 再写实现（建议测试与实现用不同模型以形成对抗性）
+1. **测试先行**: 按 `config.yaml` 的 `routing.test_writing` 派发 @step-qa 写测试 → 确认 FAIL → 再写实现（QA 写测试 + Developer 写实现 = 天然对抗性）
 2. **场景 ID 绑定**: 测试名必须包含 `[S-{slug}-xx]`
 3. **Gate 必过**: `./scripts/gate.sh standard {slug}` 通过才能标 done
 4. **场景 100% 覆盖**: `scenario-check.sh` 验证每个场景 ID 都有对应测试
@@ -124,7 +124,7 @@ Gate 失败 → 强模型(Opus/Codex xhigh)分析根因
 
 ### 硬保证（技术层面强制）
 1. **gate.sh / scenario-check.sh** — 脚本执行结果是确定性的，跑了就准
-2. **Subagent 模型绑定** — 通过 `agents/*.md` 定义 + `oh-my-opencode` 配置，subagent 启动时模型确定
+2. **Subagent 模型绑定** — `agents/*.md` frontmatter 默认模型 + oh-my-opencode preset 覆盖，subagent 启动时模型确定
 3. **SessionStart Hook 注入** — 有 `.step/` 目录就一定注入状态到上下文
 4. **文件模板结构** — step-init.sh 创建的文件结构是确定性的
 
@@ -169,29 +169,38 @@ PostToolUse 提醒不可忽略：每次 Write/Edit 后评估是否触发了状�
 2. 输出: `📍 Phase X | Task: {slug} | Status: xxx | Next: xxx`
 3. 从 next_action 继续
 
-## 模型路由（参考 .step/config.yaml）
+## Agent 路由（参考 .step/config.yaml）
 
-| 阶段 | 模型 |
-|------|------|
-| Phase 0-3 规划 | claude-opus |
-| 测试编写 | 按 config.yaml 配置（默认 codex） |
-| 前端实现 | gemini |
-| 后端实现 | codex |
-| 复杂逻辑 | claude-opus |
-| Review | claude-opus 或 codex |
+编排器按 `config.yaml` 的 `routing` 表选择 agent，Phase 4 按 `file_routing` 的 patterns 分流：
+
+| 阶段 | Agent | 路由依据 |
+|------|-------|---------|
+| Phase 0 Discovery | @step-pm | routing.discovery |
+| Phase 1 PRD | @step-pm | routing.prd |
+| Phase 2 Tech Design | @step-architect | routing.tech_design |
+| Phase 3 Plan | @step-architect | routing.planning |
+| Phase 3 场景补充 | @step-qa | routing.scenario |
+| Phase 4 测试编写 | @step-qa | routing.test_writing |
+| Phase 4 执行（后端） | @step-developer | file_routing.backend |
+| Phase 4 执行（前端） | @step-designer | file_routing.frontend |
+| Phase 5 Review | @step-reviewer | routing.review |
+
+Agent 默认模型在 `agents/*.md` frontmatter 中定义，可通过 oh-my-opencode preset 覆盖。
 
 ## 角色与 Agent 映射
 
-STEP 定义 4 个角色，通过 `agents/*.md` 实现 subagent 模型绑定：
+STEP 定义 6 个角色，通过 `agents/*.md` 实现 subagent 模型绑定：
 
-| 角色 | Agent 文件 | 模型 | 适用阶段 |
-|------|-----------|------|---------| 
-| PM（产品经理） | `agents/pm.md` | claude-opus | Phase 0, 1 |
-| Architect（架构师） | `agents/architect.md` | claude-opus | Phase 2, 3 |
-| QA（质量工程师） | `agents/qa.md` | claude-sonnet-thinking | Phase 3 场景补充, Phase 4 Gate 分析, Phase 5 Review |
-| Developer（开发者） | `agents/developer.md` | codex | Phase 4 |
+| 角色 | Agent | 默认模型 | 适用阶段 |
+|------|-------|---------|---------|
+| PM（产品经理） | @step-pm | claude-opus | Phase 0, 1 |
+| Architect（架构师） | @step-architect | claude-opus | Phase 2, 3 |
+| QA（质量工程师） | @step-qa | claude-opus | Phase 3 场景补充, Phase 4 Gate 分析, Phase 5 Review |
+| Developer（开发者） | @step-developer | codex | Phase 4（后端） |
+| Designer（UX 设计师） | @step-designer | gemini | Phase 2 UI 设计, Phase 4（前端） |
+| Reviewer（代码审查） | @step-reviewer | codex | Phase 5 Review, Lite L3 |
 
-**制衡原则**: PM 定义"做什么"、Architect 定义"怎么做"、QA 定义"怎么破坏它"、Developer 只做被定义的事。
+**制衡原则**: PM 定义"做什么"、Architect 定义"怎么做"、QA 定义"怎么破坏它"、Developer/Designer 只做被定义的事。
 
 ## 对话模式
 

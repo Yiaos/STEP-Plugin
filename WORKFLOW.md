@@ -32,27 +32,28 @@ STEP 使用两种对话模式，在不同阶段切换：
 
 ### 角色与 Agent 映射
 
-STEP 定义 4 个角色，每个角色对应一个自定义 agent 定义文件（`STEP/agents/`），在对应阶段自动切换思维模式：
+STEP 定义 6 个角色，每个角色对应一个 agent 定义文件（`STEP/agents/`），模型可通过 oh-my-opencode preset 覆盖：
 
-| 角色 | Agent 文件 | 模型 | 适用阶段 | 思维模式 |
-|------|-----------|------|----------|----------|
+| 角色 | Agent 文件 | 默认模型 | 适用阶段 | 思维模式 |
+|------|-----------|---------|----------|----------|
 | PM（产品经理） | `agents/pm.md` | claude-opus | Phase 0 Discovery, Phase 1 PRD | 用户视角、需求优先级、验收标准 |
 | Architect（架构师） | `agents/architect.md` | claude-opus | Phase 2 Tech Design, Phase 3 Plan | 技术权衡、系统设计、任务拆分 |
-| QA（质量工程师） | `agents/qa.md` | claude-sonnet-thinking | Phase 3 场景补充, Phase 4 Gate 分析, Phase 5 Review | 对抗性测试思维、根因分析、需求合规 |
-| Developer（开发者） | `agents/developer.md` | codex | Phase 4 Execution | TDD 实现、遵循 patterns、不越界 |
+| QA（质量工程师） | `agents/qa.md` | claude-opus | Phase 3 场景补充, Phase 4 Gate 分析, Phase 5 Review | 对抗性测试思维、根因分析、需求合规 |
+| Reviewer（代码审查） | `agents/reviewer.md` | codex | Phase 5 Review, Lite L3 | 需求合规审查、代码质量评估、参考 code-review-expert |
+| Developer（开发者） | `agents/developer.md` | codex | Phase 4 Execution（后端） | TDD 实现、遵循 patterns、不越界 |
+| Designer（UX 设计师） | `agents/designer.md` | gemini | Phase 2 UI 设计, Phase 4 Execution（前端） | 配色、布局、交互设计、UI 代码 |
 
 **角色切换原则：**
-- 每个 Phase 有默认角色，通过 dispatch 对应 agent 实现
-- PM 和 Architect 使用高推理模型（规划需要深度思考）
-- QA 使用 thinking 模型（对抗性分析需要深度推理）
-- Developer 使用代码模型（执行需要代码生成能力）
-- 角色之间形成制衡：PM 定义"做什么"、Architect 定义"怎么做"、QA 定义"怎么破坏它"、Developer 只做被定义的事
+- 每个 Phase 有默认角色，通过 `.step/config.yaml` 的 `routing` 表配置
+- Phase 4 执行时，按 `file_routing` 表的 patterns 匹配决定用 Designer 还是 Developer
+- 角色之间形成制衡：PM 定义"做什么"、Architect 定义"怎么做"、QA 定义"怎么破坏它"、Developer/Designer 只做被定义的事
+- Agent 默认模型在 `agents/*.md` frontmatter 中定义，用户可通过 oh-my-opencode preset 按 agent name 覆盖
 
 ### 文件结构
 
 ```
 .step/
-├── config.yaml               # 项目配置（模型路由、gate 命令）
+├── config.yaml               # 项目配置（agent 路由、文件路由、gate 命令）
 ├── baseline.md                # Phase 1 输出：冻结需求
 ├── tech-comparison.md         # Phase 2 输出：技术方案对比
 ├── decisions.md               # Phase 2 输出：架构决策日志
@@ -353,26 +354,34 @@ rollback: "git revert --no-commit HEAD~3"
 
 **多模型编排：** 所有工具统一使用 opencode，通过 opencode 的模型配置切换底层模型。
 
-### 模型路由
+### Agent 路由
+
+Phase 4 执行时，编排器按 `.step/config.yaml` 的路由表选择 agent：
 
 ```yaml
 # .step/config.yaml
-model_routing:
-  # Phase 0-3: 规划阶段
-  discovery: { model: "claude-opus" }
-  prd: { model: "claude-opus" }
-  tech_design: { model: "claude-opus" }
-  planning: { model: "claude-opus" }
 
-  # Phase 4: 执行阶段
-  test_writing: { model: "codex", note: "可配置，建议与实现模型不同以形成对抗性" }
-  frontend: { model: "gemini", patterns: ["src/components/**", "**/*.tsx", "**/*.css"] }
-  backend: { model: "codex", patterns: ["src/api/**", "src/db/**", "src/lib/**"] }
-  complex_logic: { model: "claude-opus", note: "手动指定" }
+# 阶段 → Agent 路由（编排器参考此表派发子 agent）
+routing:
+  discovery:    { agent: step-pm }
+  prd:          { agent: step-pm }
+  tech_design:  { agent: step-architect }
+  planning:     { agent: step-architect }
+  scenario:     { agent: step-qa }
+  test_writing: { agent: step-qa, note: "建议与 execution agent 不同，形成对抗性" }
+  execution:    { agent: step-developer }
+  review:       { agent: step-reviewer }
 
-  # Phase 5: 审查阶段
-  review: { model: "claude-opus | codex", note: "可选，参考 code-review-expert skill" }
+# Phase 4 文件模式路由（前端文件 → designer，其余 → developer）
+file_routing:
+  frontend:
+    agent: step-designer
+    patterns: ["src/components/**", "**/*.tsx", "**/*.css", "**/*.vue"]
+  backend:
+    agent: step-developer
+    patterns: ["src/api/**", "src/db/**", "src/lib/**"]
 
+# Gate 命令（根据项目包管理器和工具链修改）
 gate:
   lint: "pnpm lint --no-error-on-unmatched-pattern"
   typecheck: "pnpm tsc --noEmit"
@@ -387,20 +396,20 @@ Step 1: 加载上下文
   读 state.yaml → 读 task YAML → 读 baseline.md
   输出: "📍 user-register-api 用户注册 | 4 场景待实现"
 
-Step 2: 写测试（使用 config.yaml 中 test_writing 指定的模型）
+Step 2: 写测试（按 routing.test_writing 派发 @step-qa）
   ┌────────────────────────────────────────────────┐
   │ 读取 .step/tasks/user-register-api.yaml 的场景矩阵│
   │ 为每个场景写测试，名称包含 [S-{slug}-xx]          │
   │ 不写任何实现代码                                  │
   │ 跑测试确认全部 FAIL                               │
-  │ 建议：测试与实现用不同模型以形成对抗性              │
+  │ QA 写测试 + Developer 写实现 = 天然对抗性          │
   └────────────────────────────────────────────────┘
   → 确认全部 FAIL（TDD RED）
 
-Step 3: 写实现（按类型选模型）
-  前端代码 → gemini
-  后端代码 → codex
-  复杂逻辑 → claude-opus
+Step 3: 写实现（按 config.yaml file_routing 选 agent）
+  前端文件（匹配 file_routing.frontend.patterns）→ @step-designer
+  后端文件（匹配 file_routing.backend.patterns）→ @step-developer
+  未匹配的文件 → @step-developer（默认）
   → 每实现一个场景，跑 gate quick
 
 Step 4: Gate 验证
@@ -605,15 +614,10 @@ Review 的**首要职责**是验证"做的东西对不对"（需求合规），�
 ...
 ```
 
-### Review 模型选择
+### Review Agent
 
-用户可根据需要选择任何模型执行上述审查框架：
-
-```
-选项 A: claude-opus → 深度审查，擅长 spec compliance 和架构分析
-选项 B: codex       → 快速审查，擅长代码模式扫描
-选项 C: 两阶段组合   → codex 快速扫描 + opus 深度分析
-```
+Phase 5 Review 由 `@step-reviewer` 执行（参考 code-review-expert skill 实现）。
+审查优先级：需求合规（P0 阻断） > 代码质量（P1-P3）。
 
 ---
 
@@ -685,7 +689,7 @@ Post-MVP 的每一次变更都必须：
   │           status: not_run
   │
   ├── 3. TDD 修复（完整 Phase 4 流程）
-  │     → 先写失败测试（按 config.yaml test_writing 模型）
+  │     → 先写失败测试（按 routing.test_writing 派发 @step-qa）
   │     → 修复代码
   │     → gate standard → Review + Commit
   │
@@ -746,14 +750,14 @@ gate.sh 在 standard 级别自动调用 scenario-check.sh。
 
 ```
 Layer 1: 场景定义    ← Phase 3 Architect（happy_path）+ QA（edge/error/security）
-Layer 2: 测试代码    ← Phase 4 Developer（按 config.yaml test_writing 模型）
-Layer 3: 实现代码    ← Phase 4 Developer（按类型选模型）
+Layer 2: 测试代码    ← Phase 4 @step-qa（按 config.yaml test_writing 路由，形成对抗性）
+Layer 3: 实现代码    ← Phase 4 Developer/Designer（按 file_routing 选 agent）
 Layer 4: 独立审查    ← Phase 5 QA（需求合规 + 代码质量）
 ```
 
-### 测试模型选择原则
+### 测试编写 Agent
 
-测试模型通过 `config.yaml` 的 `test_writing.model` 配置，建议与实现模型不同以形成"对抗性"（避免同一模型写测试又写实现）。
+测试通过 `config.yaml` 的 `routing.test_writing` 配置，默认使用 `@step-qa`。建议与实现 agent 不同以形成"对抗性"（避免同一 agent 写测试又写实现）。
 
 ### 测试生成提示词模板
 
@@ -953,12 +957,12 @@ Session 开始
 - Phase 1 (PRD): 分段展示，选择题确认细节
 - Phase 2 (Tech Design): 开放式讨论技术方案，确认后选择题定细节
 - Phase 3 (Planning): 生成任务图+场景矩阵，用户审核
-- Phase 4 (Execution): TDD（测试模型按 config.yaml 配置）+ Gate 验证
+- Phase 4 (Execution): TDD（测试由 @step-qa 编写，实现按 file_routing）+ Gate 验证
 - Phase 5 (Review): 独立审查（需求合规 > 代码质量）
 
 ### Execution 规则
 - 遵循 established_patterns
-- 测试先行: 按 config.yaml test_writing 模型写测试 → 确认 FAIL → 再写实现
+- 测试先行: 按 routing.test_writing 派发 @step-qa 写测试 → 确认 FAIL → 再写实现
 - 场景 ID: 测试名必须包含 [S-{slug}-xx]
 - Gate: `./scripts/gate.sh standard {slug}`
 - 完成判定: 所有 scenario pass + gate pass → 才能标 done
@@ -986,154 +990,17 @@ Session 开始
 
 ---
 
-## 初始化脚本（`/step` 命令内部调用）
+## 初始化脚本
 
-```bash
-#!/bin/bash
-# step-init.sh — 初始化 STEP 协议
+初始化逻辑在 `scripts/step-init.sh` 中实现，由 `/step` 命令调用。主要功能：
 
-set -e
+1. **项目检测** — `detect_project()` 扫描 16 种包管理器/清单文件 + 6 种工具目录，判断是已有项目还是绿地项目
+2. **创建目录** — `.step/tasks/`, `.step/archive/`, `.step/change-requests/`, `.step/evidence/`, `scripts/`
+3. **复制模板** — 从 `templates/` 复制 `config.yaml`, `state.yaml`, `baseline.md`, `decisions.md`
+4. **复制脚本** — 复制 `gate.sh`, `scenario-check.sh` 到项目 `scripts/` 目录
+5. **已有项目提示** — 检测到已有代码时，提示 LLM 先分析现有代码结构再讨论新需求
 
-echo "📦 Initializing STEP protocol..."
-
-mkdir -p .step/tasks .step/change-requests .step/evidence scripts
-
-# config.yaml
-cat > .step/config.yaml << 'EOF'
-model_routing:
-  discovery: { model: "claude-opus" }
-  prd: { model: "claude-opus" }
-  tech_design: { model: "claude-opus" }
-  planning: { model: "claude-opus" }
-  test_writing: { model: "codex", note: "可配置，建议与实现模型不同" }
-  frontend: { model: "gemini", patterns: ["src/components/**", "**/*.tsx", "**/*.css"] }
-  backend: { model: "codex", patterns: ["src/api/**", "src/db/**", "src/lib/**"] }
-  complex_logic: { model: "claude-opus" }
-  review: { model: "claude-opus | codex" }
-
-gate:
-  lint: "pnpm lint --no-error-on-unmatched-pattern"
-  typecheck: "pnpm tsc --noEmit"
-  test: "pnpm vitest run"
-  build: "pnpm build"
-EOF
-
-# state.yaml
-cat > .step/state.yaml << 'EOF'
-project: "TODO"
-current_phase: "phase-0-discovery"
-last_updated: ""
-last_agent: ""
-last_session_summary: ""
-established_patterns: {}
-tasks:
-  completed: []
-  current: null
-  upcoming: []
-known_issues: []
-constraints_quick_ref: []
-EOF
-
-# baseline.md
-cat > .step/baseline.md << 'EOF'
-# Baseline
-> 状态: 未冻结（等待 Phase 1 完成）
-EOF
-
-# decisions.md
-cat > .step/decisions.md << 'EOF'
-# Architecture Decision Log
-> 等待 Phase 2 完成
-EOF
-
-# gate.sh
-cat > scripts/gate.sh << 'GATE'
-#!/bin/bash
-set -e
-LEVEL=${1:-standard}
-TASK_ID=${2:-""}
-PASS=true
-
-run_check() {
-  local name=$1; local cmd=$2
-  echo "--- $name ---"
-  if eval "$cmd" 2>&1; then
-    echo "  ✅ $name: PASS"
-  else
-    echo "  ❌ $name: FAIL"
-    PASS=false
-  fi
-}
-
-echo "🚧 Gate (level: $LEVEL, task: ${TASK_ID:-all})"
-run_check "lint" "pnpm lint --no-error-on-unmatched-pattern"
-run_check "typecheck" "pnpm tsc --noEmit"
-
-if [ "$LEVEL" != "quick" ]; then
-  run_check "unit-test" "pnpm vitest run"
-fi
-
-if [ "$LEVEL" != "quick" ] && [ -n "$TASK_ID" ]; then
-  run_check "scenario" "./scripts/scenario-check.sh $TASK_ID"
-fi
-
-if [ "$LEVEL" = "full" ]; then
-  run_check "build" "pnpm build"
-fi
-
-if [ "$PASS" = true ]; then
-  echo "✅ Gate PASSED"
-  exit 0
-else
-  echo "❌ Gate FAILED"
-  exit 1
-fi
-GATE
-chmod +x scripts/gate.sh
-
-# scenario-check.sh
-cat > scripts/scenario-check.sh << 'SCENARIO'
-#!/bin/bash
-set -e
-TASK_ID=$1
-TASK_FILE=".step/tasks/${TASK_ID}.yaml"
-
-[ ! -f "$TASK_FILE" ] && echo "❌ Not found: $TASK_FILE" && exit 1
-
-echo "🔍 Checking scenario coverage for $TASK_ID..."
-
-TOTAL=0; COVERED=0; MISSING=""
-CURRENT_SID=""
-
-while IFS= read -r line; do
-  if echo "$line" | grep -qE "^\s+- id: S-"; then
-    CURRENT_SID=$(echo "$line" | sed 's/.*id: //' | tr -d ' ')
-    TOTAL=$((TOTAL + 1))
-  fi
-  if echo "$line" | grep -q "test_file:" && [ -n "$CURRENT_SID" ]; then
-    TF=$(echo "$line" | sed 's/.*test_file: //' | tr -d '"'"'" | tr -d ' ')
-    if [ -f "$TF" ] && grep -q "\[${CURRENT_SID}\]" "$TF"; then
-      COVERED=$((COVERED + 1))
-    else
-      MISSING="${MISSING}\n  ❌ ${CURRENT_SID} not found in ${TF}"
-    fi
-    CURRENT_SID=""
-  fi
-done < "$TASK_FILE"
-
-[ $TOTAL -gt 0 ] && COV=$((COVERED * 100 / TOTAL)) || COV=0
-echo "📊 Coverage: ${COVERED}/${TOTAL} (${COV}%)"
-[ -n "$MISSING" ] && echo -e "\nMissing:${MISSING}"
-[ $COV -eq 100 ] && echo "✅ PASS" && exit 0
-echo "❌ FAIL (need 100%)" && exit 1
-SCENARIO
-chmod +x scripts/scenario-check.sh
-
-echo ""
-echo "✅ STEP initialized!"
-echo "   当前阶段: Phase 0 Discovery"
-echo "   请描述你的想法，我们开始讨论。"
-```
+详见 `scripts/step-init.sh` 源码。
 
 ---
 
@@ -1145,7 +1012,7 @@ echo "   请描述你的想法，我们开始讨论。"
 |------|----------|------|
 | gate.sh | lint/typecheck/test 结果准确 | 真实执行命令，退出码决定 pass/fail |
 | scenario-check.sh | 场景 ID 覆盖率准确 | grep 硬匹配，不依赖 LLM 判断 |
-| Subagent 模型绑定 | 不同角色用不同模型 | agents/*.md 定义 + oh-my-opencode 配置 |
+| Subagent 模型绑定 | 不同角色用不同模型 | agents/*.md frontmatter 默认值 + oh-my-opencode preset 覆盖 |
 | SessionStart Hook | 有 .step/ 就注入状态 | bash 脚本，确定性执行 |
 | step-init.sh | 文件结构正确 | 从 templates/ 复制，确定性 |
 
@@ -1444,8 +1311,8 @@ done_when:
 | 2 | Post-MVP 变更和 bug 修复 | 新增"Post-MVP"章节：Change Request（需求变更）+ Hotfix（bug）+ 约束变更 |
 | 3 | 场景规则是 BDD | 场景 = BDD Given/When/Then = 行为规格。测试类型由 test_type 字段指定 |
 | 4 | 用 hook 保证规则生效 | 新增 SessionStart hook（自动注入 state.yaml 到上下文）+ `/step` 命令 |
-| 5 | 统一使用 opencode，删除 tool | config.yaml 中删除 tool 字段，只保留 model 路由 |
-| 6 | review 模型可选，规则参考 code-review-expert | Review 模型用户指定；审查规则以需求合规（baseline/PRD/BDD/Plan/ADR）为第一优先级，code-review-expert 项为第二优先级 |
+| 5 | 统一使用 opencode，删除 tool | config.yaml 改为 routing（agent 路由）+ file_routing（文件分流）+ gate（命令） |
+| 6 | review 模型可选，规则参考 code-review-expert | 创建 step-reviewer agent，参考 code-review-expert 实现。需求合规为第一优先级 |
 | 7 | gate 失败如何处理 | 新增"Gate 失败处理流程"：Opus/Codex xhigh 先分析根因 → 分类修复最多 3 轮 → 仍失败标 blocked |
 | 8 | 初始化做成 /step 命令 | 创建 `commands/step/step.md`，检测 .step/ 是否存在：不存在则初始化，存在则恢复 |
-| 9 | 测试代码模型可配置 | config.yaml 中 test_writing.model 可配置（默认 codex），建议与实现模型不同 |
+| 9 | 测试代码模型可配置 | routing.test_writing 配置测试编写 agent（默认 @step-qa），与实现 agent 不同形成对抗性 |
