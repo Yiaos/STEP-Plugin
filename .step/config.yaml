@@ -27,5 +27,5 @@ file_routing:
 gate:
   lint: "echo 'no lint configured'"
   typecheck: "echo 'no typecheck configured'"
-  test: "bash tests/test-t001.sh && bash tests/test-t002.sh && bash tests/test-t003.sh && bash tests/test-t004.sh && bash tests/test-t005.sh && bash tests/test-t006.sh && bash tests/test-t007.sh"
+  test: "bash tests/test-attention-management.sh && bash tests/test-stop-hook.sh && bash tests/test-init-detection.sh && bash tests/test-execution-rules.sh && bash tests/test-docs-correction.sh && bash tests/test-lite-mode-and-naming.sh && bash tests/test-archive-feature.sh"
   build: "echo 'no build configured'"
