@@ -2,6 +2,7 @@
 # ⚡ 1. progress_log 是否需要追加本次进度?
 # ⚡ 2. key_decisions 是否有新的决策需要记录?
 # ⚡ 3. next_action 是否仍然准确?
+# ⚡ 4. key_decisions / progress_log 倒序写入（最新条目在最前）
 # ────────────────────────────────────────
 # STEP Protocol — 项目状态（由协议自动维护）
 project: "TODO"
@@ -17,7 +18,7 @@ tasks:
   current: null
   upcoming: []
 
-# 关键决策摘要（每条记录决策内容、原因、阶段）
+# 关键决策摘要（倒序：最新条目在最前）
 key_decisions: []
 # 示例:
 # - decision: "选择 HttpOnly Cookie 方案替代 JWT"
@@ -28,7 +29,7 @@ key_decisions: []
 known_issues: []
 constraints_quick_ref: []
 
-# 进度日志（每次对话结束时追加）
+# 进度日志（倒序：最新条目在最前）
 progress_log: []
 # 示例:
 # - date: "2026-02-15"

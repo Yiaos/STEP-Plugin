@@ -12,7 +12,7 @@ description: "启动 STEP 协议（Stateful Task Execution Protocol）。自动�
 4. **检查脚本输出**：如果输出包含 `[EXISTING PROJECT`，说明检测到已有代码库：
    - 先分析现有代码结构、框架、约定
    - 识别已建立的 patterns（命名、架构、测试策略）
-   - 将现有项目上下文写入 `.step/baseline.md`
+   - 将现有项目上下文写入 `.step/baseline.md`, baseline将作为当前该项目的快照
    - 设置 `state.yaml` 的 `established_patterns`
    - 然后进入 Phase 0 讨论新需求
 5. 如果是全新项目，直接告诉用户：进入 Phase 0 Discovery
@@ -40,6 +40,5 @@ description: "启动 STEP 协议（Stateful Task Execution Protocol）。自动�
 
 每次对话结束时**必须**更新 `.step/state.yaml`。
 `next_action` 必须精确到文件名和具体动作，不允许写"继续开发"。
-不允许违反 `baseline.md` 约束，冲突时走 Change Request。
 
 完整协议规范详见 `~/.config/opencode/tools/step/WORKFLOW.md`。

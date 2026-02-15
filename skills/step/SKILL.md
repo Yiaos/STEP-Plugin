@@ -15,7 +15,7 @@ hooks:
   Stop:
     - hooks:
         - type: command
-          command: "bash scripts/step-stop-check.sh 2>/dev/null || echo '[STEP] 对话即将结束。必须更新 state.yaml: last_updated, progress_log（追加本次摘要）, next_action（精确到文件名和动作）。'"
+          command: "bash scripts/step-stop-check.sh 2>/dev/null || echo '[STEP] 对话即将结束。必须更新 state.yaml: last_updated, progress_log（新条目插入列表最前，倒序）, next_action（精确到文件名和动作）。'"
 ---
 
 # STEP Protocol — Core Rules
@@ -162,8 +162,8 @@ Lite mode 跳过此检查点。
 
 当 PreToolUse hook 注入 state.yaml 内容时（你会看到以 `⚡` 开头的规则行）：
 
-1. **检查 progress_log** — 如果距上次更新已完成新的有意义工作，立即追加条目
-2. **检查 key_decisions** — 如果做了新的技术/架构决策，立即记录（decision + reason + phase + date）
+1. **检查 progress_log** — 如果距上次更新已完成新的有意义工作，将新条目插入列表最前（倒序，最新在前）
+2. **检查 key_decisions** — 如果做了新的技术/架构决策，将新条目插入列表最前（倒序，最新在前；含 decision + reason + phase + date）
 3. **检查 next_action** — 如果当前工作已偏离上次记录的 next_action，更新它
 4. **每 2 次工具调用** — 自省一次是否需要更新上述字段
 
@@ -172,10 +172,10 @@ PostToolUse 提醒不可忽略：每次 Write/Edit 后评估是否触发了状�
 ## Session 管理
 
 ### 对话结束时必须做
-1. 更新 `state.yaml`: last_updated, progress_log（追加本次摘要）, next_action
+1. 更新 `state.yaml`: last_updated, progress_log（新条目插入列表最前，倒序）, next_action
 2. `next_action` 精确到文件名和具体动作
 3. **禁止写** "继续开发" / "后续处理"
-4. 如有重大决策，追加到 `key_decisions`（含 decision, reason, phase, date）
+4. 如有重大决策，插入 `key_decisions` 列表最前（倒序；含 decision, reason, phase, date）
 
 ### 恢复 Session 时
 1. 读 state.yaml → 读当前 task → 读 baseline
@@ -232,6 +232,7 @@ Post-MVP 变更**同样遵循 STEP 协议**，所有过程记录在 `.step/` 下
 - **Change Request**: 需求变更 → `.step/change-requests/YYYY-MM-DD-CR-{slug}.yaml` → 用户确认 → 记录变更 → 更新 baseline → 创建新 task YAML（含场景矩阵） → Phase 4 执行 → gate + review + commit
 - **Hotfix**: Bug → 定位场景 → `.step/tasks/YYYY-MM-DD-{slug}-hotfix-{seq}.yaml` → TDD 修复 → gate full 回归 → review + commit → 更新 state.yaml
 - **约束变更**: 高影响 CR → 影响分析 → 创建迁移任务 → Phase 4 执行 → gate full
+- **Baseline 整理**: 经过多轮 CR/Hotfix 后 baseline 变得臃肿时，用户可说"整理 baseline"。流程：归档旧版到 `.step/archive/YYYY-MM-DD-baseline-v{N}.md` → 读取旧 baseline + 所有 recorded CR + decisions.md → 整理只反映当前状态的干净版本（删除已移除项、已替换约束写新值、保留完成标记）→ 用户确认后写入。同时精简 state.yaml（合并冗余 progress_log、清理已解决 known_issues、只保留核心 key_decisions）和 decisions.md（归档旧版、只保留支撑当前 baseline 的核心 ADR、合并琐碎条目）。旧版 decisions.md 归档到 `.step/archive/YYYY-MM-DD-decisions-v{N}.md`。审计链通过归档文件保留，当前文件只负责"现在为什么是这样"
 
 **命名规则**: CR 和 Hotfix 文件名以日期开头（`YYYY-MM-DD-`），便于按时间查找。
 

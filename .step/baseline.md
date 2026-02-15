@@ -1,50 +1,96 @@
 # Baseline
 
-> 状态: ✅ 已确认（2026-02-15）
+> 状态: ✅ 活快照（整理自 v1，2026-02-15）
 
 ## Goal
-一句话：为 STEP Plugin 自身提供注意力管理增强，解决 LLM 在长会话中遗忘进度/决策、以及 Stop hook 缺乏真实检查的问题。
+为 AI 编码代理提供全生命周期开发协议（STEP），通过阶段化流程、可执行门禁和会话恢复机制保证交付质量。
 
 ## Non-Goal（明确不做的事）
-- NG-1: 不重写 STEP 核心协议流程（Phase 0-5 流程不变）
-- NG-2: 不实现文件写保护（已证明无法通过 opencode 机制保证）
-- NG-3: 不新增 Agent 角色（7 角色体系已稳定）
+- NG-1: 不替代 IDE 或编辑器功能
+- NG-2: 不固定绑定特定 LLM 平台（当前基于 opencode，但协议层与平台解耦）
 
-## MVP Scope（按优先级排序）
+## 已实现能力
 
-### P0 — Must Have
-- [x] F-1: PreToolUse 注入内容增强 — state.yaml 头部嵌入行为规则（如"检查 progress_log 是否需要更新"），使 `cat | head -25` 同时注入规则和数据
-- [x] F-2: SKILL.md 正文增加注意力规则 — 显式写明"当你看到 state.yaml 被注入时，检查是否需要更新 progress_log / key_decisions"
-- [x] F-3: Stop hook 增加真实检查 — 将 echo 提醒改为脚本，检查 state.yaml 的 last_updated 是否为当天、progress_log 是否有本次条目
-- [x] F-4: step-init.sh 检测逻辑增强 — 识别非标准项目结构（如 STEP 自身的 scripts/, agents/, commands/, hooks/）
+### 协议流程（6 阶段）
+- [x] Phase 0 Discovery — 开放式讨论，用户主导方向
+- [x] Phase 1 PRD — 分段展示 baseline.md 草稿，选择题确认
+- [x] Phase 2 Tech Design — 开放式讨论技术方案，LLM 提供对比分析
+- [x] Phase 3 Plan & Tasks — BDD 场景矩阵 + 任务依赖图，用户审核
+- [x] Phase 4 Execution — TDD 循环（QA 写测试 + Developer 写实现）+ Gate 验证
+- [x] Phase 5 Review — 独立审查（需求合规 > 代码质量）+ Commit
 
-### P1 — Should Have
-- [x] F-6: 2-Action Rule 文字强化 — SKILL.md Phase 4 段落显式写入"每 2 次工具调用后检查进度更新需求"
-- [x] F-7: Pre-decision Read 规则 — SKILL.md 加入"修改文件前必须先 Read，不得凭记忆编辑"的显式规则
+### 角色体系（7 角色）
+- [x] PM — Phase 0/1，需求探索与 baseline 确认
+- [x] Architect — Phase 2/3，技术方案与任务拆分
+- [x] QA — Phase 3 场景补充 / Phase 4 测试编写 / Gate 失败分析
+- [x] Developer — Phase 4 后端实现
+- [x] Designer — Phase 2 UI 设计 / Phase 4 前端实现 / Polish 检查
+- [x] Reviewer — Phase 5 代码审查
+- [x] Deployer — 部署策略建议（可选）
 
-### P2 — Nice to Have
-- [x] F-8: 对比文档修正 — 更新 STEP-vs-planning-with-files.md，修正"STEP 不处理遗忘问题"的错误描述
+### 质量门禁（可执行脚本）
+- [x] gate.sh — lint / typecheck / test / build，三级：quick / standard / full
+- [x] scenario-check.sh — BDD 场景 ID 硬匹配，100% 覆盖验证
+- [x] step-stop-check.sh — 会话结束前检查 state.yaml 更新状态
 
-## User Stories
-- US-1: 作为使用 STEP 的开发者，我希望 LLM 在长会话中自动被提醒更新进度，以便我在下次会话能恢复完整上下文
-- US-2: 作为使用 STEP 的开发者，我希望会话结束前有真实检查（而非仅提醒），以便关键状态不会丢失
-- US-3: 作为使用 STEP 的开发者，我希望 step-init.sh 能识别各种项目结构，以便非标准项目也能正确初始化
+### 注意力管理
+- [x] PreToolUse hook — state.yaml 头部嵌入行为规则，cat | head -25 同时注入规则和数据
+- [x] PostToolUse hook — 每次 Write/Edit 后提醒检查状态变化
+- [x] Stop hook — 脚本检查 last_updated / progress_log（pass/warn/fail）
+- [x] SKILL.md 注意力规则 — 2-Action Rule + Pre-decision Read
+- [x] SessionStart hook — 自动检测 .step/ 并注入完整上下文（state + task + baseline + config + SKILL）
 
-## Acceptance Contract（验收口径）
-- AC-1: PreToolUse 注入的前 20 行同时包含行为规则和状态数据
-- AC-2: SKILL.md 包含显式注意力管理段落
-- AC-3: Stop hook 运行脚本并输出结构化检查结果（pass/warn/fail）
-- AC-4: step-init.sh 对 STEP 项目自身运行 detect_project() 输出正确的项目类型信息
-- AC-5: 所有变更通过 gate.sh standard 检查
-- AC-6: 对比文档中关于 STEP 遗忘处理的描述已修正
+### 会话恢复
+- [x] state.yaml 状态机 — current_phase / progress_log / next_action / key_decisions
+- [x] SessionStart hook 自动注入 — 有 .step/ 就注入，无需用户手动恢复
+
+### 执行模式
+- [x] Full Mode — 6 阶段完整流程
+- [x] Lite Mode — 3 阶段快速通道（L1 Quick Spec → L2 Execution → L3 Review）
+- [x] Lite 批量处理 — 一次提交多个小任务，逐个 TDD + gate + commit
+- [x] Lite → Full 升级 — 执行中发现复杂度超预期时自动升级
+
+### Post-MVP 流程
+- [x] Change Request — 需求变更审计记录
+- [x] Hotfix — Bug 修复（TDD + gate full 回归）
+- [x] 约束变更 — 高影响 CR + 影响分析 + 迁移任务
+- [x] Baseline 整理 — 多轮 CR 后归档旧版 + 合成干净快照
+
+### 防漂移机制
+- [x] baseline 活快照 + CR 审计链
+- [x] decisions.md ADR 日志
+- [x] 角色分离与对抗性（QA 写测试 ≠ Developer 写实现）
+- [x] Gate 失败分级处理（根因分析 → 3 轮上限 → blocked）
+
+### 插件基础设施
+- [x] install.sh — 安装/卸载/强制重装
+- [x] step-init.sh — 项目初始化 + 16 种包管理器检测
+- [x] /step 命令 — 初始化或恢复 session
+- [x] /archive 命令 — 任务归档
+- [x] config.yaml — Agent 路由 + 文件路由 + Gate 命令配置
+- [x] 模板体系 — state.yaml / baseline.md / decisions.md / task.yaml / lite-task.yaml / cr.yaml / config.yaml
+
+### 文档
+- [x] WORKFLOW.md — 完整协议规范
+- [x] SKILL.md — 核心规则速查
+- [x] 5 份对比文档 — vs planning-with-files / BMAD / OpenSpec / superpowers / 综合对比表
 
 ## Constraints（不可违反约束）
-- C-1: 不破坏现有 STEP 协议流程（所有现有 .step/ 项目不受影响）
-- C-2: install.sh 必须能正确安装所有新增文件
-- C-3: state.yaml 模板向后兼容（新字段有默认值）
-- C-4: 所有脚本兼容 macOS (bash 3.2+) 和 Linux (bash 4+)
-- C-5: test_writing model 通过 config.yaml 配置，不硬编码
+- C-1: 所有脚本兼容 macOS (bash 3.2+) 和 Linux (bash 4+)
+- C-2: state.yaml 模板向后兼容（新字段有默认值）
+- C-3: install.sh 必须能正确安装所有文件
+- C-4: test_writing model 通过 config.yaml 配置，不硬编码
+- C-5: baseline 变更走 CR 审计，方向性变更走 Phase 0-1
+
+## 架构决策（ADR 索引）
+- ADR-005: Baseline 语义 — 活快照
+- ADR-001: state.yaml 头部嵌入行为规则
+- ADR-002: Stop hook 改为独立脚本
+- ADR-003/004: 移除 research/ 目录和 session-catchup
+
+详见 `.step/decisions.md`，完整历史见 `.step/archive/`。
 
 ## 状态
-- 确认时间: 2026-02-15
+- 整理时间: 2026-02-16
+- 整理自: v1
 - 修改方式: 必须通过 Change Request

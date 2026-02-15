@@ -3,65 +3,47 @@
 # ⚡ 规则: next_action 必须精确到文件名+动作，禁止写"继续开发"
 # ⚡ 规则: 修改文件前必须先 Read，不得凭记忆编辑
 # ⚡ 规则: 每 2 次工具调用后自省是否需要更新状态
+# ⚡ 规则: key_decisions / progress_log 倒序写入（最新条目在最前）
 project: "STEP-Plugin"
 project_type: "existing"
 current_phase: "idle"
-last_updated: "2026-02-15T17:30:00Z"
+last_updated: "2026-02-16"
 last_agent: "orchestrator"
-last_session_summary: "一致性修复已提交并归档3个完成任务；文档与角色语义已对齐，任务已移入 archive。"
+last_session_summary: "完整重建：baseline（协议全貌快照）+ decisions.md（精简为 4 条核心 ADR）+ state.yaml 同步精简。"
 
 established_patterns:
   hook_mechanism: "SKILL.md frontmatter → PreToolUse/PostToolUse/Stop"
   attention_injection: "cat state.yaml | head -25 → 注入行为规则+状态数据"
   quality_gates: "gate.sh + scenario-check.sh + step-stop-check.sh"
-  agent_system: "7 roles (PM/Architect/QA/Developer/Designer/Reviewer/Deployer) with BMAD-style prompts"
-  config_architecture: "5-layer: agent .md → config.yaml routing → file_routing → gate → oh-my-opencode preset"
+  agent_system: "7 roles with BMAD-style prompts"
+  config_architecture: "agent .md → config.yaml routing → file_routing → gate"
 
 tasks:
-  completed: [agent-enhancement, deploy-agent, evidence-mechanism]
+  completed: []
   current: null
   upcoming: []
 
 key_decisions:
-  - decision: "借鉴 planning-with-files 的注入策略，在 state.yaml 头部嵌入行为规则"
-    reason: "planning-with-files 的 task_plan.md 混合规则+数据，LLM 遵循率更高"
-    phase: "phase-0-discovery"
-    date: "2026-02-14"
-  - decision: "Stop hook 从 echo 提醒改为脚本检查"
-    reason: "echo 是软保证，脚本检查是中等保证，与 gate.sh 一致"
-    phase: "phase-0-discovery"
-    date: "2026-02-14"
+  - decision: "baseline 语义从冻结合同改为活快照（ADR-005）"
+    reason: "文件系统无写保护，冻结语义与现实矛盾；CR 改为审计记录"
+    date: "2026-02-15"
   - decision: "7 角色 agent 体系 + BMAD 风格提示词"
-    reason: "PM/Architect/QA/Developer/Designer/Reviewer/Deployer 各司其职，BMAD 人设提高 LLM 行为质量"
-    phase: "post-mvp"
+    reason: "角色分离形成对抗性，BMAD 人设提高 LLM 行为质量"
     date: "2026-02-15"
-  - decision: "config.yaml 完整注入替代 grep -A 50"
-    reason: "config.yaml 仅 32 行，完整注入消除截断风险，无额外 token 成本"
-    phase: "post-mvp"
-    date: "2026-02-15"
-  - decision: "Lite L1 路由到 @step-pm 而非编排器内联"
-    reason: "保证所有阶段都有 agent 覆盖，一致性优先"
-    phase: "post-mvp"
-    date: "2026-02-15"
+  - decision: "state.yaml 头部嵌入行为规则"
+    reason: "混合规则+数据的注入方式 LLM 遵循率更高"
+    date: "2026-02-14"
 
-known_issues:
-  - ".step/tasks/ 旧文件(T-001~T-005)使用序号命名，已清理"
+known_issues: []
 
 constraints_quick_ref:
-  - "不破坏现有协议流程"
   - "脚本兼容 macOS bash 3.2+ 和 Linux bash 4+"
   - "state.yaml 向后兼容"
 
 progress_log:
-  - date: "2026-02-14"
-    summary: "MVP Phase 0→4 完成：注意力管理 7 项功能，30/30 场景通过"
-    next_action: "Phase 5 Review"
-  - date: "2026-02-15"
-    summary: "MVP Review 通过 → Post-MVP: 6角色agent+BMAD+routing重写+完整注入+L1路由+reviewer补全+stop-check归档提醒 → 65/65通过 → 清理旧task文件 → 重置state.yaml进入STEP自举"
-    next_action: "以 STEP 协议约束自身开发。当前 idle，等待用户发起新任务"
-  - date: "2026-02-15"
-    summary: "baseline语义变更: 冻结合同→活快照。~50处文本变更覆盖12文件(SKILL.md/WORKFLOW.md/README.md/agents/pm.md/templates/baseline.md/.step/baseline.md/step-init.sh/cr.yaml/comparisons/*5)。CR decision→recorded/reverted。NG-3修正为7角色。65/65通过。ADR-005"
-    next_action: "idle — 3个done任务(agent-enhancement/deploy-agent/evidence-mechanism)待归档，等用户决定"
-  - date: "2026-02-15"
-    summary: "一致性扫尾修复完成（Lite baseline语义、CR命名示例、7角色对齐），已提交并归档3个done任务到 .step/archive/。"
+  - date: "2026-02-16"
+    summary: "完整重建：baseline（协议全貌快照）+ decisions.md（5条→4条核心ADR）+ state.yaml 精简。对比文档修正，整理流程补入 SKILL.md/WORKFLOW.md"
     next_action: "idle — 等待用户发起下一项任务"
+  - date: "2026-02-15"
+    summary: "MVP 完成 + Post-MVP（7角色agent/routing/注入/归档）+ baseline 语义变更（ADR-005）+ 一致性修复 + 3 任务归档"
+    next_action: "idle"
