@@ -6,9 +6,9 @@
 project: "STEP-Plugin"
 project_type: "existing"
 current_phase: "idle"
-last_updated: "2026-02-15T16:00:00Z"
+last_updated: "2026-02-15T17:30:00Z"
 last_agent: "orchestrator"
-last_session_summary: "baseline语义变更：冻结合同→活快照。~50处文本变更覆盖12个文件，CR decision改为recorded/reverted，65/65测试通过。"
+last_session_summary: "一致性修复已提交并归档3个完成任务；文档与角色语义已对齐，任务已移入 archive。"
 
 established_patterns:
   hook_mechanism: "SKILL.md frontmatter → PreToolUse/PostToolUse/Stop"
@@ -46,7 +46,6 @@ key_decisions:
 
 known_issues:
   - ".step/tasks/ 旧文件(T-001~T-005)使用序号命名，已清理"
-  - "3 个 done 任务待归档: agent-enhancement, deploy-agent, evidence-mechanism"
 
 constraints_quick_ref:
   - "不破坏现有协议流程"
@@ -63,3 +62,6 @@ progress_log:
   - date: "2026-02-15"
     summary: "baseline语义变更: 冻结合同→活快照。~50处文本变更覆盖12文件(SKILL.md/WORKFLOW.md/README.md/agents/pm.md/templates/baseline.md/.step/baseline.md/step-init.sh/cr.yaml/comparisons/*5)。CR decision→recorded/reverted。NG-3修正为7角色。65/65通过。ADR-005"
     next_action: "idle — 3个done任务(agent-enhancement/deploy-agent/evidence-mechanism)待归档，等用户决定"
+  - date: "2026-02-15"
+    summary: "一致性扫尾修复完成（Lite baseline语义、CR命名示例、7角色对齐），已提交并归档3个done任务到 .step/archive/。"
+    next_action: "idle — 等待用户发起下一项任务"
