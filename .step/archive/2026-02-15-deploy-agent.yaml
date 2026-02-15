@@ -1,6 +1,6 @@
 mode: lite
 slug: deploy-agent
-status: in_progress
+status: done
 goal: "新建 step-deployer agent，Review 通过后可选触发，提供部署策略建议"
 non_goal:
   - "不自动执行部署命令"

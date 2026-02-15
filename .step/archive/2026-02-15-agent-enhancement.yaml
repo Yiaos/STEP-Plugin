@@ -1,7 +1,7 @@
 # Lite Task: agent-enhancement
 mode: lite
 slug: agent-enhancement
-status: in_progress
+status: done
 goal: "借鉴 Build Any App prompt，增强 6 个 agent 的指令覆盖（challenge assumptions、复杂度评估、Polish 阶段、v2 建议等）"
 non_goal:
   - "不做 deploy agent（待讨论）"

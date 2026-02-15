@@ -1,6 +1,6 @@
 mode: lite
 slug: evidence-mechanism
-status: in_progress
+status: done
 goal: "补全 evidence 机制：gate 必须带 slug 调用、reviewer 保存 review evidence、SKILL.md 规则补充"
 non_goal:
   - "不改 gate.sh/scenario-check.sh 核心逻辑（已有 evidence 写入）"
