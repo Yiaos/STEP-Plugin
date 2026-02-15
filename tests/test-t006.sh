@@ -1,5 +1,5 @@
 #!/bin/bash
-# T-006 测试：Lite Mode + 自主操作规则 + baseline 跟踪
+# T-006 测试：Lite Mode + 自主操作规则 + baseline 跟踪 + 语义化命名
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
 PASS=0; FAIL=0; TOTAL=0
 
@@ -13,7 +13,7 @@ assert() {
   fi
 }
 
-echo "=== T-006: Lite Mode + 自主操作规则 + baseline 跟踪 ==="
+echo "=== T-006: Lite Mode + 自主操作规则 + baseline 跟踪 + 语义化命名 ==="
 
 # ── 自主操作规则 ──
 
@@ -64,9 +64,9 @@ assert "[S-006-06] lite-task.yaml 模板包含 mode: lite" bash -c "
   grep -q 'mode: lite' '$SCRIPT_DIR/templates/lite-task.yaml'
 "
 
-# [S-006-07] lite-task.yaml 模板场景 ID 用 L 前缀
-assert "[S-006-07] lite-task.yaml 场景 ID 用 L 前缀" bash -c "
-  grep -q 'S-L' '$SCRIPT_DIR/templates/lite-task.yaml'
+# [S-006-07] lite-task.yaml 模板使用语义化 slug
+assert "[S-006-07] lite-task.yaml 使用语义化 slug (task-slug)" bash -c "
+  grep -q 'task-slug' '$SCRIPT_DIR/templates/lite-task.yaml'
 "
 
 # [S-006-08] lite-task.yaml 使用 gate standard（非 lite）
@@ -132,6 +132,40 @@ assert "[S-006-17] WORKFLOW.md Step 6 包含 baseline 跟踪规则" bash -c "
 # [S-006-18] SKILL.md 硬规则包含 Baseline 完成跟踪
 assert "[S-006-18] SKILL.md 硬规则包含 Baseline 完成跟踪" bash -c "
   grep -q 'Baseline 完成跟踪' '$SCRIPT_DIR/skills/step/SKILL.md'
+"
+
+# ── 语义化命名 ──
+
+# [S-006-19] task.yaml 模板使用语义化 slug
+assert "[S-006-19] task.yaml 模板使用语义化 slug" bash -c "
+  grep -q 'id: task-slug' '$SCRIPT_DIR/templates/task.yaml'
+  grep -q 'S-task-slug-01' '$SCRIPT_DIR/templates/task.yaml'
+  grep -q 'mode: full' '$SCRIPT_DIR/templates/task.yaml'
+"
+
+# [S-006-20] WORKFLOW.md 任务示例使用语义化 slug
+assert "[S-006-20] WORKFLOW.md 示例用语义化 slug" bash -c "
+  grep -q 'user-register-api' '$SCRIPT_DIR/WORKFLOW.md'
+  grep -q 'S-user-register-api-01' '$SCRIPT_DIR/WORKFLOW.md'
+  ! grep -q 'id: T-003' '$SCRIPT_DIR/WORKFLOW.md'
+"
+
+# [S-006-21] WORKFLOW.md 包含命名规则表
+assert "[S-006-21] WORKFLOW.md 包含命名规则表" bash -c "
+  grep -q '命名规则' '$SCRIPT_DIR/WORKFLOW.md'
+  grep -q 'kebab-case' '$SCRIPT_DIR/WORKFLOW.md'
+"
+
+# [S-006-22] SKILL.md 包含命名规则
+assert "[S-006-22] SKILL.md 包含命名规则" bash -c "
+  grep -q '命名规则' '$SCRIPT_DIR/skills/step/SKILL.md'
+  grep -q 'slug' '$SCRIPT_DIR/skills/step/SKILL.md'
+"
+
+# [S-006-23] README.md 使用语义化 slug 示例
+assert "[S-006-23] README.md 使用语义化 slug" bash -c "
+  grep -q 'user-register-api' '$SCRIPT_DIR/README.md'
+  grep -q 'fix-empty-password' '$SCRIPT_DIR/README.md'
 "
 
 echo ""

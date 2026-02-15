@@ -1,13 +1,15 @@
 #!/bin/bash
 # STEP Scenario Coverage Check
-# Usage: ./scripts/scenario-check.sh TASK_ID
+# Usage: ./scripts/scenario-check.sh <task-slug>
 # 验证 task YAML 中每个场景 ID 都有对应的测试
+# task-slug 即文件名（不含 .yaml），如: user-register-api
 
 set -e
 
 TASK_ID=$1
 if [ -z "$TASK_ID" ]; then
-  echo "❌ Usage: scenario-check.sh TASK_ID"
+  echo "❌ Usage: scenario-check.sh <task-slug>"
+  echo "   Example: scenario-check.sh user-register-api"
   exit 1
 fi
 

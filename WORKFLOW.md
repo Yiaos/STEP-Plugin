@@ -58,19 +58,20 @@ STEP 定义 4 个角色，每个角色对应一个自定义 agent 定义文件�
 ├── decisions.md               # Phase 2 输出：架构决策日志
 ├── state.yaml                 # Phase 3+ 持续更新：项目状态机
 ├── tasks/
-│   ├── T-001.yaml             # Full mode 任务定义 + 场景矩阵
-│   ├── L-001.yaml             # Lite mode 任务
+│   ├── user-register-api.yaml # 语义化 slug 命名（mode: full/lite 区分）
+│   ├── fix-empty-password.yaml
 │   └── ...
 ├── archive/                   # 已完成任务归档
-│   └── 2026-02-15-T-001.yaml
+│   └── 2026-02-15-user-register-api.yaml
 ├── change-requests/
 │   └── CR-001.yaml            # 变更请求
 └── evidence/
-    ├── T-001-gate.json        # gate 运行结果
-    └── T-001-scenario.json    # 场景覆盖结果
+    ├── user-register-api-gate.json      # gate 运行结果
+    └── user-register-api-scenario.json  # 场景覆盖结果
 scripts/
 ├── gate.sh                    # 质量门禁
-└── scenario-check.sh          # 场景覆盖检查
+├── scenario-check.sh          # 场景覆盖检查
+└── step-archive.sh            # 任务归档
 ```
 
 ---
@@ -261,10 +262,12 @@ BDD 场景 (Given/When/Then) — 行为规格
 ### 任务 YAML 格式
 
 ```yaml
-id: T-003
+# 文件名: .step/tasks/user-register-api.yaml
+id: user-register-api          # 语义化 slug = 文件名（不含 .yaml）
 title: "用户注册 API"
-status: planned  # planned | ready | in_progress | blocked | done
-depends_on: [T-002]
+mode: full                     # full | lite
+status: planned                # planned | ready | in_progress | blocked | done
+depends_on: [user-model-setup]
 goal: "实现 POST /api/register"
 non_goal:
   - "不做 OAuth"
@@ -278,41 +281,41 @@ done_when:
 # BDD 场景矩阵（4 类必须覆盖）
 scenarios:
   happy_path:
-    - id: S-003-01
+    - id: S-user-register-api-01
       given: "email=test@x.com, password=Valid123!"
       when: "POST /api/register"
       then: "返回 201 + { data: { id, email } }"
       test_file: "test/auth/register.test.ts"
-      test_name: "[S-003-01] 正常注册成功"
+      test_name: "[S-user-register-api-01] 正常注册成功"
       test_type: unit  # unit | integration | e2e
       status: not_run
 
   edge_cases:
-    - id: S-003-02
+    - id: S-user-register-api-02
       given: "email 已被注册"
       when: "POST /api/register"
       then: "返回 409"
       test_file: "test/auth/register.test.ts"
-      test_name: "[S-003-02] 重复邮箱注册"
+      test_name: "[S-user-register-api-02] 重复邮箱注册"
       test_type: unit
       status: not_run
 
-    - id: S-003-03
+    - id: S-user-register-api-03
       given: "password 少于 8 位"
       when: "POST /api/register"
       then: "返回 400"
       test_file: "test/auth/register.test.ts"
-      test_name: "[S-003-03] 密码太短"
+      test_name: "[S-user-register-api-03] 密码太短"
       test_type: unit
       status: not_run
 
   error_handling:
-    - id: S-003-04
+    - id: S-user-register-api-04
       given: "数据库连接失败"
       when: "POST /api/register"
       then: "返回 503"
       test_file: "test/auth/register.test.ts"
-      test_name: "[S-003-04] 数据库不可用"
+      test_name: "[S-user-register-api-04] 数据库不可用"
       test_type: integration
       status: not_run
 
@@ -325,6 +328,24 @@ coverage_requirements:
 
 rollback: "git revert --no-commit HEAD~3"
 ```
+
+### 命名规则
+
+| 元素 | 格式 | 示例 |
+|------|------|------|
+| 任务文件名 | `{slug}.yaml` | `user-register-api.yaml` |
+| 任务 ID | `{slug}` | `user-register-api` |
+| 场景 ID | `S-{slug}-{seq}` | `S-user-register-api-01` |
+| 归档文件名 | `YYYY-MM-DD-{slug}.yaml` | `2026-02-15-user-register-api.yaml` |
+| Evidence | `{slug}-gate.json` | `user-register-api-gate.json` |
+| Hotfix | `YYYY-MM-DD-{slug}-hotfix-{seq}.yaml` | `2026-02-15-user-register-api-hotfix-001.yaml` |
+| CR | `YYYY-MM-DD-CR-{slug}.yaml` | `2026-02-15-CR-add-oauth.yaml` |
+
+**Slug 命名原则（参考 OpenSpec）：**
+- 使用小写英文 + 连字符（kebab-case）
+- 描述任务核心内容：`fix-empty-password`、`add-dark-mode`、`user-register-api`
+- 避免含义模糊的缩写：`impl-auth`（❌）→ `user-register-api`（✅）
+- 不使用序号前缀：`001-user-register`（❌）→ `user-register-api`（✅）
 
 ---
 
@@ -364,12 +385,12 @@ gate:
 ```
 Step 1: 加载上下文
   读 state.yaml → 读 task YAML → 读 baseline.md
-  输出: "📍 T-003 用户注册 | 4 场景待实现"
+  输出: "📍 user-register-api 用户注册 | 4 场景待实现"
 
 Step 2: 写测试（使用 config.yaml 中 test_writing 指定的模型）
   ┌────────────────────────────────────────────────┐
-  │ 读取 .step/tasks/T-003.yaml 的场景矩阵          │
-  │ 为每个场景写测试，名称包含 [S-xxx-xx]              │
+  │ 读取 .step/tasks/user-register-api.yaml 的场景矩阵│
+  │ 为每个场景写测试，名称包含 [S-{slug}-xx]          │
   │ 不写任何实现代码                                  │
   │ 跑测试确认全部 FAIL                               │
   │ 建议：测试与实现用不同模型以形成对抗性              │
@@ -383,7 +404,7 @@ Step 3: 写实现（按类型选模型）
   → 每实现一个场景，跑 gate quick
 
 Step 4: Gate 验证
-  ./scripts/gate.sh standard T-003
+  ./scripts/gate.sh standard user-register-api
   → 包含场景覆盖检查（scenario-check.sh）
   → 通过 → Step 5
   → 失败 → Gate 失败处理流程（见下方）
@@ -399,8 +420,8 @@ Step 5: Review + Commit（每完成一个任务都执行）
   │      SOLID + 安全 + 性能 + 边界条件              │
   │                                                │
   │ 2. Review 通过 → Commit                         │
-  │    git add + commit（提交信息包含 task ID）       │
-  │    例: "feat(auth): T-003 用户注册 API [4/4 S]"  │
+  │    git add + commit（提交信息包含 task slug）     │
+  │    例: "feat(auth): user-register-api [4/4 S]"  │
   │                                                │
   │ 3. Review 不通过 → 修复 → 重新 Gate → 重新 Review│
   └────────────────────────────────────────────────┘
@@ -620,7 +641,7 @@ Post-MVP 的每一次变更都必须：
   │       description: "新增 XX 功能"
   │       impacts:
   │         - baseline: "MVP Scope 新增 F-7"
-  │         - tasks: "需要新增 T-008"
+  │         - tasks: "需要新增任务 add-xx-feature"
   │         - existing_code: "需要修改 src/api/xxx.ts"
   │       decision: pending
   │
@@ -629,9 +650,9 @@ Post-MVP 的每一次变更都必须：
   │
   ├── 3. 如果 approved:
   │     → 更新 baseline.md（追加 F-7）
-  │     → 创建新 task T-008.yaml（含完整场景矩阵）
+  │     → 创建新 task add-xx-feature.yaml（含完整场景矩阵）
   │     → 更新 state.yaml upcoming
-  │     → 进入 Phase 4 执行 T-008（完整 TDD + Gate + Review + Commit）
+  │     → 进入 Phase 4 执行 add-xx-feature（完整 TDD + Gate + Review + Commit）
   │     → 更新 state.yaml（记录 2026-02-14-CR-001 已完成）
   │
   └── 4. 如果 rejected:
@@ -644,19 +665,19 @@ Post-MVP 的每一次变更都必须：
 用户: "注册时空密码没报错"
   │
   ├── 1. 定位问题
-  │     → 读 state.yaml 找到对应任务（T-003）
-  │     → 读 task YAML 找到对应场景（S-003-03 密码太短）
+  │     → 读 state.yaml 找到对应任务（user-register-api）
+  │     → 读 task YAML 找到对应场景（S-user-register-api-03 密码太短）
   │     → 检查场景 status（如果是 pass → 测试没覆盖到这个 case）
   │
   ├── 2. 创建 Hotfix 任务（记录在 .step/tasks/）
-  │     .step/tasks/2026-02-14-T-003-hotfix-001.yaml:
-  │       id: 2026-02-14-T-003-hotfix-001
+  │     .step/tasks/2026-02-14-user-register-api-hotfix-001.yaml:
+  │       id: 2026-02-14-user-register-api-hotfix-001
   │       type: hotfix
-  │       parent_task: T-003
+  │       parent_task: user-register-api
   │       bug_description: "空密码未返回 400"
   │       root_cause: "zod schema 未校验空字符串"
   │       scenarios:
-  │         - id: S-003-HF01
+  │         - id: S-user-register-api-HF01
   │           given: "password 为空字符串"
   │           when: "POST /api/register"
   │           then: "返回 400"
@@ -670,7 +691,7 @@ Post-MVP 的每一次变更都必须：
   │
   └── 4. 回归验证
         → gate full（确保不破坏其他功能）
-        → 更新 state.yaml（known_issues 移除已修复项，tasks.completed 追加 2026-02-14-T-003-hotfix-001）
+        → 更新 state.yaml（known_issues 移除已修复项，tasks.completed 追加 2026-02-14-user-register-api-hotfix-001）
 ```
 
 ### 场景 3: 约束变更（影响大）
@@ -685,7 +706,7 @@ Post-MVP 的每一次变更都必须：
   │         - "baseline.md C-3: 使用 cookie session"
   │         - "ADR-003: 选择 cookie 的理由"
   │       impact_scope:
-  │         - "T-003, T-004, T-005 全部受影响"
+  │         - "user-register-api, user-login-api, user-profile-api 全部受影响"
   │         - "auth middleware 全量重写"
   │
   ├── 2. 影响分析
@@ -694,7 +715,7 @@ Post-MVP 的每一次变更都必须：
   │
   ├── 3. 用户确认
   │     → approved → 更新 baseline + decisions + 受影响 task
-  │     → 创建迁移任务 .step/tasks/2026-02-14-T-MIGRATE-001.yaml（含场景矩阵）
+  │     → 创建迁移任务 .step/tasks/2026-02-14-migrate-cookie-to-jwt.yaml（含场景矩阵）
   │
   └── 4. 执行迁移（完整 Phase 4 流程）
         → TDD + gate full + Review + Commit
@@ -708,11 +729,11 @@ Post-MVP 的每一次变更都必须：
 ### scenario-check.sh 工作原理
 
 ```
-任务 YAML 定义:  id: S-003-01
+任务 YAML 定义:  id: S-user-register-api-01
         ↓ 约定
-测试文件中写:   it('[S-003-01] 正常注册', ...)
+测试文件中写:   it('[S-user-register-api-01] 正常注册', ...)
         ↓ grep 匹配
-scenario-check.sh: grep "\[S-003-01\]" test/auth/register.test.ts
+scenario-check.sh: grep "\[S-user-register-api-01\]" test/auth/register.test.ts
         ↓
 匹配到 → covered    匹配不到 → FAIL
 ```
@@ -737,10 +758,10 @@ Layer 4: 独立审查    ← Phase 5 QA（需求合规 + 代码质量）
 ### 测试生成提示词模板
 
 ```
-读取 .step/tasks/{task_id}.yaml 中的 scenarios 字段。
+读取 .step/tasks/{slug}.yaml 中的 scenarios 字段。
 
 为每个场景写一个测试用例，规则：
-1. 测试名称必须包含场景 ID，格式: [S-xxx-xx]
+1. 测试名称必须包含场景 ID，格式: [S-{slug}-xx]
 2. 使用 test_type 字段决定测试类型：
    - unit: 可以 mock 外部依赖，但不 mock 被测对象
    - integration: 使用真实依赖
@@ -777,7 +798,7 @@ description: "初始化 STEP 协议并开始全生命周期开发流程。自动
   1. 读取 .step/state.yaml
   2. 根据 current_phase 进入对应阶段
   3. 如果有 current task，显示状态行：
-     "📍 Phase X | Task: T-xxx | Status: xxx | Next: xxx"
+     "📍 Phase X | Task: {slug} | Status: xxx | Next: xxx"
   4. 从上次中断的位置继续
 
 在所有阶段中遵守以下规则：
@@ -925,7 +946,7 @@ Session 开始
 1. 读取 `.step/state.yaml`
 2. 读取当前 task YAML（如果 Phase 4+）
 3. 读取 `.step/baseline.md`
-4. 输出状态行: "📍 Phase X | Task: T-xxx | Status: xxx"
+4. 输出状态行: "📍 Phase X | Task: {slug} | Status: xxx"
 
 ### Phase 规则
 - Phase 0 (Discovery): 开放式讨论，用户主导，不逐个提问
@@ -938,8 +959,8 @@ Session 开始
 ### Execution 规则
 - 遵循 established_patterns
 - 测试先行: 按 config.yaml test_writing 模型写测试 → 确认 FAIL → 再写实现
-- 场景 ID: 测试名必须包含 [S-xxx-xx]
-- Gate: `./scripts/gate.sh standard T-xxx`
+- 场景 ID: 测试名必须包含 [S-{slug}-xx]
+- Gate: `./scripts/gate.sh standard {slug}`
 - 完成判定: 所有 scenario pass + gate pass → 才能标 done
 
 ### Gate 失败
@@ -957,6 +978,10 @@ Session 开始
 - 冲突时先写 Change Request
 - Post-MVP 变更走 CR 流程（遵循完整 STEP）
 - Bug 修复走 Hotfix 流程（遵循完整 STEP）
+
+### 归档
+- 任务完成后，使用 `/archive` 命令或说 "归档 xxx" 归档到 `.step/archive/`
+- 归档脚本: `./scripts/step-archive.sh [slug|--all]`
 ```
 
 ---
@@ -1201,19 +1226,19 @@ L1 Quick Spec          L2 Execution           L3 Review
 用户: "修复 XXX 的 bug" / "给 YYY 加个 ZZZ 功能"
 
 LLM 输出（一次性，不分段）:
-  📋 Lite Task L-{seq}
+  📋 Lite Task: fix-empty-password
   ├── 目标: 一句话
   ├── 影响文件: [file1, file2]
   ├── BDD 场景:
-  │   ├── S-L{seq}-01: happy path
-  │   ├── S-L{seq}-02: edge case
-  │   └── S-L{seq}-03: error case
+  │   ├── S-fix-empty-password-01: happy path
+  │   ├── S-fix-empty-password-02: edge case
+  │   └── S-fix-empty-password-03: error case
   ├── 不做: [明确排除项]
   └── 验证: gate standard
 
 用户: "可以" / 修改后确认
 
-→ 写入 .step/tasks/L-{seq}.yaml
+→ 写入 .step/tasks/fix-empty-password.yaml
 → 进入 L2
 
 批量任务处理（用户一次提交多个小任务时）:
@@ -1222,9 +1247,9 @@ LLM 输出（一次性，不分段）:
 
 LLM 输出（批量展示，一次确认）:
   📋 Lite Batch (3 tasks)
-  ├── L-001: 修复空密码     → 2 场景
-  ├── L-002: 调整按钮位置   → 2 场景
-  └── L-003: 加载动画       → 3 场景
+  ├── fix-empty-password: 修复空密码     → 2 场景
+  ├── adjust-button-position: 调整按钮位置   → 2 场景
+  └── add-loading-animation: 加载动画       → 3 场景
 
   全部确认？
 
@@ -1246,14 +1271,14 @@ LLM 输出（批量展示，一次确认）:
 ```
 Step 1: 写测试 → 确认全部 FAIL (TDD RED)
 Step 2: 写实现 → 测试通过 (TDD GREEN)
-Step 3: Gate → gate.sh standard L-{seq}
+Step 3: Gate → gate.sh standard {slug}
          lint + typecheck + test + scenario
 ```
 
 **核心保留：**
 - ✅ TDD（先测试后实现）— 必须
 - ✅ BDD 场景 100% 覆盖 — 必须
-- ✅ 场景 ID 绑定 (`[S-Lxxx-xx]`) — 必须
+- ✅ 场景 ID 绑定 (`[S-{slug}-xx]`) — 必须
 - ✅ Code Review — 必须（与 Full Mode 相同）
 
 **简化项：**
@@ -1275,8 +1300,8 @@ Gate standard 通过后执行:
      - 第二优先级: 代码质量
        □ SOLID + 安全 + 性能 + 边界条件
   2. Review 通过 → Commit
-     提交信息含 lite task ID
-     例: "fix(auth): L-003 修复空密码验证 [3/3 S]"
+     提交信息含 task slug
+     例: "fix(auth): fix-empty-password 修复空密码验证 [3/3 S]"
   3. Review 不通过 → 修复 → 重新 Gate → 重新 Review
   4. 更新 state.yaml + baseline.md 对应项标记 [x]
 ```
@@ -1286,8 +1311,8 @@ Gate standard 通过后执行:
 ### Lite Task YAML 格式
 
 ```yaml
-# .step/tasks/L-{seq}.yaml
-id: L-001
+# .step/tasks/fix-empty-password.yaml
+id: fix-empty-password
 title: "修复空密码未报错"
 mode: lite
 status: planned  # planned | in_progress | done
@@ -1303,42 +1328,58 @@ affected_files:
   - "test/auth/register.test.ts"
 
 scenarios:
-  - id: S-L001-01
+  - id: S-fix-empty-password-01
     given: "password 为空字符串"
     when: "POST /api/register"
     then: "返回 400 + { error: 'password required' }"
     test_file: "test/auth/register.test.ts"
-    test_name: "[S-L001-01] 空密码返回 400"
+    test_name: "[S-fix-empty-password-01] 空密码返回 400"
     test_type: unit
     status: not_run
 
-  - id: S-L001-02
+  - id: S-fix-empty-password-02
     given: "password 为 null"
     when: "POST /api/register"
     then: "返回 400"
     test_file: "test/auth/register.test.ts"
-    test_name: "[S-L001-02] null 密码返回 400"
+    test_name: "[S-fix-empty-password-02] null 密码返回 400"
     test_type: unit
     status: not_run
 
 done_when:
-  - "gate.sh standard L-001"
+  - "gate.sh standard fix-empty-password"
 ```
 
 ### 任务归档
 
-`.step/tasks/` 存放所有活跃/未完成任务，`.step/archive/` 存放已完成任务。两种模式的任务都统一归档：
+`.step/tasks/` 存放所有活跃/未完成任务，`.step/archive/` 存放已完成任务。两种模式的任务都统一归档。
+
+**归档触发方式（三选一）：**
+
+1. **任务全部完成后提示**：当所有 tasks 的 status 都为 done 时，LLM 主动提示：
+   > "所有任务已完成。是否要归档？可以说「归档」或 `/archive`"
+2. **自然语言**：用户说 "归档 fix-empty-password" 或 "归档所有任务"
+3. **命令**：`/archive`、`/archive all`、`/archive fix-empty-password`
+
+**归档操作：**
 
 ```
-完成 L-001 → 移动到 .step/archive/2026-02-15-L-001.yaml
-完成 T-003 → 移动到 .step/archive/2026-02-15-T-003.yaml
+# 归档指定任务
+./scripts/step-archive.sh fix-empty-password
+  → .step/tasks/fix-empty-password.yaml
+  → .step/archive/2026-02-15-fix-empty-password.yaml
+
+# 归档全部已完成任务
+./scripts/step-archive.sh --all
+  → 遍历 .step/tasks/，status: done 的全部移到 archive/
 ```
 
-归档规则：
-- 任务 status 为 done 且 gate 通过 且 Review 通过
+**归档规则：**
+- 仅 status 为 done 且 gate 通过 且 Review 通过的任务可归档
+- 归档脚本自动检查 `status: done`，未完成的自动跳过
 - 文件名加日期前缀便于按时间查找
 - 归档不是删除，仍可 grep 搜索历史决策
-- 归档是手动触发的清理操作，避免活跃开发中文件消失
+- 归档是手动/提示触发的清理操作，不自动执行
 
 ### Lite vs Full 对比
 
@@ -1363,7 +1404,7 @@ done_when:
 - 发现关联 bug 需要修复
 
 → **必须升级到 Full Mode**：
-1. 将 lite task 转换为 Full task（创建 T-xxx.yaml）
+1. 将 lite task YAML 的 `mode` 字段改为 `full`，补充完整场景矩阵
 2. 补充 baseline 更新（如需要）
 3. 从 Phase 3 开始补完场景矩阵
 4. 后续按 Full Mode 执行

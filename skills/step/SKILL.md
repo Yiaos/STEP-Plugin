@@ -22,6 +22,19 @@ hooks:
 
 > Stateful Task Execution Protocol. 完整规范见 `WORKFLOW.md`（STEP 插件根目录）。
 
+## 命名规则
+
+任务使用**语义化 slug** 命名（参考 OpenSpec 理念）：
+
+| 元素 | 格式 | 示例 |
+|------|------|------|
+| 任务文件 | `.step/tasks/{slug}.yaml` | `user-register-api.yaml` |
+| 场景 ID | `S-{slug}-{seq}` | `S-user-register-api-01` |
+| 归档文件 | `.step/archive/YYYY-MM-DD-{slug}.yaml` | `2026-02-15-user-register-api.yaml` |
+| Hotfix | `YYYY-MM-DD-{slug}-hotfix-{seq}.yaml` | `2026-02-15-user-register-api-hotfix-001.yaml` |
+
+**Slug 规则**: kebab-case、描述核心内容、不用序号前缀。Full/Lite 通过 YAML `mode` 字段区分。
+
 ## Phase 规则
 
 ### Phase 0: Discovery（开放式讨论）
@@ -43,7 +56,7 @@ hooks:
 ### Phase 3: Plan & Tasks（结构化确认）
 - 生成任务图 + 依赖关系 + BDD 场景矩阵
 - 每个任务 YAML 含: happy_path / edge_cases / error_handling 场景
-- 场景 ID 格式: `S-{task}-{seq}` (如 `S-003-01`)
+- 场景 ID 格式: `S-{slug}-{seq}` (如 `S-user-register-api-01`)
 - 每个场景通过 `test_type` 指定验证方式（unit / integration / e2e），**三种类型都是必须的**
 - 用户审核确认后写入 `.step/tasks/`
 
@@ -53,7 +66,7 @@ Step 1: 加载上下文 → 输出状态行
 Step 2: 写测试（按 config.yaml test_writing 模型） → 确认全部 FAIL (TDD RED)
 Step 3: 写实现（按模型路由） → 每场景跑 gate quick
   ⚡ 每 2 次工具调用后，检查 progress_log / key_decisions 是否需要进度更新
-Step 4: Gate 验证 → gate.sh standard T-xxx
+Step 4: Gate 验证 → gate.sh standard {slug}
 Step 5: Review + Commit（每完成一个任务都执行）
 Step 6: 更新 state.yaml + baseline.md 对应项 [ ] → [x] → 进入下一任务
 ```
@@ -64,8 +77,8 @@ Step 6: 更新 state.yaml + baseline.md 对应项 [ ] → [x] → 进入下一�
 ## Execution 硬规则
 
 1. **测试先行**: 按 `config.yaml` 中 `test_writing.model` 指定的模型写测试 → 确认 FAIL → 再写实现（建议测试与实现用不同模型以形成对抗性）
-2. **场景 ID 绑定**: 测试名必须包含 `[S-xxx-xx]`
-3. **Gate 必过**: `./scripts/gate.sh standard T-xxx` 通过才能标 done
+2. **场景 ID 绑定**: 测试名必须包含 `[S-{slug}-xx]`
+3. **Gate 必过**: `./scripts/gate.sh standard {slug}` 通过才能标 done
 4. **场景 100% 覆盖**: `scenario-check.sh` 验证每个场景 ID 都有对应测试
 5. **所有测试类型必须**: unit / integration / e2e 都是必须的，不可跳过
 6. **修改前必须 Read**: 修改任何文件前必须先用 Read 工具查看当前内容，不得凭记忆编辑
@@ -153,7 +166,7 @@ PostToolUse 提醒不可忽略：每次 Write/Edit 后评估是否触发了状�
 
 ### 恢复 Session 时
 1. 读 state.yaml → 读当前 task → 读 baseline
-2. 输出: `📍 Phase X | Task: T-xxx | Status: xxx | Next: xxx`
+2. 输出: `📍 Phase X | Task: {slug} | Status: xxx | Next: xxx`
 3. 从 next_action 继续
 
 ## 模型路由（参考 .step/config.yaml）
@@ -172,7 +185,7 @@ PostToolUse 提醒不可忽略：每次 Write/Edit 后评估是否触发了状�
 STEP 定义 4 个角色，通过 `agents/*.md` 实现 subagent 模型绑定：
 
 | 角色 | Agent 文件 | 模型 | 适用阶段 |
-|------|-----------|------|---------|
+|------|-----------|------|---------| 
 | PM（产品经理） | `agents/pm.md` | claude-opus | Phase 0, 1 |
 | Architect（架构师） | `agents/architect.md` | claude-opus | Phase 2, 3 |
 | QA（质量工程师） | `agents/qa.md` | claude-sonnet-thinking | Phase 3 场景补充, Phase 4 Gate 分析, Phase 5 Review |
@@ -191,9 +204,9 @@ STEP 定义 4 个角色，通过 `agents/*.md` 实现 subagent 模型绑定：
 
 Post-MVP 变更**同样遵循 STEP 协议**，所有过程记录在 `.step/` 下：
 
-- **Change Request**: 需求变更 → `.step/change-requests/YYYY-MM-DD-CR-xxx.yaml` → 用户审批 → 更新 baseline → 创建新 task YAML（含场景矩阵） → Phase 4 执行 → gate + review + commit
-- **Hotfix**: Bug → 定位场景 → `.step/tasks/YYYY-MM-DD-T-xxx-hotfix-xxx.yaml` → TDD 修复 → gate full 回归 → review + commit → 更新 state.yaml
-- **约束变更**: 高影响 CR → 影响分析 → `.step/tasks/YYYY-MM-DD-T-MIGRATE-xxx.yaml` → Phase 4 执行 → gate full
+- **Change Request**: 需求变更 → `.step/change-requests/YYYY-MM-DD-CR-{slug}.yaml` → 用户审批 → 更新 baseline → 创建新 task YAML（含场景矩阵） → Phase 4 执行 → gate + review + commit
+- **Hotfix**: Bug → 定位场景 → `.step/tasks/YYYY-MM-DD-{slug}-hotfix-{seq}.yaml` → TDD 修复 → gate full 回归 → review + commit → 更新 state.yaml
+- **约束变更**: 高影响 CR → 影响分析 → 创建迁移任务 → Phase 4 执行 → gate full
 
 **命名规则**: CR 和 Hotfix 文件名以日期开头（`YYYY-MM-DD-`），便于按时间查找。
 
@@ -218,8 +231,8 @@ Post-MVP 变更**同样遵循 STEP 协议**，所有过程记录在 `.step/` 下
 小型任务（≤ 3 文件、无架构变更、有已有 baseline）使用 3 阶段快速流程：
 
 ```
-L1 Quick Spec → L2 Execution → L3 Quick Review
-(一次确认)      (TDD+gate lite)  (自动化)
+L1 Quick Spec → L2 Execution → L3 Review
+(一次确认)      (TDD+gate standard)  (完整 Code Review)
 ```
 
 ### 触发
@@ -227,15 +240,15 @@ L1 Quick Spec → L2 Execution → L3 Quick Review
 - 显式：`/step lite` 或 `/step full`
 
 ### L1: Quick Spec
-- 一次性输出 lite task spec → 用户确认 → 写入 `.step/tasks/L-{seq}.yaml`
+- 一次性输出 lite task spec → 用户确认 → 写入 `.step/tasks/{slug}.yaml`
 - 批量任务: 一次展示多个 lite task → 一次确认 → 逐个执行
 - 不分段确认、不冻结 baseline、不做 ADR
 
 ### L2: Execution
 - ✅ TDD 必须（测试先行）
 - ✅ BDD 场景 100% 覆盖必须
-- ✅ 场景 ID: `[S-Lxxx-xx]`
-- Gate: `gate.sh standard L-{seq}`
+- ✅ 场景 ID: `[S-{slug}-xx]`
+- Gate: `gate.sh standard {slug}`
 - e2e 按需
 
 ### L3: Review（与 Full Mode 相同）
@@ -246,5 +259,15 @@ L1 Quick Spec → L2 Execution → L3 Quick Review
 ### 升级规则
 执行中发现复杂度超预期（影响 > 3 文件 / 需要新架构决策）→ **必须升级到 Full Mode**
 
-### 归档
-完成的任务（Full 和 Lite 均可）移到 `.step/archive/YYYY-MM-DD-{id}.yaml`，手动触发。
+## 归档
+
+完成的任务（Full 和 Lite 均可）通过以下方式归档到 `.step/archive/YYYY-MM-DD-{slug}.yaml`：
+
+**触发方式：**
+1. **完成后提示** — 所有任务 done 时，LLM 主动提示用户是否归档
+2. **自然语言** — 用户说 "归档 {slug}" 或 "归档所有任务"
+3. **命令** — `/archive`、`/archive all`、`/archive {slug}`
+
+**归档脚本**: `./scripts/step-archive.sh [slug|--all]`
+
+**规则**: 仅 status: done 的任务可归档，归档不是删除（仍可搜索历史）。

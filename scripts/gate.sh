@@ -1,9 +1,10 @@
 #!/bin/bash
 # STEP Gate — 质量门禁
-# Usage: ./scripts/gate.sh [quick|standard|full] [TASK_ID]
+# Usage: ./scripts/gate.sh [quick|standard|full] [task-slug]
 #   quick    — lint + typecheck only
 #   standard — lint + typecheck + test + scenario coverage (default)
 #   full     — standard + build
+# task-slug 即文件名（不含 .yaml），如: user-register-api
 
 set -e
 

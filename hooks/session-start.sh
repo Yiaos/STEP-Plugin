@@ -50,7 +50,7 @@ escape_for_json() {
 # 读取核心文件
 STATE_CONTENT=$(cat "$STATE_FILE" 2>&1 || echo "Error reading state.yaml")
 
-# 读取当前任务
+# 读取当前任务（slug 格式，如 user-register-api）
 TASK_CONTENT=""
 CURRENT_TASK=$(grep -E "^\s+id:" "$STATE_FILE" 2>/dev/null | head -1 | sed 's/.*id: *//' | tr -d ' "'"'" || true)
 if [ -n "$CURRENT_TASK" ] && [ -f ".step/tasks/${CURRENT_TASK}.yaml" ]; then

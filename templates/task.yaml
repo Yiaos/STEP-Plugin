@@ -1,7 +1,9 @@
 # STEP Task 模板 — 在 Phase 3 中为每个任务生成
-id: T-000
+# 文件名: .step/tasks/{slug}.yaml（如 user-register-api.yaml）
+id: task-slug       # 语义化 slug，与文件名一致（不含 .yaml）
 title: "任务标题"
-status: planned  # planned | ready | in_progress | blocked | done
+mode: full          # full | lite
+status: planned     # planned | ready | in_progress | blocked | done
 depends_on: []
 goal: "一句话描述任务目标"
 non_goal:
@@ -16,32 +18,32 @@ done_when:
 # BDD 场景矩阵（4 类必须覆盖）
 scenarios:
   happy_path:
-    - id: S-000-01
+    - id: S-task-slug-01
       given: "正常输入"
       when: "执行操作"
       then: "预期输出"
       test_file: "test/xxx/xxx.test.ts"
-      test_name: "[S-000-01] 描述"
+      test_name: "[S-task-slug-01] 描述"
       test_type: unit  # unit | integration | e2e
       status: not_run  # not_run | fail | pass
 
   edge_cases:
-    - id: S-000-02
+    - id: S-task-slug-02
       given: "边界输入"
       when: "执行操作"
       then: "预期输出"
       test_file: "test/xxx/xxx.test.ts"
-      test_name: "[S-000-02] 描述"
+      test_name: "[S-task-slug-02] 描述"
       test_type: unit
       status: not_run
 
   error_handling:
-    - id: S-000-03
+    - id: S-task-slug-03
       given: "异常输入或环境"
       when: "执行操作"
       then: "预期错误处理"
       test_file: "test/xxx/xxx.test.ts"
-      test_name: "[S-000-03] 描述"
+      test_name: "[S-task-slug-03] 描述"
       test_type: integration
       status: not_run
 
