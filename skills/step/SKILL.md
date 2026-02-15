@@ -55,7 +55,7 @@ Step 3: 写实现（按模型路由） → 每场景跑 gate quick
   ⚡ 每 2 次工具调用后，检查 progress_log / key_decisions 是否需要进度更新
 Step 4: Gate 验证 → gate.sh standard T-xxx
 Step 5: Review + Commit（每完成一个任务都执行）
-Step 6: 更新 state.yaml → 进入下一任务
+Step 6: 更新 state.yaml + baseline.md 对应项 [ ] → [x] → 进入下一任务
 ```
 
 ### Phase 5: Review（独立验证）
@@ -69,6 +69,7 @@ Step 6: 更新 state.yaml → 进入下一任务
 4. **场景 100% 覆盖**: `scenario-check.sh` 验证每个场景 ID 都有对应测试
 5. **所有测试类型必须**: unit / integration / e2e 都是必须的，不可跳过
 6. **修改前必须 Read**: 修改任何文件前必须先用 Read 工具查看当前内容，不得凭记忆编辑
+7. **Baseline 完成跟踪**: 任务标记 done 时，同步更新 baseline.md 对应功能项 `[ ]` → `[x]`
 
 ## Gate 失败处理
 
@@ -226,22 +227,24 @@ L1 Quick Spec → L2 Execution → L3 Quick Review
 - 显式：`/step lite` 或 `/step full`
 
 ### L1: Quick Spec
-- 一次性输出 lite task spec → 用户确认 → 写入 `.step/lite/L-{seq}.yaml`
+- 一次性输出 lite task spec → 用户确认 → 写入 `.step/tasks/L-{seq}.yaml`
+- 批量任务: 一次展示多个 lite task → 一次确认 → 逐个执行
 - 不分段确认、不冻结 baseline、不做 ADR
 
 ### L2: Execution
 - ✅ TDD 必须（测试先行）
 - ✅ BDD 场景 100% 覆盖必须
 - ✅ 场景 ID: `[S-Lxxx-xx]`
-- Gate: `gate.sh lite L-{seq}`（跳过 build）
+- Gate: `gate.sh standard L-{seq}`
 - e2e 按需
 
-### L3: Quick Review
-- Gate lite 通过 → 自动 commit → 更新 state.yaml
-- 不做人工 Review（除非用户要求）
+### L3: Review（与 Full Mode 相同）
+- Gate standard 通过 → **完整 Code Review**（需求合规 > 代码质量）
+- Review 通过 → Commit → 更新 state.yaml + baseline.md
+- **Lite 精简的是规划阶段，不是质量保证阶段**
 
 ### 升级规则
 执行中发现复杂度超预期（影响 > 3 文件 / 需要新架构决策）→ **必须升级到 Full Mode**
 
 ### 归档
-完成的任务移到 `.step/archive/YYYY-MM-DD-{id}.yaml`
+完成的任务（Full 和 Lite 均可）移到 `.step/archive/YYYY-MM-DD-{id}.yaml`，手动触发。

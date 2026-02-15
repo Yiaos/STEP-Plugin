@@ -173,21 +173,22 @@ L1 Quick Spec → L2 Execution → L3 Quick Review
 |---|---|---|
 | TDD | ✅ | ✅ |
 | BDD 覆盖 | ✅ 100% | ✅ 100% |
-| Gate | standard | lite (跳 build) |
+| Code Review | ✅ 完整 | ✅ 完整 |
+| Gate | standard / full | standard |
 | 确认轮数 | 多次 | 一次 |
-| Code Review | 人工 | 自动 |
 | 预计时间 | 65-110 min | 10-15 min |
 
 ### 文件结构
 
-Lite 任务存放在 `.step/lite/`，完成后可归档到 `.step/archive/`：
+所有任务统一存放在 `.step/tasks/`（通过 `mode` 字段区分），完成后归档到 `.step/archive/`：
 
 ```
 .step/
-├── lite/
-│   └── L-001.yaml      # 活跃的 lite 任务
+├── tasks/
+│   ├── T-001.yaml               # Full mode 任务
+│   └── L-001.yaml               # Lite mode 任务
 └── archive/
-    └── 2026-02-15-L-001.yaml  # 归档的已完成任务
+    └── 2026-02-15-T-001.yaml    # 已完成任务归档
 ```
 
 完整协议规范详见 [WORKFLOW.md](WORKFLOW.md)。

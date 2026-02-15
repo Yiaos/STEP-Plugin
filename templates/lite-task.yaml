@@ -1,4 +1,4 @@
-# STEP Lite Task 模板 — Lite Mode L1 阶段生成
+# STEP Lite Task 模板 — Lite Mode L1 阶段生成，存放于 .step/tasks/
 id: L-000
 title: "任务标题"
 mode: lite
@@ -35,4 +35,4 @@ scenarios:
 
 # 完成条件
 done_when:
-  - "gate.sh lite L-000"
+  - "gate.sh standard L-000"
