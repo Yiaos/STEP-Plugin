@@ -32,7 +32,7 @@ STEP 使用两种对话模式，在不同阶段切换：
 
 ### 角色与 Agent 映射
 
-STEP 定义 6 个角色，每个角色对应一个 agent 定义文件（`STEP/agents/`），模型可通过 oh-my-opencode preset 覆盖：
+STEP 定义 7 个角色，每个角色对应一个 agent 定义文件（`STEP/agents/`），模型可通过 oh-my-opencode preset 覆盖：
 
 | 角色 | Agent 文件 | 默认模型 | 适用阶段 | 思维模式 |
 |------|-----------|---------|----------|----------|
@@ -40,6 +40,7 @@ STEP 定义 6 个角色，每个角色对应一个 agent 定义文件（`STEP/ag
 | Architect（架构师） | `agents/architect.md` | claude-opus | Phase 2 Tech Design, Phase 3 Plan | 技术权衡、系统设计、任务拆分 |
 | QA（质量工程师） | `agents/qa.md` | claude-opus | Phase 3 场景补充, Phase 4 Gate 分析, Phase 5 Review | 对抗性测试思维、根因分析、需求合规 |
 | Reviewer（代码审查） | `agents/reviewer.md` | codex | Phase 5 Review, Lite L3 | 需求合规审查、代码质量评估、参考 code-review-expert |
+| Deployer（部署策略） | `agents/deployer.md` | claude-opus | Review 后（可选） | 平台选型、CI/CD、环境清单、风险评估 |
 | Developer（开发者） | `agents/developer.md` | codex | Phase 4 Execution（后端） | TDD 实现、遵循 patterns、不越界 |
 | Designer（UX 设计师） | `agents/designer.md` | gemini | Phase 2 UI 设计, Phase 4 Execution（前端） | 配色、布局、交互设计、UI 代码 |
 
@@ -638,6 +639,26 @@ Review 的**首要职责**是验证"做的东西对不对"（需求合规），�
 
 Phase 5 Review 由 `@step-reviewer` 执行（参考 code-review-expert skill 实现）。
 审查优先级：需求合规（P0 阻断） > 代码质量（P1-P3）。
+
+---
+
+## Deploy（可选阶段）
+
+Phase 5 Review 通过后，用户可选择触发部署策略建议。由 `@step-deployer` 执行。
+
+**触发方式：**
+- 用户说"部署"/"上线"/"deploy"
+- Handoff Checklist 中勾选"部署就绪"
+- `/step deploy`（如果项目需要）
+
+**输出内容：**
+1. 项目类型和规模评估
+2. 推荐部署方案（主选 + 备选，含成本估算）
+3. 环境清单（账号/密钥/DNS/监控）
+4. CI/CD pipeline 建议（模板方向，非完整文件）
+5. 风险评估和回滚策略
+
+**注意：** Deployer 只提供建议，不自动执行部署命令。用户确认后可协助生成具体配置。
 
 ---
 

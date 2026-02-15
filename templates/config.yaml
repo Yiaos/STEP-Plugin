@@ -13,6 +13,7 @@ routing:
   test_writing: { agent: step-qa, note: "建议与 execution agent 不同，形成对抗性" }
   execution:    { agent: step-developer }
   review:       { agent: step-reviewer }
+  deploy:       { agent: step-deployer, note: "Review 通过后可选触发" }
 
 # Phase 4 文件模式路由（前端文件 → designer，其余 → developer）
 # 编排器根据文件路径匹配 patterns，决定用哪个 agent

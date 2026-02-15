@@ -1,0 +1,24 @@
+mode: lite
+slug: deploy-agent
+status: in_progress
+goal: "新建 step-deployer agent，Review 通过后可选触发，提供部署策略建议"
+non_goal:
+  - "不自动执行部署命令"
+  - "不生成完整 CI/CD 配置文件（只给建议和模板方向）"
+  - "不改变现有 Phase 0-5 流程（Deploy 是可选附加）"
+gate: standard
+created: "2026-02-15"
+
+scenarios:
+  - id: S-deploy-agent-01
+    desc: "deployer.md 存在且 frontmatter 合法"
+    type: unit
+  - id: S-deploy-agent-02
+    desc: "routing 包含 deploy 条目"
+    type: unit
+  - id: S-deploy-agent-03
+    desc: "SKILL.md 路由表和角色表包含 deploy"
+    type: unit
+  - id: S-deploy-agent-04
+    desc: "WORKFLOW.md 包含 Deploy 段落"
+    type: unit

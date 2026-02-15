@@ -197,12 +197,13 @@ PostToolUse 提醒不可忽略：每次 Write/Edit 后评估是否触发了状�
 | Phase 4 执行（后端） | @step-developer | file_routing.backend |
 | Phase 4 执行（前端） | @step-designer | file_routing.frontend |
 | Phase 5 Review | @step-reviewer | routing.review |
+| Deploy（可选） | @step-deployer | routing.deploy |
 
 Agent 默认模型在 `agents/*.md` frontmatter 中定义，可通过 oh-my-opencode preset 覆盖。
 
 ## 角色与 Agent 映射
 
-STEP 定义 6 个角色，通过 `agents/*.md` 实现 subagent 模型绑定：
+STEP 定义 7 个角色，通过 `agents/*.md` 实现 subagent 模型绑定：
 
 | 角色 | Agent | 默认模型 | 适用阶段 |
 |------|-------|---------|---------|
@@ -212,8 +213,9 @@ STEP 定义 6 个角色，通过 `agents/*.md` 实现 subagent 模型绑定：
 | Developer（开发者） | @step-developer | codex | Phase 4（后端） |
 | Designer（UX 设计师） | @step-designer | gemini | Phase 2 UI 设计, Phase 4（前端） |
 | Reviewer（代码审查） | @step-reviewer | codex | Phase 5 Review, Lite L3 |
+| Deployer（部署策略） | @step-deployer | claude-opus | Review 通过后（可选） |
 
-**制衡原则**: PM 定义"做什么"、Architect 定义"怎么做"、QA 定义"怎么破坏它"、Developer/Designer 只做被定义的事。
+**制衡原则**: PM 定义"做什么"、Architect 定义"怎么做"、QA 定义"怎么破坏它"、Developer/Designer 只做被定义的事、Deployer 建议"怎么上线"。
 
 ## 对话模式
 
