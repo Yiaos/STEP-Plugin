@@ -244,17 +244,20 @@ L1 Quick Spec → L2 Execution → L3 Review
 - 批量任务: 一次展示多个 lite task → 一次确认 → 逐个执行
 - 不分段确认、不冻结 baseline、不做 ADR
 
-### L2: Execution
+### L2 + L3: 自主执行（L1 确认后不再打断用户）
 - ✅ TDD 必须（测试先行）
 - ✅ BDD 场景 100% 覆盖必须
 - ✅ 场景 ID: `[S-{slug}-xx]`
 - Gate: `gate.sh standard {slug}`
 - e2e 按需
-
-### L3: Review（与 Full Mode 相同）
 - Gate standard 通过 → **完整 Code Review**（需求合规 > 代码质量）
 - Review 通过 → Commit → 更新 state.yaml + baseline.md
 - **Lite 精简的是规划阶段，不是质量保证阶段**
+
+### 完成后：Check + 迭代
+- Commit 后提示用户 check 结果 + 询问是否归档
+- 用户说"没问题" → 归档或保留
+- **用户提出修改意见 → 不新建 task，在当前 task 上继续迭代**（status 回退 in_progress → 修改 → gate → review → commit → 再次 check）
 
 ### 升级规则
 执行中发现复杂度超预期（影响 > 3 文件 / 需要新架构决策）→ **必须升级到 Full Mode**

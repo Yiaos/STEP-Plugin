@@ -1286,6 +1286,10 @@ Step 3: Gate → gate.sh standard {slug}
 - ⏭️ 不冻结 baseline
 - ⏭️ 不记录 ADR（除非新决策）
 
+#### L2 + L3 自主执行（无需用户确认）
+
+L1 用户确认方案后，L2（开发+测试+gate）和 L3（review+commit）**全程自主执行**，不再打断用户确认。
+
 #### L3: Review（Code Review + Commit）
 
 与 Full Mode Phase 5 相同的 Review 流程，保证代码质量：
@@ -1307,6 +1311,27 @@ Gate standard 通过后执行:
 ```
 
 **Lite 精简的是规划阶段（L1 一次确认），不是质量保证阶段。**
+
+#### 完成后：Check + 归档提示
+
+L3 commit 完成后，**提示用户 check 结果，并询问是否归档**：
+
+```
+LLM: "✅ 已完成并提交。请 check 以下变更：
+      - [变更摘要]
+      是否归档此任务？"
+
+用户响应:
+  ├── "没问题，归档" → 执行归档 → 任务结束
+  ├── "没问题，不归档" → 任务保持 done，留在 tasks/ → 结束
+  └── "这里要改一下..." / "还需要加个..."
+        → 不新建 task（在当前 task 上继续迭代）
+        → task status 回退到 in_progress
+        → 根据反馈修改 → gate → review → commit
+        → 再次提示 check + 归档
+```
+
+**关键规则：用户反馈修改意见时，不新建 task。在当前 task 基础上继续迭代，直到用户满意。**
 
 ### Lite Task YAML 格式
 
