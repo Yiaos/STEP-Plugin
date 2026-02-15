@@ -153,7 +153,7 @@ STEP 管"结构"：
   ├── 阶段流转（Phase 0→5）
   ├── 质量门禁（gate.sh）
   ├── 需求防漂移（baseline confirmation）
-  └── 角色制衡（PM/Architect/QA/Developer）
+  └── 角色制衡（PM/Architect/QA/Developer/Designer/Reviewer/Deployer）
 
 planning-with-files 管"记忆"：
   ├── 调研细节（findings.md）
@@ -182,7 +182,7 @@ planning-with-files 管"记忆"：
 
 1. **全生命周期覆盖** — 不管需求、设计、验收，只管执行阶段的记录
 2. **质量门禁** — 没有 gate.sh 或任何可执行的质量检查
-3. **角色系统** — 没有 PM/Architect/QA/Developer 的分工和制衡
+3. **角色系统** — 没有 STEP 7 角色的分工和制衡
 4. **需求管理** — 没有 baseline 确认、Change Request 机制
 5. **BDD 场景覆盖** — 没有场景矩阵和覆盖率验证
 6. **结构化状态** — task_plan.md 是自由文本，不是机器可读的 state.yaml

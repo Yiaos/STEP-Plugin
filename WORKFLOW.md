@@ -66,7 +66,7 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义文件（`STEP/ag
 ├── archive/                   # 已完成任务归档
 │   └── 2026-02-15-user-register-api.yaml
 ├── change-requests/
-│   └── CR-001.yaml            # 变更请求
+│   └── 2026-02-15-CR-add-oauth-login.yaml  # 变更请求
 └── evidence/
     ├── user-register-api-gate.json      # gate 运行结果（gate.sh 自动生成）
     ├── user-register-api-scenario.json  # 场景覆盖结果（scenario-check.sh 自动生成）
@@ -683,8 +683,8 @@ Post-MVP 的每一次变更都必须：
 用户: "MVP 用起来不错，但需要加一个 XX 功能"
   │
   ├── 1. 创建 Change Request
-  │     .step/change-requests/2026-02-14-CR-001.yaml:
-  │       id: 2026-02-14-CR-001
+   │     .step/change-requests/2026-02-14-CR-add-oauth-login.yaml:
+   │       id: 2026-02-14-CR-add-oauth-login
   │       type: feature  # feature | behavior_change | constraint_change
   │       description: "新增 XX 功能"
   │       impacts:
@@ -701,7 +701,7 @@ Post-MVP 的每一次变更都必须：
    │     → 创建新 task add-xx-feature.yaml（含完整场景矩阵）
    │     → 更新 state.yaml upcoming
    │     → 进入 Phase 4 执行 add-xx-feature（完整 TDD + Gate + Review + Commit）
-   │     → 更新 state.yaml（记录 2026-02-14-CR-001 已完成）
+   │     → 更新 state.yaml（记录 2026-02-14-CR-add-oauth-login 已完成）
    │
    └── 4. 如果 reverted:
          → CR 状态标 reverted，归档
@@ -1194,7 +1194,7 @@ Step 3: Gate → gate.sh standard {slug}
 
 **简化项：**
 - ⏭️ e2e 测试按需（不强制）
-- ⏭️ 不更新 baseline
+- ⏭️ 不修改 baseline 需求定义/约束（允许完成标记 [ ] → [x]）
 - ⏭️ 不记录 ADR（除非新决策）
 
 #### L2 + L3 自主执行（无需用户确认）

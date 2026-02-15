@@ -38,7 +38,7 @@
 
 ## 三、角色/Agent 系统对比
 
-### STEP: 6 个精简角色
+### STEP: 7 个精简角色
 
 | 角色 | 阶段 | 模型 |
 |------|------|------|
@@ -48,8 +48,9 @@
 | Developer | Phase 4 | codex |
 | Designer | Phase 2/3/4 | claude-opus |
 | Reviewer | Phase 5 | claude-opus |
+| Deployer | Phase 4/5 | claude-opus |
 
-**设计哲学**: 精简 6 角色 × 明确制衡。PM 定义"做什么"、Architect 定义"怎么做"、Designer 负责体验与界面、QA 定义"怎么破坏它"、Developer 只做被定义的事、Reviewer 独立审查交付物。每个角色绑定 opencode agent 定义文件（`agents/*.md`），通过 subagent 机制实现模型路由。
+**设计哲学**: 精简 7 角色 × 明确制衡。PM 定义"做什么"、Architect 定义"怎么做"、Designer 负责体验与界面、QA 定义"怎么破坏它"、Developer 只做被定义的事、Reviewer 独立审查交付物、Deployer 定义部署策略。每个角色绑定 opencode agent 定义文件（`agents/*.md`），通过 subagent 机制实现模型路由。
 
 ### BMAD: 12+ 专业 Agent + Party Mode
 
@@ -136,7 +137,7 @@
 2. **唯一有 BDD 场景矩阵 + ID 绑定**（`[S-xxx-xx]` 硬匹配验证覆盖率）
 3. **唯一有全自动 Session 恢复**（SessionStart Hook，无需人工操作）
 4. **唯一有需求确认 + CR 机制**（baseline.md 确认后变更需走 Change Request）
-5. **唯一有 Agent 模型路由**（6 个角色绑定不同模型，通过 opencode subagent 实现）
+5. **唯一有 Agent 模型路由**（7 个角色绑定不同模型，通过 opencode subagent 实现）
 
 ### STEP 相对劣势
 1. **平台绑定 opencode** — BMAD 支持 Claude Code/Cursor/Windsurf，OpenSpec 支持 20+ 工具

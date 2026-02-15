@@ -21,7 +21,7 @@ BMAD-METHOD：强调“规模自适应、角色丰富、流程模板化”的方
 
 ## 3. 角色/Agent 系统对比
 
-STEP：6 个角色（PM、Architect、QA、Developer、Designer、Reviewer），通过 opencode 子代理文件（agents/*.md）进行模型绑定。角色较少但职责清晰，强调“关键角色闭环”和强一致性：PRD、架构、体验与界面、测试、实现与审查必须覆盖。角色的权威性来自可执行工具链（脚本与钩子），而不是角色数量。
+STEP：7 个角色（PM、Architect、QA、Developer、Designer、Reviewer、Deployer），通过 opencode 子代理文件（agents/*.md）进行模型绑定。角色较少但职责清晰，强调“关键角色闭环”和强一致性：PRD、架构、体验与界面、测试、实现、部署与审查必须覆盖。角色的权威性来自可执行工具链（脚本与钩子），而不是角色数量。
 
 BMAD-METHOD：12+ 专用角色（Analyst、PM、Architect、Developer、UX Designer、Scrum Master、QA、Code Reviewer、DevOps、Data Modeler、Technical Writer 等），强调角色生态与可扩展性。角色即工作流入口，支持 Party Mode 多角色协作讨论与任务拆解。角色数量多、覆盖面广，利于复杂项目与跨职能协作，但约束更多来自 prompt 规则与流程习惯。
 

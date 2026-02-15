@@ -267,7 +267,7 @@ L1 Quick Spec → L2 Execution → L3 Review
 ### L1: Quick Spec（派发 @step-pm，routing.lite_spec）
 - 编排器派发 @step-pm 起草 lite task spec → 用户确认 → 写入 `.step/tasks/{slug}.yaml`
 - 批量任务: 一次展示多个 lite task → 一次确认 → 逐个执行
-- 不分段确认、不更新 baseline、不做 ADR
+- 不分段确认、不修改 baseline 需求（允许完成标记 [ ] → [x]）、不做 ADR
 
 ### L2 + L3: 自主执行（L1 确认后不再打断用户）
 - ✅ TDD 必须（测试先行）

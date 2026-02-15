@@ -215,7 +215,7 @@ STEP 深度绑定 opencode 的 Hook、subagent、skill 机制。移植到其他�
 2. **测试机制** — 没有 TDD 强制、BDD 场景矩阵、覆盖率验证
 3. **Session 恢复** — 没有 SessionStart Hook 或任何自动状态恢复
 4. **需求确认** — proposal.md 无确认，无 Change Request 流程
-5. **角色系统** — 没有 PM/Architect/QA/Developer 的分工和模型绑定
+5. **角色系统** — 没有 STEP 的 7 角色分工与模型绑定
 6. **状态机** — tasks.md 是 checkbox，不是结构化 state.yaml
 7. **代码审查** — 没有独立的 Review 阶段
 8. **模型路由** — 推荐模型但不绑定，无对抗性测试机制
