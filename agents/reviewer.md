@@ -69,3 +69,4 @@ model: openai/gpt-5.3-codex
 - ❌ 严禁空洞 APPROVE——必须列出至少 3 个具体发现（即使是 P3）
 - ❌ 严禁自行修复代码——Review-only，除非用户明确要求
 - ✅ P0 问题立即阻断，不等其他检查完成
+- ✅ Review 完成后将结果保存到 `.step/evidence/{slug}-review.md`（含 assessment、findings、v2 建议）

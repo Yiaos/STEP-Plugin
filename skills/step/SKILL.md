@@ -78,11 +78,12 @@ Step 6: 更新 state.yaml + baseline.md 对应项 [ ] → [x] → 进入下一�
 
 1. **测试先行**: 按 `config.yaml` 的 `routing.test_writing` 派发 @step-qa 写测试 → 确认 FAIL → 再写实现（QA 写测试 + Developer 写实现 = 天然对抗性）
 2. **场景 ID 绑定**: 测试名必须包含 `[S-{slug}-xx]`
-3. **Gate 必过**: `./scripts/gate.sh standard {slug}` 通过才能标 done
+3. **Gate 必须带 slug**: `./scripts/gate.sh standard {slug}`——必须指定 task-slug，确保 evidence 自动保存到 `.step/evidence/{slug}-gate.json`
 4. **场景 100% 覆盖**: `scenario-check.sh` 验证每个场景 ID 都有对应测试
 5. **所有测试类型必须**: unit / integration / e2e 都是必须的，不可跳过
 6. **修改前必须 Read**: 修改任何文件前必须先用 Read 工具查看当前内容，不得凭记忆编辑
 7. **Baseline 完成跟踪**: 任务标记 done 时，同步更新 baseline.md 对应功能项 `[ ]` → `[x]`
+8. **Evidence 必须保存**: gate 和 review 的证据必须保存到 `.step/evidence/`（gate 自动保存，review 需手动写入 `{slug}-review.md`）
 
 ## Gate 失败处理
 

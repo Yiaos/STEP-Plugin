@@ -6,9 +6,9 @@
 project: "STEP-Plugin"
 project_type: "existing"
 current_phase: "idle"
-last_updated: "2026-02-15T14:30:00Z"
+last_updated: "2026-02-15T15:00:00Z"
 last_agent: "orchestrator"
-last_session_summary: "Lite task agent-enhancement 完成：借鉴 Build Any App prompt 增强 6 agent（挑战假设+复杂度评估+Polish+v2建议+gate选项+commit摘要+Handoff）。Deploy agent 待讨论。"
+last_session_summary: "deploy-agent 完成：新建 step-deployer（opus），可选部署策略建议，7 角色体系。"
 
 established_patterns:
   hook_mechanism: "SKILL.md frontmatter → PreToolUse/PostToolUse/Stop"
@@ -18,7 +18,7 @@ established_patterns:
   config_architecture: "5-layer: agent .md → config.yaml routing → file_routing → gate → oh-my-opencode preset"
 
 tasks:
-  completed: [agent-enhancement]
+  completed: [agent-enhancement, deploy-agent]
   current: null
   upcoming: []
 

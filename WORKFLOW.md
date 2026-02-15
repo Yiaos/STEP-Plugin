@@ -68,8 +68,9 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义文件（`STEP/ag
 ├── change-requests/
 │   └── CR-001.yaml            # 变更请求
 └── evidence/
-    ├── user-register-api-gate.json      # gate 运行结果
-    └── user-register-api-scenario.json  # 场景覆盖结果
+    ├── user-register-api-gate.json      # gate 运行结果（gate.sh 自动生成）
+    ├── user-register-api-scenario.json  # 场景覆盖结果（scenario-check.sh 自动生成）
+    └── user-register-api-review.md      # Review 报告（@step-reviewer 手动写入）
 scripts/
 ├── gate.sh                    # 质量门禁
 ├── scenario-check.sh          # 场景覆盖检查
@@ -340,6 +341,8 @@ rollback: "git revert --no-commit HEAD~3"
 | 场景 ID | `S-{slug}-{seq}` | `S-user-register-api-01` |
 | 归档文件名 | `YYYY-MM-DD-{slug}.yaml` | `2026-02-15-user-register-api.yaml` |
 | Evidence | `{slug}-gate.json` | `user-register-api-gate.json` |
+| Evidence | `{slug}-scenario.json` | `user-register-api-scenario.json` |
+| Evidence | `{slug}-review.md` | `user-register-api-review.md` |
 | Hotfix | `YYYY-MM-DD-{slug}-hotfix-{seq}.yaml` | `2026-02-15-user-register-api-hotfix-001.yaml` |
 | CR | `YYYY-MM-DD-CR-{slug}.yaml` | `2026-02-15-CR-add-oauth.yaml` |
 
