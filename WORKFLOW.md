@@ -55,7 +55,7 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义文件（`STEP/ag
 ```
 .step/
 ├── config.yaml               # 项目配置（agent 路由、文件路由、gate 命令）
-├── baseline.md                # Phase 1 输出：冻结需求
+├── baseline.md                # Phase 1 输出：确认需求
 ├── tech-comparison.md         # Phase 2 输出：技术方案对比
 ├── decisions.md               # Phase 2 输出：架构决策日志
 ├── state.yaml                 # Phase 3+ 持续更新：项目状态机
@@ -169,7 +169,7 @@ LLM 基于 Phase 0 讨论起草 baseline.md
 - C-1: [约束内容]
 
 ## 状态
-- 冻结时间: YYYY-MM-DD
+- 确认时间: YYYY-MM-DD
 - 修改方式: 必须通过 Change Request
 ```
 
@@ -691,20 +691,20 @@ Post-MVP 的每一次变更都必须：
   │         - baseline: "MVP Scope 新增 F-7"
   │         - tasks: "需要新增任务 add-xx-feature"
   │         - existing_code: "需要修改 src/api/xxx.ts"
-  │       decision: pending
-  │
-  ├── 2. 用户审批
-  │     decision: approved / rejected
-  │
-  ├── 3. 如果 approved:
-  │     → 更新 baseline.md（追加 F-7）
-  │     → 创建新 task add-xx-feature.yaml（含完整场景矩阵）
-  │     → 更新 state.yaml upcoming
-  │     → 进入 Phase 4 执行 add-xx-feature（完整 TDD + Gate + Review + Commit）
-  │     → 更新 state.yaml（记录 2026-02-14-CR-001 已完成）
-  │
-  └── 4. 如果 rejected:
-        → CR 状态标 rejected，归档
+   │       decision: pending
+   │
+   ├── 2. 用户确认
+   │     decision: recorded / reverted
+   │
+   ├── 3. 如果 recorded:
+   │     → 更新 baseline.md（追加 F-7）
+   │     → 创建新 task add-xx-feature.yaml（含完整场景矩阵）
+   │     → 更新 state.yaml upcoming
+   │     → 进入 Phase 4 执行 add-xx-feature（完整 TDD + Gate + Review + Commit）
+   │     → 更新 state.yaml（记录 2026-02-14-CR-001 已完成）
+   │
+   └── 4. 如果 reverted:
+         → CR 状态标 reverted，归档
 ```
 
 ### 场景 2: Bug 修复（Hotfix）
@@ -762,7 +762,7 @@ Post-MVP 的每一次变更都必须：
   │     列出所有受影响文件和测试
   │
   ├── 3. 用户确认
-  │     → approved → 更新 baseline + decisions + 受影响 task
+   │     → recorded → 更新 baseline + decisions + 受影响 task
   │     → 创建迁移任务 .step/tasks/2026-02-14-migrate-cookie-to-jwt.yaml（含场景矩阵）
   │
   └── 4. 执行迁移（完整 Phase 4 流程）
@@ -1067,7 +1067,7 @@ Session 开始
 | Phase 流转顺序 | LLM 可能跳过阶段 | Hook 注入 current_phase，SKILL.md 明确规则 |
 | TDD 先测试后实现 | LLM 可能先写实现 | Developer agent 约束 + gate 验证测试存在 |
 | 每次跑 gate | LLM 可能跳过 | SKILL.md 硬规则 + Review 阶段检查 evidence |
-| baseline 冻结 | LLM 可能直接改 | 文档标记冻结 + CR 流程约束 |
+| baseline 确认 | LLM 可能直接改 | 文档标记确认 + CR 流程约束 |
 | next_action 恢复 | LLM 可能不遵守 | Hook 注入 state.yaml，包含 next_action |
 
 ### 不能保证（需要外部机制）
@@ -1075,7 +1075,7 @@ Session 开始
 | 限制 | 原因 | 现状 |
 |------|------|------|
 | 主会话中途切模型 | opencode 启动时选定模型 | 通过 dispatch subagent 间接实现不同模型 |
-| 文件写保护 | 文件系统无锁机制 | baseline 冻结是契约不是文件锁 |
+| 文件写保护 | 文件系统无锁机制 | baseline 确认是契约不是文件锁 |
 
 ---
 
@@ -1095,7 +1095,7 @@ Session 开始
 
 | 操作 | 原因 |
 |------|------|
-| baseline.md 冻结 | Phase 1 出口，不可逆契约 |
+| baseline.md 首版确认 | Phase 1 出口，确认需求基线 |
 | 技术方案选择 | 有多个可选方案时需用户决策 |
 | 需求变更（CR） | 影响 baseline 范围 |
 | git push --force / rebase | 可能丢失他人工作 |
@@ -1194,7 +1194,7 @@ Step 3: Gate → gate.sh standard {slug}
 
 **简化项：**
 - ⏭️ e2e 测试按需（不强制）
-- ⏭️ 不冻结 baseline
+- ⏭️ 不更新 baseline
 - ⏭️ 不记录 ADR（除非新决策）
 
 #### L2 + L3 自主执行（无需用户确认）
@@ -1323,7 +1323,7 @@ done_when:
 |------|-----------|-----------|
 | 阶段数 | 6 (Phase 0-5) | 3 (L1-L3) |
 | 确认轮数 | 多次分段确认 | 一次确认 |
-| Baseline | 创建 + 冻结 | 复用已有 |
+| Baseline | 创建 + 确认 | 复用已有 |
 | ADR | 必须记录 | 按需 |
 | TDD | ✅ 必须 | ✅ 必须 |
 | BDD 覆盖 | ✅ 100% | ✅ 100% |

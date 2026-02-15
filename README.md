@@ -18,7 +18,7 @@ STEP 提供 6 阶段生命周期：
 | Phase | 名称 | 目标 |
 | --- | --- | --- |
 | 0 | Discovery | 开放式讨论，澄清问题与目标 |
-| 1 | PRD | 选择题确认，冻结 baseline |
+| 1 | PRD | 选择题确认，确认 baseline |
 | 2 | Tech Design | 开放式讨论，锁定 ADR |
 | 3 | Plan & Tasks | BDD 场景矩阵 |
 | 4 | Execution | TDD + Gate 质量门禁 |
@@ -29,7 +29,7 @@ STEP 提供 6 阶段生命周期：
 - BDD 场景矩阵：每个场景有 ID，测试名必须包含 ID，100% 覆盖才能通过
 - Gate 门禁：lint + typecheck + test + scenario coverage
 - SessionStart Hook 自动恢复状态
-- baseline 冻结 + Change Request 防漂移
+- baseline 确认 + Change Request 防漂移
 - Post-MVP 流程（CR、Hotfix、约束变更）同样遵循 STEP
 
 ## 3. 整体架构（Architecture）
@@ -126,7 +126,7 @@ oh-my-opencode preset   →  WITH   用户环境的实际模型 ID
 | SessionStart Hook 注入 | bash 脚本，确定性执行 | **硬保证** |
 | 阶段流转 / TDD 先测试 | SKILL.md 规则 + agent Critical Actions | 软保证（prompt） |
 | 按 routing 表派发 agent | LLM 自主决策 | 软保证（prompt） |
-| baseline 冻结 | 契约 + CR 流程 | 软保证（无文件锁） |
+| baseline 确认 | 契约 + CR 流程 | 软保证（无文件锁） |
 
 ## 4. 安装（Installation）
 
@@ -172,7 +172,7 @@ bash uninstall.sh --project
 
 ### 角色系统
 
-STEP 定义 6 个角色，每个角色对应一个 agent 定义（`agents/*.md`），默认模型可通过 oh-my-opencode preset 覆盖：
+STEP 定义 7 个角色，每个角色对应一个 agent 定义（`agents/*.md`），默认模型可通过 oh-my-opencode preset 覆盖：
 
 | 角色 | Agent | 默认模型 | 阶段 | 思维模式 |
 | --- | --- | --- | --- | --- |
@@ -182,6 +182,7 @@ STEP 定义 6 个角色，每个角色对应一个 agent 定义（`agents/*.md`�
 | Developer | @step-developer | codex | Phase 4（后端） | TDD 实现、遵循 patterns、不越界 |
 | Designer | @step-designer | gemini | Phase 2 UI + Phase 4（前端） | 配色、布局、交互、UI 代码 |
 | Reviewer | @step-reviewer | codex | Phase 5 Review | 需求合规审查、代码质量评估 |
+| Deployer | @step-deployer | claude-opus | Review 后（可选） | 平台选型、CI/CD、风险评估 |
 
 角色之间形成制衡：PM 定义"做什么"、Architect 定义"怎么做"、QA 定义"怎么破坏它"、Developer/Designer 只做被定义的事。
 
@@ -207,7 +208,7 @@ STEP 定义 6 个角色，每个角色对应一个 agent 定义（`agents/*.md`�
 ```
 .step/
 ├── config.yaml          # agent 路由、文件路由、gate 命令
-├── baseline.md          # 需求基线（Phase 1 冻结）
+├── baseline.md          # 需求基线（Phase 1 确认）
 ├── decisions.md         # 架构决策日志
 ├── state.yaml           # 项目状态机（Session 恢复核心）
 ├── tasks/               # 任务定义（语义化 slug 命名）

@@ -1,6 +1,6 @@
 ---
 name: step-pm
-description: "STEP 产品经理角色。在 Phase 0 Discovery 和 Phase 1 PRD 阶段使用。负责需求探索、用户故事、验收标准、baseline 冻结。"
+description: "STEP 产品经理角色。在 Phase 0 Discovery 和 Phase 1 PRD 阶段使用。负责需求探索、用户故事、验收标准、baseline 确认。"
 model: google/antigravity-claude-opus-4-6-thinking
 ---
 

@@ -6,19 +6,19 @@
 project: "STEP-Plugin"
 project_type: "existing"
 current_phase: "idle"
-last_updated: "2026-02-15T15:00:00Z"
+last_updated: "2026-02-15T16:00:00Z"
 last_agent: "orchestrator"
-last_session_summary: "deploy-agent 完成：新建 step-deployer（opus），可选部署策略建议，7 角色体系。"
+last_session_summary: "baseline语义变更：冻结合同→活快照。~50处文本变更覆盖12个文件，CR decision改为recorded/reverted，65/65测试通过。"
 
 established_patterns:
   hook_mechanism: "SKILL.md frontmatter → PreToolUse/PostToolUse/Stop"
   attention_injection: "cat state.yaml | head -25 → 注入行为规则+状态数据"
   quality_gates: "gate.sh + scenario-check.sh + step-stop-check.sh"
-  agent_system: "6 roles (PM/Architect/QA/Developer/Designer/Reviewer) with BMAD-style prompts"
+  agent_system: "7 roles (PM/Architect/QA/Developer/Designer/Reviewer/Deployer) with BMAD-style prompts"
   config_architecture: "5-layer: agent .md → config.yaml routing → file_routing → gate → oh-my-opencode preset"
 
 tasks:
-  completed: [agent-enhancement, deploy-agent]
+  completed: [agent-enhancement, deploy-agent, evidence-mechanism]
   current: null
   upcoming: []
 
@@ -31,8 +31,8 @@ key_decisions:
     reason: "echo 是软保证，脚本检查是中等保证，与 gate.sh 一致"
     phase: "phase-0-discovery"
     date: "2026-02-14"
-  - decision: "6 角色 agent 体系 + BMAD 风格提示词"
-    reason: "PM/Architect/QA/Developer/Designer/Reviewer 各司其职，BMAD 人设提高 LLM 行为质量"
+  - decision: "7 角色 agent 体系 + BMAD 风格提示词"
+    reason: "PM/Architect/QA/Developer/Designer/Reviewer/Deployer 各司其职，BMAD 人设提高 LLM 行为质量"
     phase: "post-mvp"
     date: "2026-02-15"
   - decision: "config.yaml 完整注入替代 grep -A 50"
@@ -45,8 +45,8 @@ key_decisions:
     date: "2026-02-15"
 
 known_issues:
-  - "baseline.md 仍是 MVP 阶段的（注意力管理），NG-3 '不新增角色' 已被打破（4→6角色），需要刷新"
   - ".step/tasks/ 旧文件(T-001~T-005)使用序号命名，已清理"
+  - "3 个 done 任务待归档: agent-enhancement, deploy-agent, evidence-mechanism"
 
 constraints_quick_ref:
   - "不破坏现有协议流程"
@@ -60,3 +60,6 @@ progress_log:
   - date: "2026-02-15"
     summary: "MVP Review 通过 → Post-MVP: 6角色agent+BMAD+routing重写+完整注入+L1路由+reviewer补全+stop-check归档提醒 → 65/65通过 → 清理旧task文件 → 重置state.yaml进入STEP自举"
     next_action: "以 STEP 协议约束自身开发。当前 idle，等待用户发起新任务"
+  - date: "2026-02-15"
+    summary: "baseline语义变更: 冻结合同→活快照。~50处文本变更覆盖12文件(SKILL.md/WORKFLOW.md/README.md/agents/pm.md/templates/baseline.md/.step/baseline.md/step-init.sh/cr.yaml/comparisons/*5)。CR decision→recorded/reverted。NG-3修正为7角色。65/65通过。ADR-005"
+    next_action: "idle — 3个done任务(agent-enhancement/deploy-agent/evidence-mechanism)待归档，等用户决定"

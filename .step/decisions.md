@@ -35,3 +35,12 @@
 - **理由**: 用户判断 progress_log 已足够；session-catchup 脚本依赖 git 状态推断，可能不准确
 - **替代方案**: 保留作为 P1
 - **影响**: baseline 减少一项
+
+## ADR-005: Baseline 语义从"冻结合同"改为"活快照"
+- **日期**: 2026-02-15
+- **状态**: accepted
+- **上下文**: "冻结"暗示不可变，但文件系统无写保护（软保证），团队已多次违反（4→7角色未走CR）。冻结模型存在根本矛盾：以硬保证的语言描述软保证的现实
+- **决策**: baseline 改为"活快照"——首版确认后仍受 CR 保护，但在任务完成+用户确认后可更新。CR 从"审批门禁"变为"审计记录"，decision 字段改为 recorded/reverted
+- **理由**: 消除"冻结"与"无写保护"的矛盾；CR 作为审计记录更符合实际使用模式
+- **替代方案**: 保持冻结语义 + 补回缺失的 CR → 会导致 CR 流程被忽略，因为不符合实际开发节奏
+- **影响**: ~50 处文本变更覆盖 12 个文件（SKILL.md、WORKFLOW.md、README.md、agents/pm.md、templates/baseline.md、.step/baseline.md、scripts/step-init.sh、templates/cr.yaml、comparisons/*.md），零脚本/测试逻辑变更

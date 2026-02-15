@@ -30,7 +30,7 @@
 | **代码审查** | ✅ Phase 5 Review | ✅ code-review | ❌ 不覆盖 | ❌ 不覆盖 | ✅ requesting/receiving-code-review |
 | **Session 恢复** | ✅ SessionStart Hook 自动注入 | ❌ 靠人工重新加载 | ❌ 不覆盖 | ✅ session-catchup.py | ❌ 不覆盖 |
 | **Post-MVP 变更** | ✅ CR / Hotfix / 约束变更 | ✅ sprint 迭代 | ✅ archive + 新 change | ❌ 不覆盖 | ❌ 不覆盖 |
-| **需求防漂移** | ✅ baseline 冻结 + CR 机制 | ⚠️ PRD 作参考文档 | ⚠️ proposal 不冻结 | ❌ 不覆盖 | ❌ 不覆盖 |
+| **需求防漂移** | ✅ baseline 确认 + CR 机制 | ⚠️ PRD 作参考文档 | ⚠️ proposal 无确认 | ❌ 不覆盖 | ❌ 不覆盖 |
 
 **覆盖度评分**: STEP ≈ 11/11 | BMAD ≈ 9/11 | OpenSpec ≈ 6/11 | planning-with-files ≈ 3/11 | superpowers ≈ 6/11
 
@@ -89,7 +89,7 @@
 4. 文件模板结构 — `step-init.sh` 确定性创建
 
 **STEP 软保证（也是所有同类工具的共同局限）**:
-- Phase 流转顺序、TDD 先测后写、每次跑 gate、baseline 冻结 — 均依赖 LLM 遵守 prompt
+- Phase 流转顺序、TDD 先测后写、每次跑 gate、baseline 确认 — 均依赖 LLM 遵守 prompt
 
 **BMAD**: 全部是 prompt 级保证（Agent persona + workflow 引导），无可执行脚本门禁
 
@@ -108,7 +108,7 @@
 | **恢复机制** | SessionStart Hook 自动读取 state.yaml | 无（需人工重新加载 Agent） | 无（spec 文件在磁盘但不自动注入） | session-catchup.py 脚本 | 无 |
 | **恢复精度** | Phase + Task + Status + next_action | — | — | 3 个 MD 文件内容 | — |
 | **自动化程度** | 全自动（Hook 触发） | 手动 | 手动 | 半自动（需运行脚本） | — |
-| **防漂移** | baseline.md 冻结 + CR 机制 | PRD 文档（无冻结） | proposal（无冻结） | task_plan.md（无冻结） | — |
+| **防漂移** | baseline.md 确认 + CR 机制 | PRD 文档（无确认） | proposal（无确认） | task_plan.md（无确认） | — |
 
 **结论**: Session 恢复是 STEP 和 planning-with-files 的核心优势。STEP 通过 Hook 全自动注入，planning-with-files 需手动运行脚本。其余工具不涉及此问题。
 
@@ -135,7 +135,7 @@
 1. **唯一有可执行质量门禁**（gate.sh + scenario-check.sh 是真实脚本，不是 checklist）
 2. **唯一有 BDD 场景矩阵 + ID 绑定**（`[S-xxx-xx]` 硬匹配验证覆盖率）
 3. **唯一有全自动 Session 恢复**（SessionStart Hook，无需人工操作）
-4. **唯一有需求冻结 + CR 机制**（baseline.md 冻结后变更需走 Change Request）
+4. **唯一有需求确认 + CR 机制**（baseline.md 确认后变更需走 Change Request）
 5. **唯一有 Agent 模型路由**（6 个角色绑定不同模型，通过 opencode subagent 实现）
 
 ### STEP 相对劣势

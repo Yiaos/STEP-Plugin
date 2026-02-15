@@ -44,8 +44,8 @@ hooks:
 
 ### Phase 1: PRD（选择题确认）
 - LLM 起草 `baseline.md` → 分段展示 → 选择题逐项确认
-- 确认后写入 `.step/baseline.md`，标记冻结
-- 修改冻结内容必须走 Change Request
+- 确认后写入 `.step/baseline.md`
+- 修改已确认的 baseline 必须走 Change Request
 
 ### Phase 2: Tech Design（开放式讨论）
 - LLM 提供全面技术方案对比（优劣势、适用场景、推荐理由）
@@ -129,7 +129,7 @@ Lite mode 跳过此检查点。
 
 ## 防漂移机制
 
-- baseline.md 冻结后不可直接修改 → 走 Change Request
+- baseline.md 确认后不可直接修改 → 走 Change Request
 - 不可引入未经 ADR 记录的架构决策
 - Post-MVP: 需求变更 → CR，Bug → Hotfix，约束变更 → 高影响 CR
 
@@ -145,12 +145,12 @@ Lite mode 跳过此检查点。
 1. Phase 流转顺序 — LLM 可能跳过阶段
 2. TDD 先测试后实现 — LLM 可能先写实现
 3. 每次都跑 gate — LLM 可能跳过 gate 直接标 done
-4. baseline 冻结不直接改 — 文件系统无写保护
+4. baseline 确认后不直接改 — 文件系统无写保护
 5. 从 next_action 恢复 — LLM 可能不遵守
 
 ### 不能保证（需要外部机制）
 1. 主会话中途切模型 — opencode 启动时选定模型，session 内不可变
-2. 文件写保护 — baseline 冻结是契约不是文件锁
+2. 文件写保护 — baseline 确认是契约不是文件锁
 
 ### 提高遵守率的设计
 - Hook 自动注入规则（不依赖用户记得提醒）
@@ -229,7 +229,7 @@ STEP 定义 7 个角色，通过 `agents/*.md` 实现 subagent 模型绑定：
 
 Post-MVP 变更**同样遵循 STEP 协议**，所有过程记录在 `.step/` 下：
 
-- **Change Request**: 需求变更 → `.step/change-requests/YYYY-MM-DD-CR-{slug}.yaml` → 用户审批 → 更新 baseline → 创建新 task YAML（含场景矩阵） → Phase 4 执行 → gate + review + commit
+- **Change Request**: 需求变更 → `.step/change-requests/YYYY-MM-DD-CR-{slug}.yaml` → 用户确认 → 记录变更 → 更新 baseline → 创建新 task YAML（含场景矩阵） → Phase 4 执行 → gate + review + commit
 - **Hotfix**: Bug → 定位场景 → `.step/tasks/YYYY-MM-DD-{slug}-hotfix-{seq}.yaml` → TDD 修复 → gate full 回归 → review + commit → 更新 state.yaml
 - **约束变更**: 高影响 CR → 影响分析 → 创建迁移任务 → Phase 4 执行 → gate full
 
@@ -245,7 +245,7 @@ Post-MVP 变更**同样遵循 STEP 协议**，所有过程记录在 `.step/` 下
 - 创建目录
 
 **需要确认：**
-- baseline 冻结（Phase 1 出口）
+- baseline 首版确认（Phase 1 出口）
 - 技术方案选择（多选项时）
 - 需求变更（CR）
 - git push --force / rebase
@@ -267,7 +267,7 @@ L1 Quick Spec → L2 Execution → L3 Review
 ### L1: Quick Spec（派发 @step-pm，routing.lite_spec）
 - 编排器派发 @step-pm 起草 lite task spec → 用户确认 → 写入 `.step/tasks/{slug}.yaml`
 - 批量任务: 一次展示多个 lite task → 一次确认 → 逐个执行
-- 不分段确认、不冻结 baseline、不做 ADR
+- 不分段确认、不更新 baseline、不做 ADR
 
 ### L2 + L3: 自主执行（L1 确认后不再打断用户）
 - ✅ TDD 必须（测试先行）

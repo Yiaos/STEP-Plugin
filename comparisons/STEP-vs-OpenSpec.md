@@ -35,7 +35,7 @@
 ```
 /step                → 初始化或恢复
 Phase 0 Discovery    → 开放式讨论
-Phase 1 PRD          → 选择题确认 → baseline.md 冻结
+Phase 1 PRD          → 选择题确认 → baseline.md 确认
 Phase 2 Tech Design  → 开放式讨论 → ADR 记录
 Phase 3 Plan & Tasks → BDD 场景矩阵 → 用户审核
 Phase 4 Execution    → TDD → gate.sh → Review → Commit
@@ -82,7 +82,7 @@ openspec/
 .step/
 ├── config.yaml          # 模型路由 & gate 命令
 ├── state.yaml           # 状态机（当前阶段 + 任务 + next_action）
-├── baseline.md          # 需求基线（冻结）
+├── baseline.md          # 需求基线（确认）
 ├── decisions.md         # 架构决策日志 (ADR)
 ├── tasks/               # 任务 YAML + BDD 场景矩阵
 │   └── T-001-auth.yaml  # 含 happy_path / edge_cases / error_handling
@@ -148,27 +148,27 @@ Step 6: 更新 state.yaml → 进入下一任务
 
 ## 6. 需求管理与防漂移
 
-### STEP：冻结 + CR 机制
+### STEP：确认 + CR 机制
 
 ```
-Phase 1: baseline.md 起草 → 分段确认 → 冻结
-         冻结后修改 → 必须提交 Change Request
-         CR 审批 → 更新 baseline → 新 task YAML → 重新执行
+Phase 1: baseline.md 起草 → 分段确认 → 确认
+         确认后修改 → 必须提交 Change Request
+         CR 确认 → 更新 baseline → 新 task YAML → 重新执行
 ```
 
-**保证强度**：baseline.md 冻结是契约（非文件锁），Change Request 是结构化流程。
+**保证强度**：baseline.md 确认是契约（非文件锁），Change Request 是结构化流程。
 
-### OpenSpec：proposal 不冻结
+### OpenSpec：proposal 无确认机制
 
 ```
 /opsx:new → proposal.md 起草
            随时可以修改 proposal、specs、design、tasks
-           无冻结、无 CR 机制
+            无确认、无 CR 机制
 ```
 
 **保证强度**：无。哲学是 "fluid not rigid"。
 
-**对比**：STEP 更适合需求变更需要审批的场景（团队协作、客户交付）；OpenSpec 更适合个人开发或快速迭代。
+**对比**：STEP 更适合需求变更需要变更追溯的场景（团队协作、客户交付）；OpenSpec 更适合个人开发或快速迭代。
 
 ## 7. 平台兼容性
 
@@ -214,7 +214,7 @@ STEP 深度绑定 opencode 的 Hook、subagent、skill 机制。移植到其他�
 1. **质量门禁** — 没有 gate.sh 或任何可执行的质量检查脚本
 2. **测试机制** — 没有 TDD 强制、BDD 场景矩阵、覆盖率验证
 3. **Session 恢复** — 没有 SessionStart Hook 或任何自动状态恢复
-4. **需求冻结** — proposal.md 不冻结，无 Change Request 流程
+4. **需求确认** — proposal.md 无确认，无 Change Request 流程
 5. **角色系统** — 没有 PM/Architect/QA/Developer 的分工和模型绑定
 6. **状态机** — tasks.md 是 checkbox，不是结构化 state.yaml
 7. **代码审查** — 没有独立的 Review 阶段
@@ -226,7 +226,7 @@ STEP 深度绑定 opencode 的 Hook、subagent、skill 机制。移植到其他�
 |------|------|------|
 | **快速加功能（已有项目）** | OpenSpec | `/opsx:ff` 一键规划，轻量不侵入 |
 | **全新 MVP 产品** | STEP | 全生命周期管理 + 门禁保证质量 |
-| **团队协作/客户交付** | STEP | 需求冻结 + CR 机制 + Review 阶段 |
+| **团队协作/客户交付** | STEP | 需求确认 + CR 机制 + Review 阶段 |
 | **个人项目快速迭代** | OpenSpec | 灵活、快速、无约束 |
 | **质量敏感（金融/医疗）** | STEP | gate.sh + BDD 场景 100% 覆盖 |
 | **多工具平台团队** | OpenSpec | 20+ 工具支持 |

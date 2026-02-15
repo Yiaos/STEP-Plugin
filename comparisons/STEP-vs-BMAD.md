@@ -33,12 +33,12 @@ STEP 的硬保证：
 - `gate.sh` 统一运行 lint/typecheck/test/build，不通过则阻断完成。
 - `scenario-check.sh` 校验 BDD 场景矩阵 100% 覆盖，绑定 `[S-xxx-xx]` scene ID。
 - SessionStart Hook 自动注入 `state.yaml`，恢复上下文。
-- `baseline.md` 冻结与 Change Request 机制防止需求漂移。
+- `baseline.md` 确认与 Change Request 机制防止需求漂移。
 - 模板结构与子代理模型绑定为强约束。
 
 BMAD 的软保证：
 - 依赖 prompt 级角色行为、工作流模板与人机协作习惯。
-- 无强制门禁脚本、无自动会话恢复、无基线冻结。
+- 无强制门禁脚本、无自动会话恢复、无基线确认。
 
 结论：STEP 更接近“工程化执行系统”；BMAD 更接近“流程与角色方法论”。
 
@@ -72,7 +72,7 @@ BMAD：npm 安装，支持 Claude Code、Cursor、Windsurf 等多平台；模块
 - 可执行门禁脚本（lint/typecheck/test/build 集成阻断）。
 - BDD 场景矩阵与 scene ID 绑定验证机制。
 - 自动 session 恢复与 `state.yaml` 注入。
-- baseline 冻结与变更请求机制。
+- baseline 确认与变更请求机制。
 
 ## 10. 总结与适用场景建议
 

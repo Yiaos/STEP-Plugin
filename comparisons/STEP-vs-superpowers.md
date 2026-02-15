@@ -22,7 +22,7 @@ STEP：通过可执行脚本形成硬门禁。
 - `gate.sh` 统一执行 lint/typecheck/test/build，不通过则阻断完成。
 - `scenario-check.sh` 校验 BDD 场景矩阵 100% 覆盖，要求场景 ID 绑定。
 - SessionStart Hook 自动注入 `state.yaml`，确保会话恢复与阶段一致性。
-- `baseline.md` 冻结 + Change Request 防止需求漂移。
+- `baseline.md` 确认 + Change Request 防止需求漂移。
 
 superpowers：通过 prompt 级铁律形成软约束。
 - “1% 触发规则”要求只要可能就必须调用技能，禁止合理化。
@@ -83,7 +83,7 @@ STEP 提供全生命周期结构与交付门禁；superpowers 提供每个编码
 - 全生命周期流程（需求、PRD、架构、验收）
 - 会话恢复与状态机（`state.yaml`）
 - 可执行门禁与场景覆盖脚本（`gate.sh`、`scenario-check.sh`）
-- 基线冻结与变更请求机制（`baseline.md` + CR）
+- 基线确认与变更请求机制（`baseline.md` + CR）
 
 ## 11. 总结：为什么应该组合使用
 

@@ -12,6 +12,6 @@ impacts:
 
 conflicts_with: []  # 如果是 constraint_change，列出冲突的约束/ADR
 
-decision: pending  # pending | approved | rejected
+decision: pending  # pending | recorded | reverted
 decided_by: ""
 decided_at: ""

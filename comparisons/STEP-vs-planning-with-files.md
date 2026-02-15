@@ -17,7 +17,7 @@
 | **任务完成度不足** | BDD 场景矩阵 + gate.sh 质量门禁 | ❌ 不涉及 |
 | **跨 Session 上下文丢失** | SessionStart Hook 自动注入 state.yaml | session-catchup.py 半自动恢复 |
 | **长对话遗忘/幻觉** | ⚠️ PreToolUse 注入规则 + Stop hook 检查脚本（中等保证） | 2-Action Rule 强制每 2 次操作写入文件 |
-| **需求漂移** | baseline.md 冻结 + CR 机制 | ❌ 不涉及 |
+| **需求漂移** | baseline.md 确认 + CR 机制 | ❌ 不涉及 |
 | **同一错误反复重试** | gate 失败 → 强模型分析根因 → 最多 3 轮 | Three-Strikes Protocol → 3 次后停止求助 |
 | **决策遗忘** | decisions.md ADR 日志 | Pre-decision Read 重读 task_plan.md |
 
@@ -30,14 +30,14 @@
 .step/
 ├── config.yaml          # 模型路由 & gate 命令配置
 ├── state.yaml           # 状态机（Phase, Task, next_action）
-├── baseline.md          # 需求基线（冻结后不可直接改）
+├── baseline.md          # 需求基线（确认后不可直接改）
 ├── decisions.md         # 架构决策日志 (ADR)
 ├── tasks/               # 任务 YAML + BDD 场景矩阵
 ├── change-requests/     # 变更请求（YYYY-MM-DD-CR-xxx.yaml）
 └── evidence/            # gate 运行证据
 ```
 
-**特点**：结构化 YAML/MD 文件，每个文件有明确职责。state.yaml 是状态机核心，baseline.md 有冻结契约。
+**特点**：结构化 YAML/MD 文件，每个文件有明确职责。state.yaml 是状态机核心，baseline.md 有确认契约。
 
 ### planning-with-files 的 3 个文件
 ```
@@ -55,7 +55,7 @@ project/
 |------|------|---------------------|
 | 文件数量 | 5+ 结构化文件 | 3 个自由格式文件 |
 | 状态管理 | state.yaml（机器可读） | task_plan.md 中的文本标记 |
-| 需求管理 | baseline.md（可冻结） | ❌ 无 |
+| 需求管理 | baseline.md（可确认） | ❌ 无 |
 | 操作日志 | evidence/ 目录 | progress.md |
 | 调研记录 | ❌ 不专门管理 | findings.md（核心优势） |
 | 错误追踪 | gate 输出 + evidence | task_plan.md 中的错误日志 |
@@ -152,7 +152,7 @@ project/
 STEP 管"结构"：
   ├── 阶段流转（Phase 0→5）
   ├── 质量门禁（gate.sh）
-  ├── 需求防漂移（baseline freeze）
+  ├── 需求防漂移（baseline confirmation）
   └── 角色制衡（PM/Architect/QA/Developer）
 
 planning-with-files 管"记忆"：
@@ -183,7 +183,7 @@ planning-with-files 管"记忆"：
 1. **全生命周期覆盖** — 不管需求、设计、验收，只管执行阶段的记录
 2. **质量门禁** — 没有 gate.sh 或任何可执行的质量检查
 3. **角色系统** — 没有 PM/Architect/QA/Developer 的分工和制衡
-4. **需求管理** — 没有 baseline 冻结、Change Request 机制
+4. **需求管理** — 没有 baseline 确认、Change Request 机制
 5. **BDD 场景覆盖** — 没有场景矩阵和覆盖率验证
 6. **结构化状态** — task_plan.md 是自由文本，不是机器可读的 state.yaml
 7. **模型路由** — 没有 agent 定义文件和 subagent 模型绑定
