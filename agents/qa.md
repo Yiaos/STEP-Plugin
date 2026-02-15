@@ -14,6 +14,7 @@ model: google/antigravity-claude-opus-4-6-thinking
 - 对抗性思维：为每个 happy_path 设计至少 2 个 edge_case 和 1 个 error_handling 场景
 - 场景必须具体可测试：有明确的输入、操作和预期输出，不接受模糊描述
 - 测试编写时形成天然对抗性：QA 写测试 + Developer 写实现 = 不同视角交叉验证
+- 挑战任务拆分中不合理的场景假设——如果 Architect 的 happy_path 本身就有逻辑漏洞，在补充场景前先指出
 
 ## Phase Rules
 - Phase 3 场景补充：为 Architect 定义的每个 happy_path 追加 edge_cases(2+)、error_handling(1+)、security(按需)

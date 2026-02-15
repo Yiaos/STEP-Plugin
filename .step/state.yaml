@@ -1,22 +1,29 @@
 # STEP Protocol — 项目状态（由协议自动维护）
-project: "STEP-self-optimization"
+# ⚡ 规则: 每次 Write/Edit 后检查 progress_log / key_decisions 是否需要更新
+# ⚡ 规则: next_action 必须精确到文件名+动作，禁止写"继续开发"
+# ⚡ 规则: 修改文件前必须先 Read，不得凭记忆编辑
+# ⚡ 规则: 每 2 次工具调用后自省是否需要更新状态
+project: "STEP-Plugin"
 project_type: "existing"
-current_phase: "phase-5-review"
-last_updated: "2026-02-15T11:00:00Z"
-last_agent: "developer"
-last_session_summary: "Phase 4 完成：T-001~T-005 全部实现并通过测试（30/30 场景 PASS）"
+current_phase: "phase-4-execution"
+last_updated: "2026-02-15T14:00:00Z"
+last_agent: "orchestrator"
+last_session_summary: "Lite L1 确认：借鉴 Build Any App prompt 增强 6 agent。Deploy agent 待讨论。"
 
 established_patterns:
   hook_mechanism: "SKILL.md frontmatter → PreToolUse/PostToolUse/Stop"
   attention_injection: "cat state.yaml | head -25 → 注入行为规则+状态数据"
   quality_gates: "gate.sh + scenario-check.sh + step-stop-check.sh"
+  agent_system: "6 roles (PM/Architect/QA/Developer/Designer/Reviewer) with BMAD-style prompts"
+  config_architecture: "5-layer: agent .md → config.yaml routing → file_routing → gate → oh-my-opencode preset"
 
 tasks:
-  completed: [T-001, T-002, T-003, T-004, T-005]
-  current: null
+  completed: []
+  current:
+    id: agent-enhancement
+    phase: execution
   upcoming: []
 
-# 关键决策摘要（每条记录决策内容、原因、阶段）
 key_decisions:
   - decision: "借鉴 planning-with-files 的注入策略，在 state.yaml 头部嵌入行为规则"
     reason: "planning-with-files 的 task_plan.md 混合规则+数据，LLM 遵循率更高"
@@ -26,22 +33,32 @@ key_decisions:
     reason: "echo 是软保证，脚本检查是中等保证，与 gate.sh 一致"
     phase: "phase-0-discovery"
     date: "2026-02-14"
-  - decision: "移除 F-5 research/ 目录，详细决策依据写在 decisions.md ADR 中"
-    reason: "减少文件分散，decisions.md 已有替代方案字段可记录推理过程"
-    phase: "phase-2-tech-design"
+  - decision: "6 角色 agent 体系 + BMAD 风格提示词"
+    reason: "PM/Architect/QA/Developer/Designer/Reviewer 各司其职，BMAD 人设提高 LLM 行为质量"
+    phase: "post-mvp"
+    date: "2026-02-15"
+  - decision: "config.yaml 完整注入替代 grep -A 50"
+    reason: "config.yaml 仅 32 行，完整注入消除截断风险，无额外 token 成本"
+    phase: "post-mvp"
+    date: "2026-02-15"
+  - decision: "Lite L1 路由到 @step-pm 而非编排器内联"
+    reason: "保证所有阶段都有 agent 覆盖，一致性优先"
+    phase: "post-mvp"
     date: "2026-02-15"
 
-known_issues: []
+known_issues:
+  - "baseline.md 仍是 MVP 阶段的（注意力管理），NG-3 '不新增角色' 已被打破（4→6角色），需要刷新"
+  - ".step/tasks/ 旧文件(T-001~T-005)使用序号命名，已清理"
+
 constraints_quick_ref:
   - "不破坏现有协议流程"
   - "脚本兼容 macOS bash 3.2+ 和 Linux bash 4+"
   - "state.yaml 向后兼容"
 
-# 进度日志（每次对话结束时追加）
 progress_log:
   - date: "2026-02-14"
-    summary: "Phase 0 完成：分析 planning-with-files 机制，识别 5 个 gap，确定 9 项优化需求"
-    next_action: "Phase 1: 逐项确认 baseline，冻结后进入 Phase 2 Tech Design"
+    summary: "MVP Phase 0→4 完成：注意力管理 7 项功能，30/30 场景通过"
+    next_action: "Phase 5 Review"
   - date: "2026-02-15"
-    summary: "Phase 1→4 完成：baseline 冻结(7项)→Tech Design(ADR×4)→Task拆分(5个/30场景)→全部实现通过"
-    next_action: "Phase 5 Review：对照 baseline AC 逐项验收，然后 reinstall + git push"
+    summary: "MVP Review 通过 → Post-MVP: 6角色agent+BMAD+routing重写+完整注入+L1路由+reviewer补全+stop-check归档提醒 → 65/65通过 → 清理旧task文件 → 重置state.yaml进入STEP自举"
+    next_action: "以 STEP 协议约束自身开发。当前 idle，等待用户发起新任务"

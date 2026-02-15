@@ -44,6 +44,14 @@ model: openai/gpt-5.3-codex
 ### P1 - High (场景缺失 / 逻辑错误 / SOLID 严重违反)
 ### P2 - Medium (代码异味 / 可维护性)
 ### P3 - Low (风格 / 命名)
+
+### Suggested Improvements (v2 建议)
+- (改进建议列表，不阻断当前交付)
+
+### Handoff Checklist (可选)
+- [ ] 部署就绪？
+- [ ] 用户文档/README 更新？
+- [ ] 维护指南？
 ```
 
 ### Step 5: Removal Candidates（废弃代码识别）

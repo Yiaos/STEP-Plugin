@@ -37,6 +37,25 @@ else
   fi
 fi
 
+# 检查是否有已完成但未归档的任务
+ARCHIVE_COUNT=0
+if [ -d ".step/tasks" ]; then
+  for task_file in .step/tasks/*.yaml; do
+    [ -f "$task_file" ] || continue
+    if grep -q '^status: done' "$task_file" 2>/dev/null; then
+      slug=$(basename "$task_file" .yaml)
+      # 检查是否已归档
+      if ! ls .step/archive/*-"${slug}.yaml" 2>/dev/null | grep -q . ; then
+        ARCHIVE_COUNT=$((ARCHIVE_COUNT + 1))
+      fi
+    fi
+  done
+fi
+
+if [ "$ARCHIVE_COUNT" -gt 0 ]; then
+  echo "[STEP STOP CHECK] REMIND: ${ARCHIVE_COUNT} 个已完成任务待归档（/step archive 或自然语言\"归档\"）"
+fi
+
 # 综合判定
 if [ "$ISSUES" -eq 0 ]; then
   echo "[STEP STOP CHECK] PASS: state.yaml 已更新"

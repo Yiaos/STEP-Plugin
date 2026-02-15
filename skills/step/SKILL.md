@@ -88,8 +88,9 @@ Step 6: 更新 state.yaml + baseline.md 对应项 [ ] → [x] → 进入下一�
 
 ```
 Gate 失败 → 强模型(Opus/Codex xhigh)分析根因
-  → root_cause + category + fix_strategy
-  → 按分类修复 → 重跑 gate
+  → root_cause + category + fix_strategy(可能多个)
+  → 如有多种修复策略 → 展示选项给用户选择
+  → 用户选择后执行修复 → 重跑 gate
   → 最多自动修复 3 轮
   → 仍失败 → status: blocked + 请求人工介入
 ```
@@ -113,6 +114,17 @@ Gate 失败 → 强模型(Opus/Codex xhigh)分析根因
 ```
 
 严重程度: P0(需求不合规/安全/数据丢失) > P1(场景缺失/逻辑错误) > P2(代码异味) > P3(风格)
+
+## Polish 检查点（Full mode 限定）
+
+Gate 通过后、Review 前，由 @step-designer 执行打磨检查：
+- loading 状态和骨架屏
+- 错误提示友好性（用户能理解并行动）
+- 空状态处理（首次使用引导）
+- 过渡动画和视觉反馈
+- 跨设备/响应式验证
+
+Lite mode 跳过此检查点。
 
 ## 防漂移机制
 

@@ -1,0 +1,67 @@
+# Lite Task: agent-enhancement
+mode: lite
+slug: agent-enhancement
+status: in_progress
+goal: "借鉴 Build Any App prompt，增强 6 个 agent 的指令覆盖（challenge assumptions、复杂度评估、Polish 阶段、v2 建议等）"
+non_goal:
+  - "不做 deploy agent（待讨论）"
+  - "不做 #6 通信风格自适应（已排除）"
+gate: standard
+created: "2026-02-15"
+
+changes:
+  - agent: pm.md
+    items:
+      - "Principles +2: 主动挑战不合理假设 + 建议缩小起点"
+  - agent: architect.md
+    items:
+      - "Principles +2: 挑战不合理技术假设 + 诚实说明技术局限性"
+      - "Phase Rules: 输出增加复杂度评估 + 外部依赖清单 + 产品轮廓"
+  - agent: qa.md
+    items:
+      - "Principles +1: 挑战任务拆分中不合理的场景假设"
+  - agent: developer.md
+    items:
+      - "Phase Rules: commit 后输出简短摘要"
+      - "Critical Actions: gate 失败展示修复选项给用户选择"
+  - agent: designer.md
+    items:
+      - "Phase Rules +1: Polish 阶段（Full mode, gate→Review 之间）"
+  - agent: reviewer.md
+    items:
+      - "输出格式增加 Suggested Improvements section"
+      - "输出格式增加 Handoff Checklist（可选）"
+  - file: SKILL.md
+    items:
+      - "gate 失败流程增加选项展示"
+      - "Full mode 增加 Polish 检查点"
+      - "Review 输出增加 v2 建议"
+  - file: WORKFLOW.md
+    items:
+      - "同步以上所有变更的详细说明"
+
+scenarios:
+  - id: S-agent-enhancement-01
+    desc: "PM agent 包含挑战假设和建议缩小起点"
+    type: unit
+  - id: S-agent-enhancement-02
+    desc: "Architect agent 包含复杂度评估、外部依赖、产品轮廓、诚实局限性"
+    type: unit
+  - id: S-agent-enhancement-03
+    desc: "QA agent 包含挑战任务拆分假设"
+    type: unit
+  - id: S-agent-enhancement-04
+    desc: "Developer agent 包含 commit 摘要和 gate 失败选项"
+    type: unit
+  - id: S-agent-enhancement-05
+    desc: "Designer agent 包含 Polish 阶段"
+    type: unit
+  - id: S-agent-enhancement-06
+    desc: "Reviewer agent 包含 v2 建议和 Handoff"
+    type: unit
+  - id: S-agent-enhancement-07
+    desc: "SKILL.md gate 失败流程包含选项展示"
+    type: unit
+  - id: S-agent-enhancement-08
+    desc: "SKILL.md 包含 Polish 检查点"
+    type: unit

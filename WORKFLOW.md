@@ -421,7 +421,15 @@ Step 4: Gate 验证
 
 Step 5: Review + Commit（每完成一个任务都执行）
   ┌────────────────────────────────────────────────┐
-  │ Gate 通过后，立即执行 Review + Commit:           │
+  │ Gate 通过后：                                    │
+  │                                                │
+  │ 0. Polish（Full mode 限定，Lite 跳过）           │
+  │    由 @step-designer 执行打磨检查：              │
+  │    - loading 状态和骨架屏                        │
+  │    - 错误提示友好性（用户能理解并行动）            │
+  │    - 空状态处理（首次使用引导）                   │
+  │    - 过渡动画和视觉反馈                          │
+  │    - 跨设备/响应式验证                           │
   │                                                │
   │ 1. Review（按 Phase 5 规则）                     │
   │    - 第一优先级: 需求合规                        │
@@ -432,6 +440,7 @@ Step 5: Review + Commit（每完成一个任务都执行）
   │ 2. Review 通过 → Commit                         │
   │    git add + commit（提交信息包含 task slug）     │
   │    例: "feat(auth): user-register-api [4/4 S]"  │
+  │    Commit 后输出简短摘要：做了什么、为什么、影响  │
   │                                                │
   │ 3. Review 不通过 → 修复 → 重新 Gate → 重新 Review│
   └────────────────────────────────────────────────┘
@@ -459,9 +468,11 @@ Gate 失败后，**必须**先用高推理能力模型做根因分析，不能�
   输出:
     1. root_cause: "具体原因（一句话）"
     2. category: lint | typecheck | test_logic | test_coverage | build
-    3. fix_strategy: "具体修复策略"
+    3. fix_strategy: ["策略A: ...", "策略B: ..."]  # 可能多个
     4. affected_files: ["file:line", ...]
     5. risk: "修复可能影响的其他模块"
+  
+  如有多种修复策略 → 展示选项给用户选择，而非自动选第一个
 ```
 
 **为什么要用强模型分析：** 直接让执行 agent 看到报错就改，容易改表面不改根因，导致反复失败。先分析再修，一次修对的概率显著更高。
@@ -613,6 +624,14 @@ Review 的**首要职责**是验证"做的东西对不对"（需求合规），�
 
 ### P3 - Low
 ...
+
+### Suggested Improvements (v2 建议)
+- (改进建议列表，不阻断当前交付)
+
+### Handoff Checklist (可选)
+- [ ] 部署就绪？
+- [ ] 用户文档/README 更新？
+- [ ] 维护指南？
 ```
 
 ### Review Agent

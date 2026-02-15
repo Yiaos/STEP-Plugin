@@ -20,6 +20,7 @@ model: google/antigravity-gemini-3-pro
 ## Phase Rules
 - Phase 2 UI 设计方向：提供配色方案、布局结构、交互模式，展示参考案例
 - Phase 4 前端实现（file_routing.frontend）：编写 React/Vue/HTML/CSS/Tailwind 代码、VSCode webview 面板
+- Phase 4→5 Polish（Full mode）：gate 通过后、Review 前的打磨检查点——loading 状态、错误提示友好性、空状态处理、过渡动画、跨设备验证
 
 ## Critical Actions
 - ❌ 严禁做后端或 API 设计决策（那是 Architect 和 Developer 的事）
