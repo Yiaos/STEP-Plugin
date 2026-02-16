@@ -13,7 +13,7 @@ Usage:
 
 Commands:
   create    Create or reuse worktree for change branch
-  finalize  Ask merge+archive, merge to base branch, resolve conflicts, cleanup
+  finalize  Ask merge+archive, merge to base branch, resolve conflicts via LLM, cleanup
 USAGE
 }
 
@@ -81,20 +81,60 @@ current_branch() {
   git rev-parse --abbrev-ref HEAD
 }
 
-remember_step_base_branch() {
-  local feature_branch="$1"
-  local base="$2"
-  git config "branch.${feature_branch}.step-base" "$base"
+meta_dir() {
+  printf ".step/worktrees"
+}
+
+meta_file() {
+  local change_name="$1"
+  printf "%s/%s.meta" "$(meta_dir)" "$change_name"
+}
+
+remember_step_meta() {
+  local change_name="$1"
+  local feature_branch="$2"
+  local base="$3"
+  local wt_path="$4"
+  mkdir -p "$(meta_dir)"
+  cat > "$(meta_file "$change_name")" <<EOF
+change_name=$change_name
+feature_branch=$feature_branch
+base_branch=$base
+worktree_path=$wt_path
+EOF
+}
+
+read_meta_value() {
+  local change_name="$1"
+  local key="$2"
+  local mf
+  mf=$(meta_file "$change_name")
+  if [ ! -f "$mf" ]; then
+    printf ""
+    return
+  fi
+  awk -F'=' -v k="$key" '$1==k {print $2; exit}' "$mf"
 }
 
 step_base_branch() {
-  local feature_branch="$1"
+  local change_name="$1"
   local base
-  base=$(git config --get "branch.${feature_branch}.step-base" || true)
+  base=$(read_meta_value "$change_name" "base_branch")
   if [ -z "$base" ]; then
     base=$(current_branch)
   fi
   printf "%s" "$base"
+}
+
+step_feature_branch() {
+  local change_name="$1"
+  local fallback="$2"
+  local feature
+  feature=$(read_meta_value "$change_name" "feature_branch")
+  if [ -z "$feature" ]; then
+    feature="$fallback"
+  fi
+  printf "%s" "$feature"
 }
 
 choose_conflict_strategy() {
@@ -111,7 +151,124 @@ choose_conflict_strategy() {
     return
   fi
 
-  printf "ours"
+  if [[ "$file_path" == .step/* ]]; then
+    printf "ours"
+    return
+  fi
+
+  printf "manual"
+}
+
+write_conflict_report() {
+  local merge_wt="$1"
+  local change_name="$2"
+  local branch="$3"
+  local base="$4"
+  local resolver_log="$5"
+  local resolver_summary_file="$6"
+  shift 6
+  local report_files=("$@")
+  local report_path
+  report_path="$(repo_root)/.step/conflict-report.md"
+  mkdir -p "$(repo_root)/.step"
+  {
+    echo "# Conflict Report"
+    echo ""
+    echo "- change: $change_name"
+    echo "- feature branch: $branch"
+    echo "- base branch: $base"
+    echo ""
+    echo "## Conflict Files"
+    echo "以下代码冲突已交由大模型解决："
+    echo ""
+    for f in "${report_files[@]}"; do
+      echo "- $f"
+    done
+    echo ""
+    echo "## Resolution Strategy"
+    echo "- 保留双方有效改动，不允许静默丢失功能"
+    echo "- .step 元数据按既定策略自动处理"
+    echo ""
+    if [ -f "$resolver_summary_file" ]; then
+      echo "## LLM Resolution Summary"
+      cat "$resolver_summary_file"
+      echo ""
+    fi
+    if [ -f "$resolver_log" ]; then
+      echo "## LLM Run Log (tail)"
+      tail -n 80 "$resolver_log"
+      echo ""
+    fi
+    echo "## User-facing Summary Requirement"
+    echo "完成后必须向用户说明："
+    echo "1. 哪些文件发生冲突"
+    echo "2. 每个文件保留了哪边改动以及原因"
+    echo "3. gate/scenario 的验证结果"
+  } > "$report_path"
+  echo "📄 冲突报告已生成: $report_path"
+}
+
+run_llm_conflict_resolution() {
+  local merge_wt="$1"
+  local change_name="$2"
+  local branch="$3"
+  local base="$4"
+  local resolver_log="$5"
+  local summary_file="$6"
+  shift 6
+  local conflict_files=("$@")
+
+  mkdir -p "$merge_wt/.step"
+
+  local prompt_file="$merge_wt/.step/conflict-resolution-prompt.md"
+  {
+    echo "你是 STEP 的冲突解决代理。请处理当前 git merge 冲突。"
+    echo ""
+    echo "约束："
+    echo "1. 不能直接丢弃某一侧改动，必须尽量保留双方有效逻辑。"
+    echo "2. 不允许保留冲突标记（<<<<<<< ======= >>>>>>>）。"
+    echo "3. 只处理冲突文件，不做无关修改。"
+    echo "4. 解决后输出总结到 .step/conflict-resolution-summary.md。"
+    echo ""
+    echo "上下文："
+    echo "- change: $change_name"
+    echo "- feature branch: $branch"
+    echo "- base branch: $base"
+    echo ""
+    echo "冲突文件："
+    for f in "${conflict_files[@]}"; do
+      echo "- $f"
+    done
+    echo ""
+    echo "完成后请确保 git diff --name-only --diff-filter=U 为空。"
+  } > "$prompt_file"
+
+  local resolver_cmd="${STEP_CONFLICT_RESOLVER:-}"
+  if [ -n "$resolver_cmd" ]; then
+    (
+      cd "$merge_wt"
+      CONFLICT_FILES="${conflict_files[*]}" \
+      CHANGE_NAME="$change_name" \
+      FEATURE_BRANCH="$branch" \
+      BASE_BRANCH="$base" \
+      bash -lc "$resolver_cmd"
+    ) >"$resolver_log" 2>&1
+  else
+    local prompt
+    prompt=$(cat "$prompt_file")
+    (
+      cd "$merge_wt"
+      opencode run "$prompt"
+    ) >"$resolver_log" 2>&1
+  fi
+
+  if [ ! -f "$summary_file" ]; then
+    {
+      echo "## 自动生成总结"
+      echo "- 已触发 LLM 冲突解决流程"
+      echo "- 未检测到 .step/conflict-resolution-summary.md，使用默认摘要"
+    } > "$summary_file"
+  fi
 }
 
 find_worktree_for_branch() {
@@ -178,9 +335,7 @@ create_worktree() {
       echo "   请手动清理后重试"
       return 1
     fi
-    if [ -z "$(git config --get "branch.${branch}.step-base" || true)" ]; then
-      remember_step_base_branch "$branch" "$base"
-    fi
+    remember_step_meta "$change_name" "$branch" "$base" "$wt_path"
     echo "✅ Worktree exists: $wt_path"
     return 0
   fi
@@ -191,7 +346,7 @@ create_worktree() {
     git worktree add -b "$branch" "$wt_path" "$base"
   fi
 
-  remember_step_base_branch "$branch" "$base"
+  remember_step_meta "$change_name" "$branch" "$base" "$wt_path"
 
   echo "✅ Worktree created"
   echo "   change: $change_name"
@@ -248,17 +403,49 @@ merge_with_conflict_report() {
     fi
 
     echo "⚠️ Merge conflicts detected:"
+    local code_conflicts=()
     local conflict_file=""
     for conflict_file in $conflicts; do
       local strategy
       strategy=$(choose_conflict_strategy "$conflict_file" "$change_name")
-      git -C "$merge_wt" checkout --"$strategy" -- "$conflict_file"
-      git -C "$merge_wt" add "$conflict_file"
-      echo "  - $conflict_file  => used '$strategy'"
+      if [ "$strategy" = "manual" ]; then
+        code_conflicts+=("$conflict_file")
+        echo "  - $conflict_file  => resolve by LLM"
+      else
+        git -C "$merge_wt" checkout --"$strategy" -- "$conflict_file"
+        git -C "$merge_wt" add "$conflict_file"
+        echo "  - $conflict_file  => used '$strategy'"
+      fi
     done
 
-    git -C "$merge_wt" commit -m "merge(step): ${change_name} (auto-resolved conflicts)" >/dev/null 2>&1
-    echo "✅ Conflicts resolved and merged"
+    if [ "${#code_conflicts[@]}" -gt 0 ]; then
+      local resolver_log
+      resolver_log="$merge_wt/.step/conflict-resolution.log"
+      local summary_file
+      summary_file="$merge_wt/.step/conflict-resolution-summary.md"
+
+      if ! run_llm_conflict_resolution "$merge_wt" "$change_name" "$branch" "$base" "$resolver_log" "$summary_file" "${code_conflicts[@]}"; then
+        write_conflict_report "$merge_wt" "$change_name" "$branch" "$base" "$resolver_log" "$summary_file" "${code_conflicts[@]}"
+        [ -n "$temp_merge_wt" ] && git worktree remove "$temp_merge_wt" --force || true
+        echo "❌ 大模型冲突解决失败，请查看 .step/conflict-report.md"
+        return 1
+      fi
+
+      local unresolved
+      unresolved=$(git -C "$merge_wt" diff --name-only --diff-filter=U)
+      if [ -n "$unresolved" ]; then
+        write_conflict_report "$merge_wt" "$change_name" "$branch" "$base" "$resolver_log" "$summary_file" "${code_conflicts[@]}"
+        [ -n "$temp_merge_wt" ] && git worktree remove "$temp_merge_wt" --force || true
+        echo "❌ 大模型处理后仍有未解决冲突，请查看 .step/conflict-report.md"
+        return 1
+      fi
+
+      git -C "$merge_wt" add -A
+      write_conflict_report "$merge_wt" "$change_name" "$branch" "$base" "$resolver_log" "$summary_file" "${code_conflicts[@]}"
+    fi
+
+    git -C "$merge_wt" commit -m "merge(step): ${change_name} (llm-resolved conflicts)" >/dev/null 2>&1
+    echo "✅ Conflicts resolved by LLM and merged"
   fi
 
   if ! archive_change_on_base_worktree "$change_name" "$merge_wt"; then
@@ -273,6 +460,7 @@ merge_with_conflict_report() {
 cleanup_feature_worktree() {
   local branch="$1"
   local wt_path="$2"
+  local change_name="$3"
 
   if [ -d "$wt_path" ]; then
     if [ "$(pwd)" = "$wt_path" ]; then
@@ -285,6 +473,7 @@ cleanup_feature_worktree() {
   fi
 
   git branch -d "$branch" >/dev/null 2>&1 || true
+  rm -f "$(meta_file "$change_name")"
 }
 
 finalize_worktree() {
@@ -296,10 +485,12 @@ finalize_worktree() {
     return 0
   fi
 
+  local default_branch
+  default_branch=$(change_branch "$change_name")
   local branch
-  branch=$(change_branch "$change_name")
+  branch=$(step_feature_branch "$change_name" "$default_branch")
   local base
-  base=$(step_base_branch "$branch")
+  base=$(step_base_branch "$change_name")
   local wt_path
   wt_path="$(worktree_root_abs)/${change_name}"
 
@@ -321,7 +512,7 @@ finalize_worktree() {
   fi
 
   merge_with_conflict_report "$change_name" "$branch" "$base"
-  cleanup_feature_worktree "$branch" "$wt_path"
+  cleanup_feature_worktree "$branch" "$wt_path" "$change_name"
 }
 
 main() {

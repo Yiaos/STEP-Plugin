@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "STEP State",
+  "type": "object",
+  "required": [
+    "project",
+    "current_phase",
+    "current_change",
+    "last_updated",
+    "last_agent",
+    "last_session_summary",
+    "established_patterns",
+    "tasks",
+    "key_decisions",
+    "known_issues",
+    "constraints_quick_ref",
+    "progress_log"
+  ],
+  "properties": {
+    "project": { "type": "string" },
+    "current_phase": { "type": "string" },
+    "current_change": { "type": "string" },
+    "last_updated": { "type": "string" },
+    "last_agent": { "type": "string" },
+    "last_session_summary": { "type": "string" },
+    "established_patterns": { "type": "object" },
+    "tasks": {
+      "type": "object",
+      "required": ["current", "upcoming"],
+      "properties": {
+        "current": { "type": ["string", "null"] },
+        "upcoming": { "type": "array" }
+      }
+    },
+    "key_decisions": { "type": "array" },
+    "known_issues": { "type": "array" },
+    "constraints_quick_ref": { "type": "array" },
+    "progress_log": { "type": "array" }
+  }
+}

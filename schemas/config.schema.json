@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "STEP Config",
+  "type": "object",
+  "required": ["routing", "file_routing", "gate"],
+  "properties": {
+    "routing": { "type": "object" },
+    "file_routing": { "type": "object" },
+    "gate": {
+      "type": "object",
+      "required": ["lint", "typecheck", "test", "build"],
+      "properties": {
+        "lint": { "type": "string" },
+        "typecheck": { "type": "string" },
+        "test": { "type": "string" },
+        "build": { "type": "string" }
+      }
+    }
+  }
+}

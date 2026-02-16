@@ -38,13 +38,12 @@ assert "[S-006-03] AGENTS.md 不包含自主操作规则" bash -c "
 
 # ── Lite Mode ──
 
-# [S-006-04] gate.sh 无 lite 级别（Lite Mode 使用 standard gate）
-assert "[S-006-04] gate.sh 只有 quick/standard/full 三级" bash -c "
+# [S-006-04] gate.sh 使用 lite/full（兼容 quick/standard）
+assert "[S-006-04] gate.sh 使用 lite/full 并兼容旧级别" bash -c "
+  grep -q 'lite' '$SCRIPT_DIR/scripts/gate.sh'
+  grep -q 'full' '$SCRIPT_DIR/scripts/gate.sh'
   grep -q 'quick' '$SCRIPT_DIR/scripts/gate.sh'
   grep -q 'standard' '$SCRIPT_DIR/scripts/gate.sh'
-  grep -q 'full' '$SCRIPT_DIR/scripts/gate.sh'
-  # gate.sh 注释中不应有 lite 级别
-  ! grep -q '^\#.*lite' '$SCRIPT_DIR/scripts/gate.sh'
 "
 
 # [S-006-05] step-init.sh 创建 archive 目录（无 lite 目录）
@@ -69,9 +68,9 @@ assert "[S-006-07] lite-task.yaml 使用语义化 slug (task-slug)" bash -c "
   grep -q 'task-slug' '$SCRIPT_DIR/templates/lite-task.yaml'
 "
 
-# [S-006-08] lite-task.yaml 使用 gate standard（非 lite）
-assert "[S-006-08] lite-task.yaml 使用 gate standard" bash -c "
-  grep -q 'gate.sh standard' '$SCRIPT_DIR/templates/lite-task.yaml'
+# [S-006-08] lite-task.yaml 使用 gate lite
+assert "[S-006-08] lite-task.yaml 使用 gate lite" bash -c "
+  grep -q 'gate.sh lite' '$SCRIPT_DIR/templates/lite-task.yaml'
 "
 
 # [S-006-09] lite-task.yaml 存放路径为 tasks/（非 lite/）
@@ -100,7 +99,7 @@ assert "[S-006-12] WORKFLOW.md 包含批量任务处理" bash -c "
 # [S-006-13] SKILL.md 包含 Lite Mode 精简规则
 assert "[S-006-13] SKILL.md 包含 Lite Mode 精简规则" bash -c "
   grep -q 'Lite Mode' '$SCRIPT_DIR/skills/step/SKILL.md'
-  grep -q 'gate.sh standard' '$SCRIPT_DIR/skills/step/SKILL.md'
+  grep -q 'gate.sh lite' '$SCRIPT_DIR/skills/step/SKILL.md'
 "
 
 # [S-006-14] SKILL.md L3 Review 与 Full Mode 相同

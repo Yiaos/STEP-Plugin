@@ -1,97 +1,52 @@
 #!/bin/bash
 # STEP Gate — 质量门禁
-# Usage: ./scripts/gate.sh [quick|standard|full] [task-slug]
-#   quick    — lint + typecheck only
-#   standard — lint + typecheck + test + scenario coverage (default)
-#   full     — standard + build
-# task-slug 即文件名（不含 .yaml），如: user-register-api
+# Usage: ./scripts/gate.sh [lite|full|quick|standard] [task-slug] [--all]
+#   lite     — lint + typecheck + test + scenario coverage
+#   full     — lite + build
+# Deprecated:
+#   quick    — 已弃用，等价于 lite
+#   standard — 已弃用，等价于 lite
 
-set -e
+set -euo pipefail
 
-LEVEL=${1:-standard}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+CORE_SCRIPT="${SCRIPT_DIR}/step-core.js"
+
+LEVEL_RAW=${1:-lite}
 TASK_ID=${2:-""}
-PASS=true
-RESULTS=""
+RUN_MODE="incremental"
 
-run_check() {
-  local name=$1; local cmd=$2
-  echo "--- $name ---"
-  if eval "$cmd" 2>&1; then
-    echo "  ✅ $name: PASS"
-    RESULTS="${RESULTS}{\"name\":\"$name\",\"status\":\"pass\"},"
-  else
-    echo "  ❌ $name: FAIL"
-    RESULTS="${RESULTS}{\"name\":\"$name\",\"status\":\"fail\"},"
-    PASS=false
-  fi
-}
-
-echo "🚧 Gate (level: $LEVEL, task: ${TASK_ID:-all})"
-echo ""
-
-# 读取 gate 命令配置（如果 config.yaml 存在）
-LINT_CMD="pnpm lint --no-error-on-unmatched-pattern"
-TC_CMD="pnpm tsc --noEmit"
-TEST_CMD="pnpm vitest run"
-BUILD_CMD="pnpm build"
-
-if [ -f ".step/config.yaml" ]; then
-  _lint=$(grep "lint:" .step/config.yaml 2>/dev/null | head -1 | sed 's/.*lint: *//' | tr -d '"' || true)
-  _tc=$(grep "typecheck:" .step/config.yaml 2>/dev/null | head -1 | sed 's/.*typecheck: *//' | tr -d '"' || true)
-  _test=$(grep "test:" .step/config.yaml 2>/dev/null | head -1 | sed 's/.*test: *//' | tr -d '"' || true)
-  _build=$(grep "build:" .step/config.yaml 2>/dev/null | head -1 | sed 's/.*build: *//' | tr -d '"' || true)
-  [ -n "$_lint" ] && LINT_CMD="$_lint"
-  [ -n "$_tc" ] && TC_CMD="$_tc"
-  [ -n "$_test" ] && TEST_CMD="$_test"
-  [ -n "$_build" ] && BUILD_CMD="$_build"
+if [ "${3:-}" = "--all" ]; then
+  RUN_MODE="all"
 fi
 
-# Always run: lint + typecheck
-run_check "lint" "$LINT_CMD"
-run_check "typecheck" "$TC_CMD"
+case "$LEVEL_RAW" in
+  quick)
+    echo "⚠️  gate level 'quick' 已弃用，自动映射到 'lite'"
+    LEVEL="lite"
+    ;;
+  standard)
+    echo "⚠️  gate level 'standard' 已弃用，自动映射到 'lite'"
+    LEVEL="lite"
+    ;;
+  lite|full)
+    LEVEL="$LEVEL_RAW"
+    ;;
+  *)
+    echo "❌ Invalid level: $LEVEL_RAW"
+    echo "Usage: ./scripts/gate.sh [lite|full|quick|standard] [task-slug]"
+    exit 2
+    ;;
+esac
 
-# standard/full: run tests
-if [ "$LEVEL" != "quick" ]; then
-  run_check "test" "$TEST_CMD"
+if [ -z "$TASK_ID" ]; then
+  echo "❌ gate 必须指定 task slug（例如: ./scripts/gate.sh lite user-register-api）"
+  exit 2
 fi
 
-# standard/full: scenario coverage check (if task specified)
-if [ "$LEVEL" != "quick" ] && [ -n "$TASK_ID" ]; then
-  SCENARIO_SCRIPT="./scripts/scenario-check.sh"
-  if [ -f "$SCENARIO_SCRIPT" ]; then
-    run_check "scenario-coverage" "$SCENARIO_SCRIPT $TASK_ID"
-  else
-    echo "⚠️  scenario-check.sh not found, skipping scenario coverage"
-  fi
-fi
-
-# full only: run build
-if [ "$LEVEL" = "full" ]; then
-  run_check "build" "$BUILD_CMD"
-fi
-
-echo ""
-
-# Save evidence if task specified
-if [ -n "$TASK_ID" ]; then
-  mkdir -p .step/evidence
-  TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  cat > ".step/evidence/${TASK_ID}-gate.json" <<EVIDENCE
-{
-  "task_id": "${TASK_ID}",
-  "level": "${LEVEL}",
-  "timestamp": "${TIMESTAMP}",
-  "passed": ${PASS},
-  "results": [${RESULTS%,}]
-}
-EVIDENCE
-  echo "📄 Evidence saved: .step/evidence/${TASK_ID}-gate.json"
-fi
-
-if [ "$PASS" = true ]; then
-  echo "✅ Gate PASSED"
-  exit 0
-else
-  echo "❌ Gate FAILED"
+if [ ! -f "$CORE_SCRIPT" ]; then
+  echo "❌ 缺少核心工具: $CORE_SCRIPT"
   exit 1
 fi
+
+node "$CORE_SCRIPT" gate run --level "$LEVEL" --task "$TASK_ID" --mode "$RUN_MODE" --config .step/config.yaml

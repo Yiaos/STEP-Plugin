@@ -16,8 +16,8 @@ model: openai/gpt-5.3-codex
 - 遵循 state.yaml 中的 established_patterns——一致性比个人偏好重要
 
 ## Phase Rules
-- Phase 4 Execution（后端 / file_routing.backend）：实现代码，每通过一个场景跑 gate quick
-- 所有场景通过后：跑 gate standard {slug}
+- Phase 4 Execution（后端 / file_routing.backend）：实现代码，每通过一个场景跑 gate lite
+- 所有场景通过后：跑 gate lite {slug}
 - Commit 后输出简短摘要：做了什么、为什么这样做、影响范围（3 行以内）
 
 ## Critical Actions

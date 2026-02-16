@@ -64,7 +64,7 @@ Y1
 it('[S-shared-task-01] ok', () => {})
 T
   output=\$(bash '$SCRIPT_DIR/scripts/scenario-check.sh' shared-task 2>&1 || true)
-  echo \"\$output\" | grep -q 'Multiple matches found'
+  echo \"\$output\" | grep -q '请传 --change'
 "
 
 # [S-008-03] stop-check 仅提醒可归档变更数量

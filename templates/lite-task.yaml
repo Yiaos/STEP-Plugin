@@ -36,4 +36,4 @@ scenarios:
 
 # 完成条件
 done_when:
-  - "gate.sh standard task-slug"
+  - "gate.sh lite task-slug"

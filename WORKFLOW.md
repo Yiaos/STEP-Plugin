@@ -438,10 +438,12 @@ Step 3: 写实现（按 config.yaml file_routing 选 agent）
   前端文件（匹配 file_routing.frontend.patterns）→ @step-designer
   后端文件（匹配 file_routing.backend.patterns）→ @step-developer
   未匹配的文件 → @step-developer（默认）
-  → 每实现一个场景，跑 gate quick
+  → 每实现一个场景，跑 gate lite
 
 Step 4: Gate 验证
-  ./scripts/gate.sh standard user-register-api
+  ./scripts/gate.sh lite user-register-api   # 默认增量测试
+  # Review 前或归档前
+  ./scripts/gate.sh full user-register-api --all
   → 包含场景覆盖检查（scenario-check.sh）
   → 通过 → Step 5
   → 失败 → Gate 失败处理流程（见下方）
@@ -518,11 +520,11 @@ Gate 失败后，**必须**先用高推理能力模型做根因分析，不能�
 Gate 分级修复
   │
   ├── lint 失败
-  │     → 自动修复: 按分析结果修复 → 重跑 gate quick
+   │     → 自动修复: 按分析结果修复 → 重跑 gate lite
   │     → 通常不需要人工干预
   │
   ├── typecheck 失败
-  │     → 按分析结果修复 → 重跑 gate quick
+   │     → 按分析结果修复 → 重跑 gate lite
   │     → 如果分析指出涉及接口变更 → 检查是否违反 baseline 约束
   │
   ├── 测试失败
@@ -772,7 +774,7 @@ Post-MVP 的每一次变更都必须：
   │           status: not_run
   │
   ├── 3. TDD 修复（完整 Phase 4 流程）
-  │     → 先写失败测试 → 修复代码 → gate standard → Review + Commit
+   │     → 先写失败测试 → 修复代码 → gate lite → Review + Commit
   │
   └── 4. 回归验证
         → gate full（确保不破坏其他功能）
@@ -863,7 +865,7 @@ scenario-check.sh: grep "\[S-user-register-api-01\]" test/auth/register.test.ts
 匹配到 → covered    匹配不到 → FAIL
 ```
 
-gate.sh 在 standard 级别自动调用 scenario-check.sh。
+gate.sh 在 lite/full 级别自动调用 scenario-check.sh。
 
 ## 测试代码生成策略
 
@@ -1089,7 +1091,7 @@ Session 开始
 - 遵循 established_patterns
 - 测试先行: 按 routing.test_writing 派发 @step-qa 写测试 → 确认 FAIL → 再写实现
 - 场景 ID: 测试名必须包含 [S-{slug}-xx]
-- Gate: `./scripts/gate.sh standard {slug}`
+- Gate: `./scripts/gate.sh lite {slug}`（默认增量；Review 前与归档前必须跑 `full --all`）
 - 完成判定: 所有 scenario pass + gate pass → 才能标 done
 
 ### Gate 失败
@@ -1227,7 +1229,7 @@ LLM 输出（一次性，不分段）:
   │   ├── S-fix-empty-password-02: edge case
   │   └── S-fix-empty-password-03: error case
   ├── 不做: [明确排除项]
-  └── 验证: gate standard
+  └── 验证: gate lite
 
 用户: "可以" / 修改后确认
 
@@ -1264,7 +1266,8 @@ LLM 输出（批量展示，一次确认）:
 ```
 Step 1: 写测试 → 确认全部 FAIL (TDD RED)
 Step 2: 写实现 → 测试通过 (TDD GREEN)
-Step 3: Gate → gate.sh standard {slug}
+Step 3: Gate → gate.sh lite {slug}（默认增量）
+Step 3.5: Review 前强制全量回归 → gate.sh full {slug} --all
          lint + typecheck + test + scenario
 ```
 
@@ -1288,7 +1291,7 @@ L1 用户确认方案后，L2（开发+测试+gate）和 L3（review+commit）**
 与 Full Mode Phase 5 相同的 Review 流程，保证代码质量：
 
 ```
-Gate standard 通过后执行:
+Gate lite 通过后执行:
   1. Code Review（按 Phase 5 规则）
      - 第一优先级: 需求合规
        □ baseline 约束未违反
@@ -1337,7 +1340,8 @@ LLM: "✅ 已完成并提交。请 check 以下变更：
 3. 用户确认后执行 `./scripts/step-worktree.sh finalize {change-name}`：
    - 先合并到“创建该 worktree 时所在分支”
    - 再归档 change
-   - 若冲突，按策略自动解冲突并输出：冲突文件 + 采用策略（ours/theirs）
+   - 若冲突，统一交由大模型解冲突（禁止直接 ours/theirs 丢弃代码）
+   - 生成 `.step/conflict-report.md`，并在回复用户时说明：冲突文件、保留/舍弃逻辑及原因、验证结果
    - 合并完成后清理 feature worktree
 4. 若用户拒绝合并，保留当前分支和 worktree，稍后可手动触发 finalize
 
@@ -1380,7 +1384,7 @@ scenarios:
     status: not_run
 
 done_when:
-  - "gate.sh standard fix-empty-password"
+  - "gate.sh lite fix-empty-password"
 ```
 
 ### 变更归档
@@ -1422,7 +1426,7 @@ mv .step/changes/init/ .step/archive/2026-02-15-init/
 | ADR         | 必须记录        | 按需       |
 | TDD         | ✅ 必须          | ✅ 必须     |
 | BDD 覆盖    | ✅ 100%          | ✅ 100%     |
-| Gate        | standard / full | standard   |
+| Gate        | lite / full | lite   |
 | e2e 测试    | ✅ 必须          | 按需       |
 | Code Review | ✅ 完整审查      | ✅ 完整审查 |
 | 预计时间    | 65-110 min      | 10-15 min  |

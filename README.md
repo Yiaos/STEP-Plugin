@@ -71,7 +71,7 @@ STEP 提供 6 阶段生命周期：
   │  ├── 测试编写: @step-qa (routing.test_writing) ← 对抗性                           │
   │  ├── 后端实现: @step-developer (file_routing.backend)                             │
   │  ├── 前端实现: @step-designer (file_routing.frontend)                             │
-  │  ├── Gate: gate.sh standard {slug} ← 硬保证                                      │
+  │  ├── Gate: gate.sh lite {slug} ← 硬保证                                          │
   │  └── Gate 失败: @step-qa 分析根因 → 分级修复（最多 3 轮）                          │
   │                         │                                                        │
   │                         ▼                                                        │
@@ -157,7 +157,7 @@ bash uninstall.sh --project
 ├── skills/step/SKILL.md    # 核心协议规则
 ├── scripts/
 │   ├── step-init.sh        # 项目初始化
-│   ├── gate.sh             # 质量门禁 (quick/standard/full)
+│   ├── gate.sh             # 质量门禁 (lite/full，兼容 quick/standard)
 │   ├── scenario-check.sh   # BDD 场景覆盖检查
 │   └── step-archive.sh     # 变更归档
 ├── agents/                 # 角色 agent 定义
@@ -308,7 +308,7 @@ Agent 默认模型在 `agents/*.md` frontmatter 中定义。用户可通过 oh-m
 
 ```
 L1 Quick Spec → L2 Execution → L3 Review
-(一次确认)      (TDD+gate standard)  (完整 Code Review)
+(一次确认)      (TDD+gate lite)  (完整 Code Review)
 ```
 
 ### 适用条件
@@ -337,7 +337,7 @@ L1 Quick Spec → L2 Execution → L3 Review
 | TDD | ✅ | ✅ |
 | BDD 覆盖 | ✅ 100% | ✅ 100% |
 | Code Review | ✅ 完整 | ✅ 完整 |
-| Gate | standard / full | standard |
+| Gate | lite / full | lite |
 | 确认轮数 | 多次 | 一次 |
 | 预计时间 | 65-110 min | 10-15 min |
 

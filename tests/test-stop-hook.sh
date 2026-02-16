@@ -75,7 +75,7 @@ INNER
   echo \"\$output\" | grep -q 'WARN'
 "
 
-# [S-002-04] 双项缺失时输出 FAIL
+# [S-002-04] 双项缺失时输出 FAIL 且返回非0
 assert "[S-002-04] 双项缺失时输出 FAIL" bash -c "
   set -e
   tmpdir=\$(mktemp -d)
@@ -90,7 +90,11 @@ progress_log:
     next_action: old
 INNER
   cd \"\$tmpdir\"
+  set +e
   output=\$(bash '$SCRIPT_DIR/scripts/step-stop-check.sh' 2>&1)
+  code=\$?
+  set -e
+  [ \"\$code\" -ne 0 ]
   echo \"\$output\" | grep -q 'FAIL'
 "
 
@@ -112,7 +116,6 @@ assert "[S-002-06] 损坏 YAML 不崩溃" bash -c "
   mkdir -p \"\$tmpdir/.step\"
   echo '{{invalid yaml:::' > \"\$tmpdir/.step/state.yaml\"
   cd \"\$tmpdir\"
-  # 脚本应该能运行完成（不崩溃），输出 WARN
   output=\$(bash '$SCRIPT_DIR/scripts/step-stop-check.sh' 2>&1 || true)
   echo \"\$output\" | grep -qi 'warn\|skip\|fail'
 "

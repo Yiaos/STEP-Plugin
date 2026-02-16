@@ -41,7 +41,7 @@ uninstall_project() {
   rm -rf .step && echo "  Removed .step/"
 
   # 仅移除 STEP 部署的脚本（检查是否是 STEP 生成的）
-  for f in scripts/gate.sh scripts/scenario-check.sh; do
+  for f in scripts/gate.sh scripts/scenario-check.sh scripts/step-core.js; do
     if [ -f "$f" ] && head -3 "$f" | grep -q "STEP"; then
       rm -f "$f" && echo "  Removed $f"
     fi

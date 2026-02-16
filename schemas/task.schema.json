@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "STEP Task",
+  "type": "object",
+  "required": ["id", "title", "mode", "status", "scenarios", "done_when"],
+  "properties": {
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "mode": { "type": "string", "enum": ["full", "lite"] },
+    "status": { "type": "string" },
+    "scenarios": {
+      "oneOf": [
+        { "type": "array" },
+        { "type": "object" }
+      ]
+    },
+    "done_when": { "type": "array" }
+  }
+}

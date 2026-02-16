@@ -34,8 +34,8 @@ assert "[S-010-02] WORKFLOW/SKILL 包含 worktree 流程" bash -c "
   grep -q 'step-worktree.sh finalize' '$SCRIPT_DIR/skills/step/SKILL.md'
 "
 
-# [S-010-03] step-worktree.sh 可创建并清理 worktree，冲突时输出解决策略
-assert "[S-010-03] step-worktree 创建/合并/冲突报告/清理" bash -c "
+# [S-010-03] step-worktree.sh 发生代码冲突时调用 LLM 解决并输出报告
+assert "[S-010-03] step-worktree 代码冲突交给 LLM 解决" bash -c "
   set -e
   tmpdir=\$(mktemp -d)
   trap 'rm -rf \"\$tmpdir\"' EXIT
@@ -70,12 +70,15 @@ CFG
   git add app.txt
   git commit -m 'main change' >/dev/null 2>&1
 
-  output=\$(bash scripts/step-worktree.sh finalize demo-change --yes 2>&1)
-  echo \"\$output\" | grep -q 'Merge conflicts detected'
-  echo \"\$output\" | grep -q 'app.txt'
-  echo \"\$output\" | grep -q "used 'ours'"
+  export STEP_CONFLICT_RESOLVER='git checkout --ours app.txt >/dev/null 2>&1 && cp app.txt .step/ours.txt && git checkout --theirs app.txt >/dev/null 2>&1 && cp app.txt .step/theirs.txt && cat .step/ours.txt .step/theirs.txt > app.txt && printf "## 解决说明\n- app.txt 保留了 main-v2 与 feature-v1 两侧改动\n" > .step/conflict-resolution-summary.md'
 
-  grep -q '^main-v2$' app.txt
+  output=\$(bash scripts/step-worktree.sh finalize demo-change --yes 2>&1)
+  echo \"\$output\" | grep -q 'Conflicts resolved by LLM'
+  [ -f .step/conflict-report.md ]
+  grep -q 'LLM Resolution Summary' .step/conflict-report.md
+  grep -q 'app.txt' .step/conflict-report.md
+  grep -q 'main-v2' app.txt
+  grep -q 'feature-v1' app.txt
   [ ! -d .worktrees/demo-change ]
 "
 

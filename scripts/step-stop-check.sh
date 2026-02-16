@@ -4,6 +4,7 @@
 # 输出: [STEP STOP CHECK] PASS / WARN / FAIL / SKIP
 
 STATE_FILE=".step/state.yaml"
+STRICT_MODE="${STEP_STOP_STRICT:-true}"
 
 # 无 state.yaml → SKIP
 if [ ! -f "$STATE_FILE" ]; then
@@ -70,6 +71,9 @@ if [ "$ISSUES" -eq 0 ]; then
   exit 0
 elif [ "$ISSUES" -ge 2 ]; then
   echo "[STEP STOP CHECK] FAIL: last_updated 和 progress_log 都需要更新"
+  if [ "$STRICT_MODE" = "true" ]; then
+    exit 1
+  fi
   exit 0
 else
   # 1 个 WARN 已经输出了
