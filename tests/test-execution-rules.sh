@@ -1,5 +1,5 @@
 #!/bin/bash
-# T-004 测试：SKILL.md 执行规则增强（2-Action Rule + Pre-decision Read）
+# T-004 测试：SKILL.md 执行规则增强（Pre-decision Read + Hook 注入）
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
 SKILL="$SCRIPT_DIR/skills/step/SKILL.md"
 PASS=0; FAIL=0; TOTAL=0
@@ -16,9 +16,9 @@ assert() {
 
 echo "=== T-004: SKILL.md 执行规则增强 ==="
 
-# [S-004-01] Phase 4 包含进度更新频率
-assert "[S-004-01] Phase 4 包含进度更新频率" bash -c "
-  sed -n '/### Phase 4/,/### Phase 5/p' '$SKILL' | grep -q '2.*工具调用\|进度更新'
+# [S-004-01] Phase 4 包含 gate 验证
+assert "[S-004-01] Phase 4 包含 gate 验证" bash -c "
+  sed -n '/### Phase 4/,/### Phase 5/p' '$SKILL' | grep -q 'gate\|Gate'
 "
 
 # [S-004-02] 硬规则包含 Pre-decision Read

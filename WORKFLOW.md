@@ -60,6 +60,7 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义文件（`STEP/ag
 ├── state.yaml                 # Phase 3+ 持续更新：项目状态机
 ├── changes/                   # 所有变更（初始 + 后续）统一管理
 │   ├── init/                  # 初始开发
+│   │   ├── findings.md        # 探索发现（Phase 0/2，可选）
 │   │   ├── spec.md            # 需求说明（Phase 1 产出）
 │   │   ├── design.md          # 技术方案（Phase 2 产出）
 │   │   └── tasks/             # 任务 + BDD 场景（Phase 3 产出）
@@ -125,6 +126,14 @@ LLM: 回应用户的问题，提供分析。
 - 用户说"差不多了"或"可以继续了"
 
 Phase 0 **不需要** 完美的需求文档。它的输出是"双方对方向达成共识"。
+
+### findings.md（可选）
+
+如果探索过程中产生了关键发现（现有代码结构、技术约束、性能数据等），写入 `.step/changes/{change}/findings.md`。这些事实性信息会在 Session 恢复时自动注入上下文，避免重复调研。
+
+- **什么写 findings**：事实性发现（"数据库连接池上限 5"、"这个库不支持 SSR"）
+- **什么写 decisions**：重大发现应提炼为 ADR 写入 `decisions.md`（"选了 A 不选 B，因为 findings 发现 B 不支持 X"）
+- **什么写 baseline**：跨变更的通用约束应沉淀到 `baseline.md` Constraints
 
 ---
 
@@ -440,18 +449,21 @@ Step 5: Review + Commit（每完成一个任务都执行）
   │    - 过渡动画和视觉反馈                          │
   │    - 跨设备/响应式验证                           │
   │                                                │
-  │ 1. Review（按 Phase 5 规则）                     │
-  │    - 第一优先级: 需求合规                        │
-  │      对照 baseline → PRD → BDD 场景 → ADR       │
-  │    - 第二优先级: 代码质量                        │
-  │      SOLID + 安全 + 性能 + 边界条件              │
+  │ 1. Review 第一轮: Spec Compliance（需求合规）      │
+  │    对照 baseline → PRD → BDD 场景 → ADR          │
+  │    展示 gate + scenario-check 最新输出作为证据    │
+  │    → 不通过 → REQUEST_CHANGES，不进入第二轮       │
   │                                                │
-  │ 2. Review 通过 → Commit                         │
+  │ 2. Review 第二轮: Code Quality（代码质量）        │
+  │    SOLID + 安全 + 性能 + 边界条件                │
+  │    仅在第一轮通过后执行                          │
+  │                                                │
+  │ 3. Review 通过 → Commit                         │
   │    git add + commit（提交信息包含 task slug）     │
   │    例: "feat(auth): user-register-api [4/4 S]"  │
   │    Commit 后输出简短摘要：做了什么、为什么、影响  │
   │                                                │
-  │ 3. Review 不通过 → 修复 → 重新 Gate → 重新 Review│
+  │ 4. Review 不通过 → 修复 → 重新 Gate → 重新 Review│
   └────────────────────────────────────────────────┘
 
 Step 6: 更新状态
@@ -544,15 +556,19 @@ Gate 分级修复
 **模型：** 可选（Claude Opus / Codex / 其他），用户根据需要指定  
 **触发时机：** 每完成一个任务（task）都可以触发 Review + Commit，不必等全部完成
 
-### Review 优先级：需求合规 > 代码质量
+### Review 两阶段：Spec Compliance → Code Quality
 
-Review 的**首要职责**是验证"做的东西对不对"（需求合规），其次才是"代码写得好不好"（代码质量）。
+Review 分两轮执行。第一轮不通过则阻断，**不进入第二轮**。
 
-**审查步骤（固定流程，按优先级排序）：**
+**第一轮：Spec Compliance（需求合规 — 阻断）**
+
+<HARD-GATE>
+第一轮未通过前，禁止进行代码质量审查。spec 都不达标时讨论代码风格没有意义。
+</HARD-GATE>
 
 ```
 ═══════════════════════════════════════
-  第一优先级：需求合规（MUST，不通过则阻断）
+  第一轮：Spec Compliance（不通过则阻断）
 ═══════════════════════════════════════
 
 1. Baseline 合规
@@ -579,24 +595,35 @@ Review 的**首要职责**是验证"做的东西对不对"（需求合规），�
    □ 有没有"假测试"（expect(true).toBe(true)）？
    □ edge case 是否有效（真的传了空值/错误值）？
 
+6. 验证铁律
+   □ 声称"需求合规通过"前，必须展示 gate + scenario-check 最新输出
+   □ 没有新鲜证据的通过声明等于撒谎
+```
+
+→ 通过 → 明确声明"第一轮 Spec Compliance 通过"+ 证据引用 → 进入第二轮
+→ 不通过 → 输出 P0 问题列表 → REQUEST_CHANGES → **停止，不进入第二轮**
+
+**第二轮：Code Quality（代码质量 — 仅在第一轮通过后执行）**
+
+```
 ═══════════════════════════════════════
-  第二优先级：代码质量（参考 code-review-expert）
+  第二轮：Code Quality（仅在第一轮通过后）
 ═══════════════════════════════════════
 
-6. SOLID + Architecture Smells
+7. SOLID + Architecture Smells
    □ SRP: 模块职责是否单一？
    □ OCP: 是否通过扩展而非修改来增加行为？
    □ LSP: 子类是否满足基类契约？
    □ ISP: 接口是否最小化？
    □ DIP: 高层是否依赖抽象？
 
-7. Security & Reliability
+8. Security & Reliability
    □ XSS、注入（SQL/NoSQL/命令）、SSRF、路径穿越
    □ AuthZ/AuthN 缺口、多租户隔离
    □ 密钥泄露、日志中的敏感信息
    □ 竞态条件、TOCTOU、缺少锁
 
-8. Code Quality
+9. Code Quality
    □ 错误处理：吞异常、过宽 catch、缺失错误处理
    □ 性能：N+1 查询、热路径计算密集、缺失缓存
    □ 边界条件：null/undefined、空集合、数值边界、off-by-one

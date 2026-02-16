@@ -67,6 +67,12 @@ if [ -n "$CURRENT_CHANGE" ] && [ -f ".step/changes/${CURRENT_CHANGE}/spec.md" ];
   SPEC_CONTENT=$(cat ".step/changes/${CURRENT_CHANGE}/spec.md" 2>&1 || echo "")
 fi
 
+# 读取当前变更的 findings.md（如果存在）
+FINDINGS_CONTENT=""
+if [ -n "$CURRENT_CHANGE" ] && [ -f ".step/changes/${CURRENT_CHANGE}/findings.md" ]; then
+  FINDINGS_CONTENT=$(cat ".step/changes/${CURRENT_CHANGE}/findings.md" 2>&1 || echo "")
+fi
+
 # 读取 baseline
 BASELINE_CONTENT=""
 if [ -f ".step/baseline.md" ]; then
@@ -88,15 +94,21 @@ fi
 STATE_ESC=$(escape_for_json "$STATE_CONTENT")
 TASK_ESC=$(escape_for_json "$TASK_CONTENT")
 SPEC_ESC=$(escape_for_json "$SPEC_CONTENT")
+FINDINGS_ESC=$(escape_for_json "$FINDINGS_CONTENT")
 BASELINE_ESC=$(escape_for_json "$BASELINE_CONTENT")
 ROUTING_ESC=$(escape_for_json "$ROUTING_CONTENT")
 SKILL_ESC=$(escape_for_json "$SKILL_CONTENT")
+
+FINDINGS_SECTION_ESC=""
+if [ -n "$FINDINGS_CONTENT" ]; then
+  FINDINGS_SECTION_ESC="\n\n## 当前变更 findings\n${FINDINGS_ESC}"
+fi
 
 cat <<EOF
 {
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
-    "additionalContext": "<STEP_PROTOCOL>\nSTEP 协议已激活。\n\n## 核心规则\n${SKILL_ESC}\n\n## state.yaml\n${STATE_ESC}\n\n## 当前变更 spec\n${SPEC_ESC}\n\n## 当前任务\n${TASK_ESC}\n\n## Baseline (摘要)\n${BASELINE_ESC}\n\n## Agent 路由表\n${ROUTING_ESC}\n\n## 恢复指令\n1. 根据 current_phase 和 routing 表选择对应 agent\n2. 输出状态行: 📍 Phase X | Change: {name} | Task | Status | Next\n3. 从 next_action 继续工作\n4. Phase 4 按 file_routing 的 patterns 决定用 @step-developer 或 @step-designer\n5. 对话结束必须更新 state.yaml\n</STEP_PROTOCOL>"
+    "additionalContext": "<STEP_PROTOCOL>\nSTEP 协议已激活。\n\n## 核心规则\n${SKILL_ESC}\n\n## state.yaml\n${STATE_ESC}\n\n## 当前变更 spec\n${SPEC_ESC}${FINDINGS_SECTION_ESC}\n\n## 当前任务\n${TASK_ESC}\n\n## Baseline (摘要)\n${BASELINE_ESC}\n\n## Agent 路由表\n${ROUTING_ESC}\n\n## 恢复指令\n1. 根据 current_phase 和 routing 表选择对应 agent\n2. 输出状态行: 📍 Phase X | Change: {name} | Task | Status | Next\n3. 从 next_action 继续工作\n4. Phase 4 按 file_routing 的 patterns 决定用 @step-developer 或 @step-designer\n5. 对话结束必须更新 state.yaml\n</STEP_PROTOCOL>"
   }
 }
 EOF

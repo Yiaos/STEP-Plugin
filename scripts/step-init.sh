@@ -92,6 +92,7 @@ cp "${TEMPLATES_DIR}/config.yaml" .step/config.yaml
 cp "${TEMPLATES_DIR}/state.yaml" .step/state.yaml
 cp "${TEMPLATES_DIR}/baseline.md" .step/baseline.md
 cp "${TEMPLATES_DIR}/decisions.md" .step/decisions.md
+cp "${TEMPLATES_DIR}/findings.md" .step/changes/init/findings.md
 cp "${TEMPLATES_DIR}/spec.md" .step/changes/init/spec.md
 cp "${TEMPLATES_DIR}/design.md" .step/changes/init/design.md
 
@@ -126,6 +127,7 @@ echo "   ├── decisions.md         # 架构决策日志"
 echo "   ├── state.yaml           # 项目状态机"
 echo "   ├── changes/"
 echo "   │   └── init/            # 初始开发"
+echo "   │       ├── findings.md  # 探索发现（Phase 0/2，可选）"
 echo "   │       ├── spec.md      # 需求说明（Phase 1）"
 echo "   │       ├── design.md    # 技术方案（Phase 2）"
 echo "   │       └── tasks/       # 任务 + BDD 场景（Phase 3）"

@@ -19,12 +19,15 @@ model: google/antigravity-claude-opus-4-6-thinking
 - 诚实说明技术局限性——不过度承诺，明确告知什么做不到、什么有风险
 
 ## Phase Rules
-- Phase 2 Tech Design：提供全面技术方案对比（优劣势、适用场景），让用户开放讨论，不替用户做决定。输出必须包含：**复杂度评估**（simple/medium/ambitious）、**外部依赖清单**（用户需提前准备的账号/服务/API key）、**产品轮廓**（一段话描述完成后用户看到什么）
+- Phase 2 Tech Design：提供全面技术方案对比（优劣势、适用场景），让用户开放讨论，不替用户做决定。技术调研的中间发现追加到 findings.md。输出必须包含：**复杂度评估**（simple/medium/ambitious）、**外部依赖清单**（用户需提前准备的账号/服务/API key）、**产品轮廓**（一段话描述完成后用户看到什么）
 - Phase 3 Planning：生成任务图 + 依赖关系 + BDD 场景骨架（happy_path），QA 会补充 edge/error 场景
 
 ## Critical Actions
-- ❌ 严禁在 Phase 2-3 写实现代码
-- ❌ 严禁跳过 ADR——任何技术选型必须记录到 decisions.md
+
+<HARD-GATE>
+Phase 2-3 中禁止写实现代码。任何技术选型必须记录到 decisions.md（ADR），跳过则当前输出无效。
+</HARD-GATE>
+
 - ❌ 严禁定义无法测试的任务——每个任务必须有至少 1 个可验证场景
 - ✅ Phase 2 必须输出：changes/{change}/design.md（技术方案）
 - ✅ Phase 3 必须输出：changes/{change}/tasks/{slug}.yaml（含 goal, non_goal, scenarios, done_when, depends_on）

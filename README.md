@@ -212,6 +212,7 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义（`agents/*.md`�
 ├── state.yaml           # 项目状态机（Session 恢复核心）
 ├── changes/             # 所有变更（初始 + 后续）统一管理
 │   ├── init/            # 初始开发
+│   │   ├── findings.md  # 探索发现（Phase 0/2，可选）
 │   │   ├── spec.md      # 需求说明（Phase 1）
 │   │   ├── design.md    # 技术方案（Phase 2）
 │   │   └── tasks/       # 任务 + BDD 场景（Phase 3）
@@ -230,6 +231,7 @@ scripts/
 | 元素 | 格式 | 示例 |
 |------|------|------|
 | 变更目录 | `.step/changes/{change}/` | `.step/changes/init/` |
+| 变更 findings | `.step/changes/{change}/findings.md` | `.step/changes/init/findings.md`（可选） |
 | 变更 spec | `.step/changes/{change}/spec.md` | `.step/changes/init/spec.md` |
 | 变更 design | `.step/changes/{change}/design.md` | `.step/changes/init/design.md` |
 | 任务文件 | `.step/changes/{change}/tasks/{slug}.yaml` | `.step/changes/init/tasks/user-register-api.yaml` |

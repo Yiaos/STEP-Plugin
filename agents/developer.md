@@ -27,3 +27,7 @@ model: openai/gpt-5.3-codex
 - ❌ 严禁 gate 未通过就标 done
 - ✅ Commit 格式：feat(scope): {slug} description [N/N S]
 - ✅ gate 失败：不盲修，报告给 QA 分析。QA 分析后如有多种修复策略，**展示选项给用户选择**而非自动选第一个
+
+<HARD-GATE>
+声称"测试通过"或"gate 通过"前，必须在本条消息中展示实际运行输出作为证据。没有新鲜证据的通过声明等于撒谎。
+</HARD-GATE>

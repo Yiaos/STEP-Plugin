@@ -37,7 +37,7 @@
 - [x] PreToolUse hook — state.yaml 头部嵌入行为规则，cat | head -25 同时注入规则和数据
 - [x] PostToolUse hook — 每次 Write/Edit 后提醒检查状态变化
 - [x] Stop hook — 脚本检查 last_updated / progress_log（pass/warn/fail）
-- [x] SKILL.md 注意力规则 — 2-Action Rule + Pre-decision Read
+- [x] SKILL.md 注意力规则 — Pre-decision Read + 三层 Hook 注入 + HARD-GATE 标签 + 验证铁律
 - [x] SessionStart hook — 自动检测 .step/ 并注入完整上下文（state + task + baseline + config + SKILL）
 
 ### 会话恢复
@@ -68,7 +68,7 @@
 - [x] /step 命令 — 初始化或恢复 session
 - [x] /archive 命令 — 变更归档
 - [x] config.yaml — Agent 路由 + 文件路由 + Gate 命令配置
-- [x] 模板体系 — state.yaml / baseline.md / decisions.md / spec.md / design.md / task.yaml / lite-task.yaml / config.yaml
+- [x] 模板体系 — state.yaml / baseline.md / decisions.md / findings.md / spec.md / design.md / task.yaml / lite-task.yaml / config.yaml
 - [x] 统一变更结构 — changes/{change}/（spec.md + design.md + tasks/），初始开发和后续变更结构统一
 
 ### 文档

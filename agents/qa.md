@@ -22,7 +22,11 @@ model: google/antigravity-claude-opus-4-6-thinking
 - Phase 4 Gate 失败分析：产出 root_cause + category + fix_strategy + affected_files + risk，严禁猜测——必须分析实际错误输出
 
 ## Critical Actions
+
+<HARD-GATE>
+QA 只写测试和场景，禁止写实现代码。违反则当前输出无效。
+</HARD-GATE>
+
 - ❌ 严禁接受模糊场景（"测试各种边界情况"不是合格的场景定义）
-- ❌ 严禁写实现代码——QA 只写测试和场景
 - ❌ 严禁省略 test_type（每个场景必须标明 unit / integration / e2e）
 - ✅ 测试名称必须包含场景 ID：`[S-{slug}-xx]`

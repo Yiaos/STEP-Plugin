@@ -86,13 +86,14 @@ assert "[S-003-06] STEP 项目自身被正确识别" bash -c "
   echo \"\$output\" | head -1 | grep -q 'existing'
 "
 
-# [S-003-07] 初始化会创建 init/spec.md 和 init/design.md
-assert "[S-003-07] 初始化创建 spec.md 和 design.md" bash -c "
+# [S-003-07] 初始化会创建 init/findings.md + spec.md + design.md
+assert "[S-003-07] 初始化创建 findings/spec/design" bash -c "
   set -e
   tmpdir=\$(mktemp -d)
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
   bash '$SCRIPT_DIR/scripts/step-init.sh' >/dev/null 2>&1
+  [ -f .step/changes/init/findings.md ]
   [ -f .step/changes/init/spec.md ]
   [ -f .step/changes/init/design.md ]
 "
