@@ -149,7 +149,7 @@ bash uninstall.sh --project
 ```
 ~/.config/opencode/tools/step/
 ├── commands/
-│   ├── init.md             # /step/init 命令
+│   ├── step.md             # /step 命令
 │   ├── status.md           # /step/status 诊断命令
 │   └── archive.md          # /archive 归档命令
 ├── hooks/
@@ -191,7 +191,7 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义（`agents/*.md`�
 
 ```
 # 在任何项目中启动 STEP
-/step/init
+/step
 
 # 新项目 → 自动初始化 .step/ 目录 → 进入 Phase 0
 # 已有项目 → 自动恢复到上次中断的阶段和任务
@@ -206,7 +206,7 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义（`agents/*.md`�
 
 ## 6. 项目文件结构（Project Files）
 
-`/step/init` 会在项目中创建：
+`/step` 会在项目中创建：
 
 ```
 .step/
@@ -315,7 +315,7 @@ Agent 默认模型在 `agents/*.md` frontmatter 中定义。用户可通过 oh-m
 L1 Quick Spec → L2 Execution → L3 Review
 (一次确认)      (TDD+gate lite)  (完整 Code Review)
 
-Quick 模式用于小改动：`/step/init quick`，由模型判断是否适用；执行中可升级到 lite/full。
+Quick 模式用于小改动：`/step quick`，由模型判断是否适用；执行中可升级到 lite/full。
 ```
 
 ### 适用条件
@@ -328,13 +328,13 @@ Quick 模式用于小改动：`/step/init quick`，由模型判断是否适用�
 
 ```bash
 # 显式指定 Lite Mode
-/step/init lite
+/step lite
 
 # 显式指定 Full Mode
-/step/init full
+/step full
 
 # 自动检测（根据输入复杂度判断）
-/step/init
+/step
 ```
 
 ### 核心保留 vs 简化

@@ -1,0 +1,10 @@
+{
+  "name": "step-protocol",
+  "version": "0.1.0",
+  "private": true,
+  "description": "STEP protocol scripts and tooling",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "yaml": "^2.8.1"
+  }
+}

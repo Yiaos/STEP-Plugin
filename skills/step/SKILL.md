@@ -277,7 +277,7 @@ L1 Quick Spec → L2 Execution → L3 Review
 
 ### 触发
 - 自动：短输入 + 范围关键词(fix/修复/加个/改下) + 无架构词 + 有 baseline
-- 显式：`/step/init quick` / `lite` / `full`
+- 显式：`/step quick` / `lite` / `full`
 
 Quick 模式由模型语义判断是否适用，不使用文件数/关键词硬约束；
 若发现风险上升，必须升级到 lite/full，并记录 `escalation_reason`。

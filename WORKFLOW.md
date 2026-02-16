@@ -699,7 +699,7 @@ Phase 5 Review 通过后，用户可选择触发部署策略建议。由 `@step-
 **触发方式：**
 - 用户说"部署"/"上线"/"deploy"
 - Handoff Checklist 中勾选"部署就绪"
-- `/step/init deploy`（如果项目需要）
+- `/step deploy`（如果项目需要）
 
 **输出内容：**
 1. 项目类型和规模评估
@@ -903,11 +903,11 @@ Layer 4: 独立审查    ← Phase 5 QA（需求合规 + 代码质量）
 
 ## Hook 与 Command 实现（自动化执行）
 
-### `/step/init` 命令
+### `/step` 命令
 
 像 `/brainstorm` 和 `/plan` 一样，STEP 通过 opencode 的自定义命令触发：
 
-**命令文件：** `~/.config/opencode/commands/step/init.md`
+**命令文件：** `~/.config/opencode/commands/step/step.md`
 
 ```markdown
 ---
@@ -1058,7 +1058,7 @@ Session 开始
   │     │
   │     └── 不存在 → 不注入（正常 session）
   │
-  └── 用户输入 /step/init
+  └── 用户输入 /step
         │
         ├── .step/ 不存在 → 初始化 → Phase 0
         │
@@ -1121,7 +1121,7 @@ Session 开始
 
 ## 初始化脚本
 
-初始化逻辑在 `scripts/step-init.sh` 中实现，由 `/step/init` 命令调用。主要功能：
+初始化逻辑在 `scripts/step-init.sh` 中实现，由 `/step` 命令调用。主要功能：
 
 1. **项目检测** — `detect_project()` 扫描 16 种包管理器/清单文件 + 6 种工具目录，判断是已有项目还是绿地项目
 2. **创建目录** — `.step/changes/init/tasks/`, `.step/archive/`, `.step/evidence/`, `scripts/`
@@ -1205,8 +1205,8 @@ Lite Mode 适用于**满足以下全部条件**的任务：
 ### 触发方式
 
 1. **自动检测**：输入描述短（< 100 字）+ 范围关键词（fix, 修复, 加个, 改下, tweak, patch）+ 无架构关键词（架构, 重构, 迁移, redesign）+ 已有 baseline
-2. **显式指定**：`/step/init quick`、`/step/init lite`
-3. **强制 Full**：`/step/init full` 或在对话中说"用完整模式"
+2. **显式指定**：`/step quick`、`/step lite`
+3. **强制 Full**：`/step full` 或在对话中说"用完整模式"
 
 Quick 模式不使用硬阈值（如文件数或关键词），由模型基于语义判断是否适用；
 若执行中发现风险高于预期，必须升级到 lite/full，并记录升级原因。
@@ -1458,11 +1458,11 @@ mv .step/changes/init/ .step/archive/2026-02-15-init/
 | 1   | Phase 0/2 应该是开放式讨论                   | Phase 0/2 改为"用户主导的开放式讨论"，Phase 1/3 才用选择题确认细节                          |
 | 2   | Post-MVP 变更和 bug 修复                     | 新增"Post-MVP"章节：统一变更目录（spec + design + tasks）覆盖新增功能、Hotfix、约束变更      |
 | 3   | 场景规则是 BDD                               | 场景 = BDD Given/When/Then = 行为规格。测试类型由 test_type 字段指定                        |
-| 4   | 用 hook 保证规则生效                         | 新增 SessionStart hook（自动注入 state.yaml 到上下文）+ `/step/init` 命令                   |
+| 4   | 用 hook 保证规则生效                         | 新增 SessionStart hook（自动注入 state.yaml 到上下文）+ `/step` 命令                        |
 | 5   | 统一使用 opencode，删除 tool                 | config.yaml 改为 routing（agent 路由）+ file_routing（文件分流）+ gate（命令）              |
 | 6   | review 模型可选，规则参考 code-review-expert | 创建 step-reviewer agent，参考 code-review-expert 实现。需求合规为第一优先级                |
 | 7   | gate 失败如何处理                            | 新增"Gate 失败处理流程"：Opus/Codex xhigh 先分析根因 → 分类修复最多 3 轮 → 仍失败标 blocked |
-| 8   | 初始化做成 /step 命令                        | 创建 `commands/step/init.md`，检测 .step/ 是否存在：不存在则初始化，存在则恢复              |
+| 8   | 初始化做成 /step 命令                        | 创建 `commands/step/step.md`，检测 .step/ 是否存在：不存在则初始化，存在则恢复              |
 | 9   | 测试代码模型可配置                           | routing.test_writing 配置测试编写 agent（默认 @step-qa），与实现 agent 不同形成对抗性       |
 ### `/step/status` 命令
 

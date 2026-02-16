@@ -3,9 +3,9 @@ description: "初始化或恢复 STEP 协议（Stateful Task Execution Protocol�
 ---
 
 支持模式：
-- `/step/init quick`：小改动快速路径（由模型判断是否适用，可中途升级）
-- `/step/init lite`：轻量任务路径
-- `/step/init full`：完整流程路径
+- `/step quick`：小改动快速路径（由模型判断是否适用，可中途升级）
+- `/step lite`：轻量任务路径
+- `/step full`：完整流程路径
 
 说明：Quick 不使用文件数/关键词硬阈值，由模型按语义判断。
 
