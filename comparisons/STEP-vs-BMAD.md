@@ -1,107 +1,58 @@
-# STEP vs BMAD-METHOD 详细对比
+# STEP vs BMAD（基于当前实现）
 
-> 基于 STEP baseline v2（2026-02-16）重新对比。
+## 一句话结论
 
-## 1. 定位差异
+BMAD 更像“团队协作与迭代管理框架”，STEP 更像“AI 代理驱动的软件交付协议”。
 
-**STEP**：全生命周期开发协议。强调"可执行、可验证、可恢复"——通过脚本门禁、角色对抗、Hook 注入和状态机形成多层保证。
+## 关键差异
 
-**BMAD**：AI 驱动的敏捷开发框架。强调"规模自适应、角色丰富、流程模板化"——通过大量专用角色与工作流覆盖从分析到实现的全过程。
+### 1) 主体对象不同
 
-一句话：STEP 是"硬保证的工程协议"，BMAD 是"角色驱动的流程生态"。
+- BMAD：面向人类团队协作，强调 backlog、迭代节奏、角色协同。
+- STEP：面向“人 + AI 代理”协作，强调可执行 gate 和上下文恢复。
 
-## 2. 生命周期覆盖
+### 2) 流程粒度不同
 
-| 阶段 | STEP | BMAD | 差异 |
-|------|------|------|------|
-| 需求发现 | Phase 0 Discovery | Analysis + product-brief | STEP 有明确阶段入口；BMAD 由工作流引导 |
-| 需求定义 | Phase 1 → baseline 确认 | create-prd | STEP 有用户确认契约；BMAD 的 PRD 是参考文档 |
-| 技术设计 | Phase 2 → ADR | create-architecture | STEP 记录 ADR；BMAD 多角色协作推进 |
-| 任务规划 | Phase 3 → BDD 场景矩阵 | epics/stories/sprint | STEP 绑定场景 ID；BMAD 粒度更细 |
-| 执行编码 | Phase 4（TDD + gate 检查点） | dev-story | STEP 有脚本级门禁；BMAD 依赖流程引导 |
-| 代码审查 | Phase 5 Review（Reviewer agent） | code-review workflow | STEP 有"需求合规 > 代码质量"的固定步骤 |
-| Session 恢复 | SessionStart Hook 全自动 | ❌ 需人工重新加载 | STEP 独有优势 |
-| Post-MVP | 新增功能变更 / Hotfix / 约束变更 / Baseline 整理 | sprint 迭代 | STEP 有审计链；BMAD 更灵活 |
-| 注意力管理 | 三层 Hook + 2-Action Rule | ❌ | STEP 独有 |
+- BMAD：宏观到中观管理（版本、里程碑、迭代治理）。
+- STEP：中观到微观执行（task 场景、测试先行、逐步 gate、逐变更归档）。
 
-## 3. 角色系统对比
+### 3) 工程验证机制
 
-### STEP：7 角色 + 硬绑定
+- BMAD：可接入测试体系，但框架本身不绑定固定脚本闸门。
+- STEP：内置 `gate.sh` / `scenario-check.sh`，并把结果写入 `.step/evidence/`。
 
-| 角色 | 绑定方式 | 对抗性 |
-|------|---------|--------|
-| PM | agents/pm.md → subagent 模型绑定 | 定义"做什么" |
-| Architect | agents/architect.md → subagent | 定义"怎么做" |
-| QA | agents/qa.md → subagent | 定义"怎么破坏它" |
-| Developer | agents/developer.md → subagent | 只做被定义的事 |
-| Designer | agents/designer.md → subagent | 负责体验与界面 |
-| Reviewer | agents/reviewer.md → subagent | 独立审查交付物 |
-| Deployer | agents/deployer.md → subagent | 部署策略（可选） |
+### 4) 会话连续性
 
-特点：每个角色有 opencode agent 定义文件 + 模型路由。QA 与 Developer 天然对抗（写测试 ≠ 写实现）。Reviewer 有"严禁空洞 APPROVE"的硬约束。
+- BMAD：通常靠工具链和团队习惯维持上下文。
+- STEP：通过 `state.yaml` + hooks 自动恢复当前 phase/change/task。
 
-### BMAD：12+ 角色 + prompt persona
+### 5) 变更管理落地
 
-Analyst、PM、Architect、Developer、UX Designer、Scrum Master、QA (Quinn)、Code Reviewer、DevOps、Data Modeler、Technical Writer、BMad Help 等。
+- BMAD：强调流程节点和职责边界。
+- STEP：强调落地结构：`changes/{change}`、`archive/`、`decisions.md`、`baseline.md`。
 
-特点：角色更多，覆盖面广（UX、DevOps、Tech Writer 等 STEP 不涉及的领域）。Party Mode 允许多角色同时讨论。Scale-Adaptive 自动调整规划深度。但所有角色都是 prompt 级 persona，无模型绑定。
+### 6) 并行开发
 
-### 对比
+- BMAD：天然支持多人并行，但对分支落地方式不做强规定。
+- STEP：当前实现通过 worktree 自动化管理并行分支的创建、合并、冲突报告与清理。
+
+## 适配建议
+
+- 你已经有成熟团队流程、只是要提升代理执行质量：优先上 STEP。
+- 你在搭组织级协作机制、跨团队协同复杂：BMAD 更合适。
+- 实战建议：BMAD 管项目层节奏，STEP 管单变更执行与验证。
+
+## 优劣对比
 
 | 维度 | STEP | BMAD |
-|------|------|------|
-| 角色绑定 | subagent 文件 + 模型路由 | prompt persona |
-| 对抗性 | QA ≠ Developer，Reviewer 独立审查 | 角色间无结构化对抗 |
-| 覆盖面 | 7 角色，聚焦核心工程链 | 12+ 角色，覆盖 UX/DevOps/Tech Writer |
-| 多角色协作 | 顺序对抗（阶段切换） | Party Mode 同时讨论 |
-| 规模适应 | Full/Lite 两档（手动） | Scale-Adaptive 自动 |
+|---|---|---|
+| 目标层级 | 任务/变更执行与质量闭环 | 团队/项目治理与迭代管理 |
+| AI 执行约束 | 强：代理路由 + gate +证据链 | 中：以协作流程为主，执行约束较抽象 |
+| 质量控制 | 强：脚本级验证与场景覆盖 | 中：可接入质量流程，但不内建固定门禁 |
+| 组织协同 | 中：单项目深度更强 | 强：跨角色、跨团队节奏更友好 |
+| 交付确定性 | 强：从任务到归档路径明确 | 中：更依赖团队执行一致性 |
 
-## 4. 执行保证对比
+## 最终判断
 
-| 机制 | STEP | BMAD |
-|------|------|------|
-| 可执行门禁 | ✅ gate.sh + scenario-check.sh + step-stop-check.sh | ❌ |
-| BDD 场景 ID 硬匹配 | ✅ [S-xxx-xx] 覆盖率验证 | ❌ |
-| Agent 模型绑定 | ✅ 不同角色→不同模型 | ❌ 同模型不同 persona |
-| Hook 自动注入 | ✅ 四层（SessionStart/PreToolUse/PostToolUse/Stop） | ❌ |
-| 需求基线确认 | ✅ baseline + 变更审计链 | ❌ PRD 无确认机制 |
-| Gate 失败处理 | ✅ 根因分析 → 3 轮 → blocked | ❌ |
-| 注意力管理 | ✅ 2-Action Rule + Pre-decision Read | ❌ |
-| 倒序状态 | ✅ 最新决策/进度在 state.yaml 头部 | ❌ |
-
-STEP 的保证是"可执行门禁 + prompt 约束"双层；BMAD 全部是 prompt 级。
-
-## 5. 平台与生态
-
-| 维度 | STEP | BMAD |
-|------|------|------|
-| 平台支持 | opencode 唯一 | Claude Code, Cursor, Windsurf 等多平台 |
-| 安装方式 | bash install.sh | npx bmad-method install |
-| 社区 | 新项目 | 35k+ stars, 111+ contributors, Discord |
-| 模块生态 | 单一插件 | BMM, Builder, TEA, Game Dev Studio 等 |
-
-这是 BMAD 的最大优势——生态广度和社区规模。
-
-## 6. 可借鉴点
-
-| BMAD 特性 | 评估 |
-|-----------|------|
-| Scale-Adaptive 自动调整深度 | 有参考价值。STEP 的 Lite/Full 手动切换已够用。Phase 0 由 PM 判断复杂度，自动判断准确性存疑 |
-| Party Mode 多角色同时讨论 | 有趣但 opencode 不支持并行 agent 对话。STEP 的顺序对抗（阶段切换）已实现类似效果 |
-| 更多角色（UX、DevOps、Tech Writer） | 不需要。STEP 的 Designer 已覆盖 UX，Deployer 覆盖部署策略。角色多不等于更好 |
-| 模块生态扩展 | 长期方向可参考，但当前阶段聚焦核心协议更重要 |
-
-## 7. BMAD 缺少什么
-
-1. 可执行门禁脚本
-2. BDD 场景矩阵 + ID 硬匹配
-3. 自动 Session 恢复
-4. 需求基线确认 + 变更审计链
-5. 三层注意力管理 Hook
-6. 角色对抗性机制（QA ≠ Developer）
-7. Gate 失败分级处理
-8. 倒序状态机（最新信息优先注入）
-
-## 8. 总结
-
-STEP 和 BMAD 是两种不同的设计哲学：STEP 用"少角色 + 硬门禁 + 状态机"换取执行可靠性，BMAD 用"多角色 + 流程丰富 + 多平台"换取覆盖面和适配性。STEP 在执行保证层级上显著强于 BMAD（脚本级 vs prompt 级），BMAD 在平台兼容性和社区生态上显著强于 STEP。两者不适合组合使用——定位重叠且哲学冲突。
+当前代码实现下，STEP 在“代理执行确定性”上明显优于 BMAD；
+BMAD 在“组织治理广度”上仍然更有优势。
