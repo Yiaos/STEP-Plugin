@@ -1,6 +1,6 @@
 #!/bin/bash
 # STEP Protocol — 项目初始化脚本
-# 由 /step 命令调用，在当前项目创建 .step/ 目录和 scripts/
+# 由 /step/init 命令调用，在当前项目创建 .step/ 目录和 scripts/
 
 set -e
 
@@ -75,7 +75,7 @@ echo "📦 Initializing STEP protocol..."
 
 # 检查是否已初始化
 if [ -d ".step" ]; then
-  echo "⚠️  .step/ already exists. Use /step to resume."
+  echo "⚠️  .step/ already exists. Use /step/init to resume."
   exit 1
 fi
 

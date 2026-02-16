@@ -47,23 +47,13 @@ escape_for_json() {
   printf '%s' "$output"
 }
 
-# 读取核心文件
-STATE_CONTENT=$(python3 - "$STATE_FILE" <<'PY' 2>/dev/null || cat "$STATE_FILE" 2>&1 || echo "Error reading state.yaml"
-import sys
-import yaml
-
-path = sys.argv[1]
-with open(path, "r", encoding="utf-8") as f:
-    data = yaml.safe_load(f) or {}
-
-if isinstance(data, dict):
-    logs = data.get("progress_log")
-    if isinstance(logs, list):
-        data["progress_log"] = logs[:3]
-
-print(yaml.safe_dump(data, sort_keys=False, allow_unicode=True), end="")
-PY
-)
+# 读取核心文件（progress_log 仅注入最近 3 条）
+CORE_SCRIPT="${PLUGIN_ROOT}/scripts/step-core.js"
+if [ -f "$CORE_SCRIPT" ]; then
+  STATE_CONTENT=$(node "$CORE_SCRIPT" state trim-progress --file "$STATE_FILE" --limit 3 2>/dev/null || cat "$STATE_FILE" 2>&1 || echo "Error reading state.yaml")
+else
+  STATE_CONTENT=$(cat "$STATE_FILE" 2>&1 || echo "Error reading state.yaml")
+fi
 
 CURRENT_PHASE=$(grep '^current_phase:' "$STATE_FILE" 2>/dev/null | head -1 | sed 's/^current_phase:[[:space:]]*//' | tr -d ' "' || true)
 

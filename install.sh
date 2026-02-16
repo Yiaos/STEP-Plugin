@@ -47,6 +47,12 @@ uninstall() {
 install() {
   local force=$1
 
+  if ! command -v node >/dev/null 2>&1; then
+    echo -e "${RED}❌ Node.js is required but not found${NC}"
+    echo "  Please install Node.js 18+ and retry."
+    exit 1
+  fi
+
   # 检查是否已安装
   if [ -d "$TARGET_DIR" ] && [ "$force" != "true" ]; then
     echo -e "${YELLOW}⚠️  STEP plugin already installed at $TARGET_DIR${NC}"
@@ -105,11 +111,12 @@ install() {
   echo "  Skills:   $SKILLS_LINK → $TARGET_DIR/skills"
   echo "  Hooks:    $HOOKS_LINK → $TARGET_DIR/hooks"
   echo ""
-  echo "  Usage: In any project, run /step to initialize the STEP protocol."
+  echo "  Usage: In any project, run /step/init to initialize the STEP protocol."
   echo ""
   echo "  Plugin structure:"
   echo "  ~/.config/opencode/tools/step/"
-  echo "  ├── commands/step.md        # /step command"
+  echo "  ├── commands/init.md        # /step/init command"
+  echo "  ├── commands/status.md      # /step/status command"
   echo "  ├── hooks/"
   echo "  │   ├── hooks.json          # SessionStart hook registration"
   echo "  │   └── session-start.sh    # Auto-detect .step/ and inject state"

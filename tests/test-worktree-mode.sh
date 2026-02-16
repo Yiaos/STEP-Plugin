@@ -49,11 +49,39 @@ assert "[S-010-03] step-worktree 代码冲突交给 LLM 解决" bash -c "
   cp '$SCRIPT_DIR/scripts/step-worktree.sh' scripts/step-worktree.sh
   chmod +x scripts/step-worktree.sh
 
+  cat > scripts/gate.sh <<'GATE'
+#!/usr/bin/env bash
+echo "mock gate pass"
+exit 0
+GATE
+  chmod +x scripts/gate.sh
+
   cat > .step/config.yaml <<'CFG'
 worktree:
   enabled: true
   branch_prefix: "change/"
 CFG
+
+  mkdir -p .step/changes/demo-change/tasks
+  cat > .step/changes/demo-change/tasks/demo-task.yaml <<'TASK'
+id: demo-task
+title: demo
+mode: lite
+status: done
+done_when: []
+scenarios:
+  - id: S-demo-task-01
+    test_file: test/demo.test.ts
+TASK
+  mkdir -p test
+  cat > test/demo.test.ts <<'TEST'
+it('[S-demo-task-01] ok', () => {})
+TEST
+  cat > .step/state.yaml <<'STATE'
+current_change: "demo-change"
+tasks:
+  current: "demo-task"
+STATE
 
   printf 'main-v1\n' > app.txt
   git add .
@@ -74,6 +102,7 @@ CFG
 
   output=\$(bash scripts/step-worktree.sh finalize demo-change --yes 2>&1)
   echo \"\$output\" | grep -q 'Conflicts resolved by LLM'
+  echo \"\$output\" | grep -q '冲突解决后强制验证'
   [ -f .step/conflict-report.md ]
   grep -q 'LLM Resolution Summary' .step/conflict-report.md
   grep -q 'app.txt' .step/conflict-report.md

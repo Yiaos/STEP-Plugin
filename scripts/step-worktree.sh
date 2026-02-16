@@ -375,6 +375,83 @@ archive_change_on_base_worktree() {
   fi
 }
 
+current_task_for_change() {
+  local merge_wt="$1"
+  local change_name="$2"
+  local state_file="$merge_wt/.step/state.yaml"
+  local tasks_dir="$merge_wt/.step/changes/${change_name}/tasks"
+
+  # 1) 优先使用 state.yaml 中当前任务（且当前变更一致）
+  if [ -f "$state_file" ]; then
+    local current_change
+    current_change=$(grep '^current_change:' "$state_file" 2>/dev/null | head -1 | sed 's/^current_change:[[:space:]]*//' | tr -d ' "' || true)
+    if [ "$current_change" = "$change_name" ]; then
+      local current_task
+      current_task=$(grep -E '^\s+current:' "$state_file" 2>/dev/null | head -1 | sed 's/.*current:[[:space:]]*//' | tr -d ' "' || true)
+      if [ -n "$current_task" ] && [ "$current_task" != "null" ]; then
+        printf "%s" "$current_task"
+        return
+      fi
+    fi
+  fi
+
+  [ -d "$tasks_dir" ] || { printf ""; return; }
+
+  # 2) 回退：寻找 in_progress 任务
+  local tf=""
+  for tf in "$tasks_dir"/*.yaml; do
+    [ -f "$tf" ] || continue
+    if grep -q '^status:[[:space:]]*in_progress' "$tf" 2>/dev/null; then
+      basename "$tf" .yaml
+      return
+    fi
+  done
+
+  # 3) 再回退：选择最近修改的任务
+  local latest=""
+  latest=$(ls -t "$tasks_dir"/*.yaml 2>/dev/null | head -1 || true)
+  if [ -n "$latest" ] && [ -f "$latest" ]; then
+    basename "$latest" .yaml
+    return
+  fi
+
+  printf ""
+}
+
+set_task_status() {
+  local merge_wt="$1"
+  local change_name="$2"
+  local task_slug="$3"
+  local status="$4"
+  local task_file="$merge_wt/.step/changes/${change_name}/tasks/${task_slug}.yaml"
+  [ -f "$task_file" ] || return 1
+  sed -i.bak "s/^status:.*/status: ${status}/" "$task_file"
+  rm -f "$task_file.bak"
+}
+
+run_post_conflict_gate() {
+  local merge_wt="$1"
+  local change_name="$2"
+  local task_slug
+  task_slug=$(current_task_for_change "$merge_wt" "$change_name")
+  if [ -z "$task_slug" ]; then
+    echo "❌ 无法确定当前任务，冲突解决后无法强制 gate lite"
+    return 1
+  fi
+  echo "🔒 冲突解决后强制验证: gate lite ${task_slug}"
+  set_task_status "$merge_wt" "$change_name" "$task_slug" "in_progress" || true
+  if [ -x "$merge_wt/scripts/gate.sh" ]; then
+    if ! bash "$merge_wt/scripts/gate.sh" lite "$task_slug"; then
+      echo "❌ 冲突解决后的 gate lite 失败"
+      return 1
+    fi
+  else
+    echo "❌ 缺少 gate.sh，无法执行冲突后强制验证"
+    return 1
+  fi
+  return 0
+}
+
 merge_with_conflict_report() {
   local change_name="$1"
   local branch="$2"
@@ -437,6 +514,12 @@ merge_with_conflict_report() {
         write_conflict_report "$merge_wt" "$change_name" "$branch" "$base" "$resolver_log" "$summary_file" "${code_conflicts[@]}"
         [ -n "$temp_merge_wt" ] && git worktree remove "$temp_merge_wt" --force || true
         echo "❌ 大模型处理后仍有未解决冲突，请查看 .step/conflict-report.md"
+        return 1
+      fi
+
+      if ! run_post_conflict_gate "$merge_wt" "$change_name"; then
+        write_conflict_report "$merge_wt" "$change_name" "$branch" "$base" "$resolver_log" "$summary_file" "${code_conflicts[@]}"
+        [ -n "$temp_merge_wt" ] && git worktree remove "$temp_merge_wt" --force || true
         return 1
       fi
 

@@ -19,53 +19,228 @@ function ensureFile(filePath) {
   }
 }
 
-function pythonCommand() {
-  const cands = ["python3", "python"]
-  for (const cmd of cands) {
-    const p = spawnSync(cmd, ["-V"], { stdio: "ignore" })
-    if (p.status === 0) {
-      return cmd
+function countIndent(line) {
+  let n = 0
+  while (n < line.length && line[n] === " ") n += 1
+  return n
+}
+
+function normalizeYamlLines(raw) {
+  return raw.replace(/\r\n/g, "\n").split("\n")
+}
+
+function stripInlineComment(s) {
+  let quote = null
+  for (let i = 0; i < s.length; i += 1) {
+    const ch = s[i]
+    if (quote) {
+      if (ch === quote) quote = null
+      continue
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch
+      continue
+    }
+    if (ch === "#" && (i === 0 || /\s/.test(s[i - 1]))) {
+      return s.slice(0, i).trimEnd()
     }
   }
-  fail("未找到 python3/python，无法解析 YAML")
+  return s
+}
+
+function parseScalar(raw) {
+  const s = stripInlineComment(raw).trim()
+  if (s === "") return ""
+  if (s === "null") return null
+  if (s === "true") return true
+  if (s === "false") return false
+  if (s === "[]") return []
+  if (s === "{}") return {}
+  if (/^-?\d+$/.test(s)) return Number(s)
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    return s.slice(1, -1)
+  }
+  return s
+}
+
+function splitKeyValue(content) {
+  const idx = content.indexOf(":")
+  if (idx < 0) return null
+  const key = content.slice(0, idx).trim()
+  const value = content.slice(idx + 1)
+  return { key, value }
+}
+
+function parseBlock(lines, startIndex, indent) {
+  let i = startIndex
+  while (i < lines.length) {
+    const line = lines[i]
+    const trimmed = line.trim()
+    if (trimmed === "" || trimmed.startsWith("#")) {
+      i += 1
+      continue
+    }
+    const ind = countIndent(line)
+    if (ind < indent) return { value: null, next: i }
+    if (ind > indent) {
+      fail(`YAML 缩进错误，第 ${i + 1} 行`) 
+    }
+    const content = line.slice(indent)
+    if (content.startsWith("- ")) {
+      return parseList(lines, i, indent)
+    }
+    return parseMap(lines, i, indent)
+  }
+  return { value: null, next: i }
+}
+
+function parseMap(lines, startIndex, indent) {
+  const out = {}
+  let i = startIndex
+  while (i < lines.length) {
+    const line = lines[i]
+    const trimmed = line.trim()
+    if (trimmed === "" || trimmed.startsWith("#")) {
+      i += 1
+      continue
+    }
+    const ind = countIndent(line)
+    if (ind < indent) break
+    if (ind > indent) {
+      fail(`YAML map 缩进错误，第 ${i + 1} 行`)
+    }
+    const content = line.slice(indent)
+    if (content.startsWith("- ")) break
+    const kv = splitKeyValue(content)
+    if (!kv) {
+      fail(`YAML 键值格式错误，第 ${i + 1} 行`) 
+    }
+    const { key, value } = kv
+    if (value.trim() === "") {
+      const nested = parseBlock(lines, i + 1, indent + 2)
+      out[key] = nested.value === null ? {} : nested.value
+      i = nested.next
+    } else {
+      out[key] = parseScalar(value)
+      i += 1
+    }
+  }
+  return { value: out, next: i }
+}
+
+function parseList(lines, startIndex, indent) {
+  const out = []
+  let i = startIndex
+  while (i < lines.length) {
+    const line = lines[i]
+    const trimmed = line.trim()
+    if (trimmed === "" || trimmed.startsWith("#")) {
+      i += 1
+      continue
+    }
+    const ind = countIndent(line)
+    if (ind < indent) break
+    if (ind > indent) {
+      fail(`YAML list 缩进错误，第 ${i + 1} 行`)
+    }
+    const content = line.slice(indent)
+    if (!content.startsWith("- ")) break
+    const itemRest = content.slice(2)
+    if (itemRest.trim() === "") {
+      const nested = parseBlock(lines, i + 1, indent + 2)
+      out.push(nested.value)
+      i = nested.next
+      continue
+    }
+
+    const kv = splitKeyValue(itemRest)
+    if (!kv) {
+      out.push(parseScalar(itemRest))
+      i += 1
+      continue
+    }
+
+    const item = {}
+    if (kv.value.trim() === "") {
+      const nestedVal = parseBlock(lines, i + 1, indent + 4)
+      item[kv.key] = nestedVal.value
+      i = nestedVal.next
+    } else {
+      item[kv.key] = parseScalar(kv.value)
+      i += 1
+    }
+
+    if (i < lines.length) {
+      const tail = parseMap(lines, i, indent + 2)
+      if (tail.next > i && tail.value && Object.keys(tail.value).length > 0) {
+        Object.assign(item, tail.value)
+        i = tail.next
+      }
+    }
+    out.push(item)
+  }
+  return { value: out, next: i }
+}
+
+function parseYaml(raw) {
+  const lines = normalizeYamlLines(raw)
+  const parsed = parseBlock(lines, 0, 0)
+  return parsed.value
+}
+
+function dumpScalar(value) {
+  if (value === null) return "null"
+  if (typeof value === "boolean") return value ? "true" : "false"
+  if (typeof value === "number") return String(value)
+  const s = String(value)
+  if (s === "" || /^[-?:\[\]{}#,!]|\s|:$/.test(s) || s.includes(": ")) {
+    return JSON.stringify(s)
+  }
+  return s
+}
+
+function dumpYaml(value, indent = 0) {
+  const pad = " ".repeat(indent)
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (isObject(item) || Array.isArray(item)) {
+          const nested = dumpYaml(item, indent + 2)
+          return `${pad}-\n${nested}`
+        }
+        return `${pad}- ${dumpScalar(item)}`
+      })
+      .join("\n")
+  }
+  if (isObject(value)) {
+    return Object.keys(value)
+      .map((key) => {
+        const v = value[key]
+        if (isObject(v) || Array.isArray(v)) {
+          const nested = dumpYaml(v, indent + 2)
+          return `${pad}${key}:\n${nested}`
+        }
+        return `${pad}${key}: ${dumpScalar(v)}`
+      })
+      .join("\n")
+  }
+  return `${pad}${dumpScalar(value)}`
 }
 
 function readYaml(filePath) {
   ensureFile(filePath)
-  const py = pythonCommand()
-  const script = [
-    "import json,sys,yaml",
-    "p=sys.argv[1]",
-    "with open(p,'r',encoding='utf-8') as f:",
-    "  data=yaml.safe_load(f)",
-    "print(json.dumps(data, ensure_ascii=False))",
-  ].join("\n")
-  const out = spawnSync(py, ["-c", script, filePath], { encoding: "utf-8" })
-  if (out.status !== 0) {
-    fail(`YAML 解析失败: ${filePath}\n${out.stderr || out.stdout}`)
-  }
+  const raw = fs.readFileSync(filePath, "utf-8")
   try {
-    return JSON.parse(out.stdout)
+    return parseYaml(raw)
   } catch (err) {
-    fail(`YAML 转 JSON 失败: ${filePath} (${String(err)})`)
+    fail(`YAML 解析失败: ${filePath} (${String(err)})`)
   }
 }
 
 function writeYamlAtomic(filePath, data) {
-  const py = pythonCommand()
   const tmpPath = `${filePath}.tmp-${process.pid}`
-  const script = [
-    "import json,sys,yaml",
-    "payload=json.loads(sys.argv[1])",
-    "target=sys.argv[2]",
-    "with open(target,'w',encoding='utf-8') as f:",
-    "  yaml.safe_dump(payload, f, sort_keys=False, allow_unicode=True)",
-  ].join("\n")
-  const payload = JSON.stringify(data)
-  const out = spawnSync(py, ["-c", script, payload, tmpPath], { encoding: "utf-8" })
-  if (out.status !== 0) {
-    fail(`YAML 写入失败: ${filePath}\n${out.stderr || out.stdout}`)
-  }
+  const content = `${dumpYaml(data)}\n`
+  fs.writeFileSync(tmpPath, content, "utf-8")
   fs.renameSync(tmpPath, filePath)
 }
 
@@ -164,6 +339,9 @@ function validateConfig(config) {
       if (!(k in config.gate) || typeof config.gate[k] !== "string") {
         errors.push(`gate.${k} 必须是字符串`) 
       }
+    }
+    if ("dangerous_executables" in config.gate && !Array.isArray(config.gate.dangerous_executables)) {
+      errors.push("gate.dangerous_executables 必须是数组")
     }
   }
   return errors
@@ -403,42 +581,21 @@ function tokenize(segment) {
   return tokens
 }
 
-function sanitizeTokens(tokens) {
+function sanitizeTokens(tokens, dangerousExecutables) {
   if (tokens.length === 0) {
     fail("空命令段")
   }
-  const allowExecutables = new Set([
-    "pnpm",
-    "npm",
-    "node",
-    "python3",
-    "python",
-    "bash",
-    "sh",
-    "yarn",
-    "bun",
-    "npx",
-    "vitest",
-    "jest",
-    "echo",
-  ])
   const exe = tokens[0]
-  if (!allowExecutables.has(exe)) {
-    fail(`命令不在白名单中: ${exe}`)
-  }
-  const banned = /[;|><`$]/
-  for (const t of tokens) {
-    if (banned.test(t)) {
-      fail(`命令包含非法字符: ${t}`)
-    }
+  if (dangerousExecutables.has(exe)) {
+    fail(`命中危险命令黑名单: ${exe}`)
   }
 }
 
-function runSafeCommand(command) {
+function runSafeCommand(command, dangerousExecutables) {
   const segments = splitChain(command)
   for (const seg of segments) {
     const tokens = tokenize(seg)
-    sanitizeTokens(tokens)
+    sanitizeTokens(tokens, dangerousExecutables)
     const exe = tokens[0]
     const args = tokens.slice(1)
     const p = spawnSync(exe, args, {
@@ -459,6 +616,25 @@ function getGateCommands(configPath) {
     typecheck: "pnpm tsc --noEmit",
     test: "pnpm vitest run",
     build: "pnpm build",
+    dangerous_executables: [
+      "rm",
+      "dd",
+      "mkfs",
+      "shutdown",
+      "reboot",
+      "poweroff",
+      "halt",
+      "sudo",
+      "chown",
+      "chmod",
+      "passwd",
+      "useradd",
+      "usermod",
+      "deluser",
+      "killall",
+      "pkill",
+      "launchctl",
+    ],
   }
   if (!fs.existsSync(configPath)) {
     return defaults
@@ -473,6 +649,9 @@ function getGateCommands(configPath) {
     typecheck: cfg.gate.typecheck || defaults.typecheck,
     test: cfg.gate.test || defaults.test,
     build: cfg.gate.build || defaults.build,
+    dangerous_executables: Array.isArray(cfg.gate.dangerous_executables)
+      ? cfg.gate.dangerous_executables.map((v) => String(v))
+      : defaults.dangerous_executables,
   }
 }
 
@@ -488,6 +667,91 @@ function writeGateEvidence(taskSlug, level, pass, results) {
   const evidencePath = path.join(".step", "evidence", `${taskSlug}-gate.json`)
   fs.writeFileSync(evidencePath, `${JSON.stringify(payload, null, 2)}\n`, "utf-8")
   info(`📄 Evidence saved: ${evidencePath}`)
+}
+
+function todayUTC() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function patchProgressEntry(filePath, taskSlug, fields) {
+  if (!fs.existsSync(filePath)) return
+  const state = readYaml(filePath)
+  if (!isObject(state)) return
+  if (!Array.isArray(state.progress_log)) {
+    state.progress_log = []
+  }
+  const date = todayUTC()
+  let idx = state.progress_log.findIndex(
+    (item) => isObject(item) && item.task === taskSlug && item.date === date,
+  )
+  if (idx < 0) {
+    const base = { date, task: taskSlug, summary: "", next_action: "" }
+    state.progress_log.unshift(base)
+    idx = 0
+  }
+  const entry = state.progress_log[idx]
+  Object.assign(entry, fields)
+  writeYamlAtomic(filePath, state)
+}
+
+function trimProgressForPrint(filePath, limit) {
+  const state = readYaml(filePath)
+  if (isObject(state) && Array.isArray(state.progress_log)) {
+    state.progress_log = state.progress_log.slice(0, limit)
+  }
+  return dumpYaml(state)
+}
+
+function renderStatusReport(root = ".step") {
+  const statePath = path.join(root, "state.yaml")
+  if (!fs.existsSync(statePath)) {
+    return "STEP 未初始化（缺少 .step/state.yaml）"
+  }
+  const state = readYaml(statePath)
+  const phase = state.current_phase || "unknown"
+  const change = state.current_change || ""
+  const currentTask = state.tasks && state.tasks.current ? state.tasks.current : "null"
+
+  let total = 0
+  let done = 0
+  const changesDir = path.join(root, "changes")
+  if (fs.existsSync(changesDir)) {
+    for (const ch of fs.readdirSync(changesDir)) {
+      const taskDir = path.join(changesDir, ch, "tasks")
+      if (!fs.existsSync(taskDir)) continue
+      for (const tf of fs.readdirSync(taskDir)) {
+        if (!tf.endsWith(".yaml")) continue
+        total += 1
+        const t = readYaml(path.join(taskDir, tf))
+        if (t && t.status === "done") done += 1
+      }
+    }
+  }
+
+  const evidenceDir = path.join(root, "evidence")
+  let gatePass = 0
+  let gateFail = 0
+  if (fs.existsSync(evidenceDir)) {
+    for (const f of fs.readdirSync(evidenceDir)) {
+      if (!f.endsWith("-gate.json")) continue
+      const payload = JSON.parse(fs.readFileSync(path.join(evidenceDir, f), "utf-8"))
+      if (payload.passed) gatePass += 1
+      else gateFail += 1
+    }
+  }
+
+  const issues = Array.isArray(state.known_issues) ? state.known_issues : []
+  const topIssue = issues.length > 0 ? JSON.stringify(issues[0]) : "(none)"
+
+  return [
+    "STEP Status",
+    `- Phase: ${phase}`,
+    `- Change: ${change || "(none)"}`,
+    `- Task: ${currentTask}`,
+    `- Progress: ${done}/${total}`,
+    `- Gate Evidence: PASS=${gatePass}, FAIL=${gateFail}`,
+    `- Top Blocking Issue: ${topIssue}`,
+  ].join("\n")
 }
 
 function getTaskTestFiles(taskSlug, changeName) {
@@ -532,6 +796,7 @@ function runGate(level, taskSlug, configPath, mode) {
   }
 
   const commands = getGateCommands(configPath)
+  const dangerousExecutables = new Set(commands.dangerous_executables)
   const testFiles = getTaskTestFiles(taskSlug, null)
   let testCommand = commands.test
   let testScope = "all"
@@ -566,7 +831,7 @@ function runGate(level, taskSlug, configPath, mode) {
 
   for (const [name, cmd] of checks) {
     info(`--- ${name} ---`)
-    const code = runSafeCommand(cmd)
+    const code = runSafeCommand(cmd, dangerousExecutables)
     if (code === 0) {
       info(`  ✅ ${name}: PASS`)
       results.push({ name, status: "pass" })
@@ -590,6 +855,13 @@ function runGate(level, taskSlug, configPath, mode) {
 
   info("")
   writeGateEvidence(taskSlug, `${level}:${mode}:${testScope}`, pass, results)
+  patchProgressEntry(path.join(".step", "state.yaml"), taskSlug, {
+    gate_status: pass ? "pass" : "fail",
+    gate_level: level,
+    gate_mode: mode,
+    gate_scope: testScope,
+    gate_at: isoNow(),
+  })
 
   if (pass) {
     info("✅ Gate PASSED")
@@ -626,9 +898,12 @@ function usage() {
   info("  step-core.js task test-files --task <slug> [--change <name>] [--json]")
   info("  step-core.js task scenarios --task <slug> [--change <name>] [--json]")
   info("  step-core.js state set --file <path> --path a.b --value <value>")
+  info("  step-core.js state trim-progress --file <path> --limit <n>")
+  info("  step-core.js state patch-progress --file <path> --task <slug> --set k=v[,k=v]")
   info("  step-core.js scenario check --task <slug> [--change <name>]")
   info("  step-core.js gate test-files --task <slug> [--change <name>] [--json]")
   info("  step-core.js gate run --level lite|full --task <slug> [--mode incremental|all] [--config .step/config.yaml]")
+  info("  step-core.js status report [--root .step]")
 }
 
 function main() {
@@ -722,6 +997,36 @@ function main() {
     process.exit(0)
   }
 
+  if (cmd === "state" && sub === "trim-progress") {
+    const file = args.file
+    const limit = Number(args.limit || 3)
+    if (!file || !Number.isFinite(limit) || limit <= 0) {
+      fail("state trim-progress 需要 --file 和正整数 --limit")
+    }
+    info(trimProgressForPrint(file, limit))
+    process.exit(0)
+  }
+
+  if (cmd === "state" && sub === "patch-progress") {
+    const file = args.file
+    const task = args.task
+    const setRaw = args.set
+    if (!file || !task || !setRaw) {
+      fail("state patch-progress 需要 --file --task --set")
+    }
+    const fields = {}
+    for (const pair of String(setRaw).split(",")) {
+      const idx = pair.indexOf("=")
+      if (idx < 1) continue
+      const k = pair.slice(0, idx).trim()
+      const v = pair.slice(idx + 1).trim()
+      if (k) fields[k] = v
+    }
+    patchProgressEntry(file, task, fields)
+    info(`✅ 已补写 progress_log: task=${task}`)
+    process.exit(0)
+  }
+
   if (cmd === "gate" && sub === "run") {
     const level = args.level
     const task = args.task
@@ -729,6 +1034,12 @@ function main() {
     const mode = args.mode || "incremental"
     const code = runGate(level, task, config, mode)
     process.exit(code)
+  }
+
+  if (cmd === "status" && sub === "report") {
+    const root = args.root || ".step"
+    info(renderStatusReport(root))
+    process.exit(0)
   }
 
   usage()

@@ -31,6 +31,15 @@ gate:
   typecheck: "pnpm tsc --noEmit"
   test: "pnpm vitest run"
   build: "pnpm build"
+  dangerous_executables:
+    - "rm"
+    - "dd"
+    - "mkfs"
+    - "shutdown"
+    - "reboot"
+    - "poweroff"
+    - "halt"
+    - "sudo"
 
 # Worktree 并行开发（可选）
 # enabled=true 时，STEP 在变更开始阶段优先使用独立 worktree 执行

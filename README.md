@@ -149,7 +149,8 @@ bash uninstall.sh --project
 ```
 ~/.config/opencode/tools/step/
 ├── commands/
-│   ├── step.md             # /step 命令
+│   ├── init.md             # /step/init 命令
+│   ├── status.md           # /step/status 诊断命令
 │   └── archive.md          # /archive 归档命令
 ├── hooks/
 │   ├── hooks.json          # SessionStart hook
@@ -190,7 +191,7 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义（`agents/*.md`�
 
 ```
 # 在任何项目中启动 STEP
-/step
+/step/init
 
 # 新项目 → 自动初始化 .step/ 目录 → 进入 Phase 0
 # 已有项目 → 自动恢复到上次中断的阶段和任务
@@ -198,11 +199,14 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义（`agents/*.md`�
 # 归档已完成的变更
 /archive                     # 交互式列出并归档
 /archive {change-name}       # 归档指定变更
+
+# 查看当前 STEP 健康度
+/step/status
 ```
 
 ## 6. 项目文件结构（Project Files）
 
-`/step` 会在项目中创建：
+`/step/init` 会在项目中创建：
 
 ```
 .step/
@@ -270,6 +274,7 @@ gate:
   typecheck: "pnpm tsc --noEmit"
   test: "pnpm vitest run"
   build: "pnpm build"
+  dangerous_executables: ["rm", "dd", "mkfs", "shutdown", "reboot", "poweroff", "halt", "sudo"]
 
 # Worktree 并行开发（可选）
 worktree:
@@ -321,13 +326,13 @@ L1 Quick Spec → L2 Execution → L3 Review
 
 ```bash
 # 显式指定 Lite Mode
-/step lite
+/step/init lite
 
 # 显式指定 Full Mode
-/step full
+/step/init full
 
 # 自动检测（根据输入复杂度判断）
-/step
+/step/init
 ```
 
 ### 核心保留 vs 简化
