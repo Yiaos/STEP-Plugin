@@ -26,6 +26,21 @@ description: "启动 STEP 协议（Stateful Task Execution Protocol）。自动�
 5. 输出状态行：`📍 Phase X | Change: {name} | Task: {slug} | Status: xxx | Next: xxx`
 6. 从上次中断的位置继续
 
+## Worktree 自动模式（可选）
+
+如果 `.step/config.yaml` 中配置：
+
+```yaml
+worktree:
+  enabled: true
+```
+
+则在变更开始阶段自动创建独立 worktree：
+
+- 执行 `./scripts/step-worktree.sh create {change-name}`
+- 后续在该 worktree 内执行 Phase 4（TDD + gate + review + commit）
+- commit 完成后询问是否“合并回创建时所在分支并归档”
+
 ## 全阶段规则
 
 加载 `step` skill 并严格遵守其中的规则。

@@ -71,9 +71,12 @@ hooks:
 Step 1: 加载上下文 → 输出状态行
 Step 2: 写测试（按 routing.test_writing 派发 @step-qa） → 确认全部 FAIL (TDD RED)
 Step 3: 写实现（按 file_routing 选 agent） → 每场景跑 gate quick
+  若 config.worktree.enabled=true：先执行 ./scripts/step-worktree.sh create {change}
 
 Step 4: Gate 验证 → gate.sh standard {slug}
 Step 5: Review + Commit（每完成一个任务都执行）
+  commit 后询问是否合并回主分支并归档
+  用户确认后执行 ./scripts/step-worktree.sh finalize {change}
 Step 6: 更新 state.yaml + baseline.md 对应项 [ ] → [x] → 进入下一任务
 ```
 
@@ -309,3 +312,18 @@ L1 Quick Spec → L2 Execution → L3 Review
 **归档脚本**: `./scripts/step-archive.sh [change-name|--all]`
 
 **规则**: 仅变更下所有任务都为 status: done 才可归档，归档不是删除（仍可搜索历史）。
+
+## Worktree 模式（可选）
+
+在 `.step/config.yaml` 里设置：
+
+```yaml
+worktree:
+  enabled: true
+  branch_prefix: "change/"
+```
+
+启用后流程：
+1. 变更开始时自动创建 worktree（create）
+2. commit 完成后询问是否合并回主分支并归档
+3. 用户确认后 finalize：合并 → 归档 → 冲突报告（含解决策略）→ 清理 worktree

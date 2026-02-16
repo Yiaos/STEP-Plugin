@@ -107,6 +107,11 @@ if [ ! -f "scripts/scenario-check.sh" ]; then
   chmod +x scripts/scenario-check.sh
 fi
 
+if [ ! -f "scripts/step-worktree.sh" ]; then
+  cp "${PLUGIN_ROOT}/scripts/step-worktree.sh" scripts/step-worktree.sh
+  chmod +x scripts/step-worktree.sh
+fi
+
 # 设置初始时间戳 + 项目类型
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if command -v sed &>/dev/null; then
@@ -136,7 +141,8 @@ echo "   └── evidence/            # gate 运行证据"
 echo ""
 echo "   scripts/"
 echo "   ├── gate.sh              # 质量门禁"
-echo "   └── scenario-check.sh    # 场景覆盖检查"
+echo "   ├── scenario-check.sh    # 场景覆盖检查"
+echo "   └── step-worktree.sh     # worktree 创建/归档合并清理"
 echo ""
 
 # ── 已有项目提示 ──────────────────────────────────────────────

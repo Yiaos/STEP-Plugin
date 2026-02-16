@@ -31,3 +31,9 @@ gate:
   typecheck: "pnpm tsc --noEmit"
   test: "pnpm vitest run"
   build: "pnpm build"
+
+# Worktree 并行开发（可选）
+# enabled=true 时，STEP 在变更开始阶段优先使用独立 worktree 执行
+worktree:
+  enabled: false
+  branch_prefix: "change/"

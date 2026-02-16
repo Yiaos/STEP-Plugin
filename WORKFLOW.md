@@ -80,7 +80,8 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义文件（`STEP/ag
 scripts/
 ├── gate.sh                    # 质量门禁
 ├── scenario-check.sh          # 场景覆盖检查
-└── step-archive.sh            # 变更归档
+├── step-archive.sh            # 变更归档
+└── step-worktree.sh           # worktree 创建/归档合并清理
 ```
 
 ---
@@ -406,6 +407,11 @@ gate:
   typecheck: "pnpm tsc --noEmit"
   test: "pnpm vitest run"
   build: "pnpm build"
+
+# Worktree 并行开发（可选）
+worktree:
+  enabled: false
+  branch_prefix: "change/"
 ```
 
 ### 执行循环
@@ -426,6 +432,9 @@ Step 2: 写测试（按 routing.test_writing 派发 @step-qa）
   → 确认全部 FAIL（TDD RED）
 
 Step 3: 写实现（按 config.yaml file_routing 选 agent）
+  若 `config.worktree.enabled=true`:
+    → 自动执行 `./scripts/step-worktree.sh create {change-name}`
+    → 在该变更的独立 worktree 中继续执行 Phase 4
   前端文件（匹配 file_routing.frontend.patterns）→ @step-designer
   后端文件（匹配 file_routing.backend.patterns）→ @step-developer
   未匹配的文件 → @step-developer（默认）
@@ -462,6 +471,9 @@ Step 5: Review + Commit（每完成一个任务都执行）
   │    git add + commit（提交信息包含 task slug）     │
   │    例: "feat(auth): user-register-api [4/4 S]"  │
   │    Commit 后输出简短摘要：做了什么、为什么、影响  │
+  │    worktree 模式下：                              │
+  │      询问是否合并回主分支并归档                  │
+  │      用户确认后执行 `step-worktree.sh finalize`  │
   │                                                │
   │ 4. Review 不通过 → 修复 → 重新 Gate → 重新 Review│
   └────────────────────────────────────────────────┘
@@ -1109,9 +1121,9 @@ Session 开始
 
 1. **项目检测** — `detect_project()` 扫描 16 种包管理器/清单文件 + 6 种工具目录，判断是已有项目还是绿地项目
 2. **创建目录** — `.step/changes/init/tasks/`, `.step/archive/`, `.step/evidence/`, `scripts/`
-3. **创建初始变更文档** — `.step/changes/init/spec.md` + `.step/changes/init/design.md`
-4. **复制模板** — 从 `templates/` 复制 `config.yaml`, `state.yaml`, `baseline.md`, `decisions.md`
-5. **复制脚本** — 复制 `gate.sh`, `scenario-check.sh` 到项目 `scripts/` 目录
+3. **创建初始变更文档** — `.step/changes/init/findings.md` + `.step/changes/init/spec.md` + `.step/changes/init/design.md`
+4. **复制模板** — 从 `templates/` 复制 `config.yaml`, `state.yaml`, `baseline.md`, `decisions.md`, `findings.md`
+5. **复制脚本** — 复制 `gate.sh`, `scenario-check.sh`, `step-worktree.sh` 到项目 `scripts/` 目录
 6. **已有项目提示** — 检测到已有代码时，提示 LLM 先分析现有代码结构再讨论新需求
 
 详见 `scripts/step-init.sh` 源码。
@@ -1304,6 +1316,8 @@ LLM: "✅ 已完成并提交。请 check 以下变更：
 
 用户响应:
   ├── "没问题，归档" → 执行归档 → 任务结束
+  ├── "没问题，合并并归档"（worktree 模式）
+  │      → 合并主分支 → 归档 change → 输出冲突及解决方案 → 清理 worktree
   ├── "没问题，不归档" → 任务保持 done，留在 tasks/ → 结束
   └── "这里要改一下..." / "还需要加个..."
         → 不新建 task（在当前 task 上继续迭代）
@@ -1313,6 +1327,19 @@ LLM: "✅ 已完成并提交。请 check 以下变更：
 ```
 
 **关键规则：用户反馈修改意见时，不新建 task。在当前 task 基础上继续迭代，直到用户满意。**
+
+### Worktree 自动流程（可选）
+
+当 `.step/config.yaml` 中 `worktree.enabled=true` 时：
+
+1. 变更开始阶段自动创建 worktree：`./scripts/step-worktree.sh create {change-name}`
+2. Commit 后询问用户是否“合并回主分支并归档”
+3. 用户确认后执行 `./scripts/step-worktree.sh finalize {change-name}`：
+   - 先合并到“创建该 worktree 时所在分支”
+   - 再归档 change
+   - 若冲突，按策略自动解冲突并输出：冲突文件 + 采用策略（ours/theirs）
+   - 合并完成后清理 feature worktree
+4. 若用户拒绝合并，保留当前分支和 worktree，稍后可手动触发 finalize
 
 ### Lite Task YAML 格式
 

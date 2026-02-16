@@ -221,7 +221,8 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义（`agents/*.md`�
 └── evidence/            # gate 运行证据
 scripts/
 ├── gate.sh              # 质量门禁
-└── scenario-check.sh    # 场景覆盖检查
+├── scenario-check.sh    # 场景覆盖检查
+└── step-worktree.sh     # worktree 创建/归档合并清理
 ```
 
 ### 命名规则
@@ -269,7 +270,22 @@ gate:
   typecheck: "pnpm tsc --noEmit"
   test: "pnpm vitest run"
   build: "pnpm build"
+
+# Worktree 并行开发（可选）
+worktree:
+  enabled: false
+  branch_prefix: "change/"
 ```
+
+### Worktree 模式
+
+当 `worktree.enabled: true` 时，STEP 流程会遵循以下规则：
+
+- 变更开始阶段自动创建独立 worktree（`scripts/step-worktree.sh create {change}`）
+- Commit 完成后询问是否“合并回主分支并归档”
+- 用户确认后执行：合并回“创建该 worktree 时所在分支” → 归档 change
+- 合并冲突时按策略自动解冲突，并输出冲突文件与采用的解决策略
+- 合并完成后自动清理 feature worktree
 
 ### 模型配置
 

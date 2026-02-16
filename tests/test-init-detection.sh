@@ -98,6 +98,16 @@ assert "[S-003-07] 初始化创建 findings/spec/design" bash -c "
   [ -f .step/changes/init/design.md ]
 "
 
+# [S-003-08] 初始化会复制 step-worktree.sh 脚本
+assert "[S-003-08] 初始化复制 step-worktree.sh" bash -c "
+  set -e
+  tmpdir=\$(mktemp -d)
+  trap 'rm -rf \"\$tmpdir\"' EXIT
+  cd \"\$tmpdir\"
+  bash '$SCRIPT_DIR/scripts/step-init.sh' >/dev/null 2>&1
+  [ -x scripts/step-worktree.sh ]
+"
+
 echo ""
 echo "=== 结果: $PASS/$TOTAL passed, $FAIL failed ==="
 [ "$FAIL" -eq 0 ]
