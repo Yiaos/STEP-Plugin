@@ -3,13 +3,6 @@
 const fs = require("fs")
 const path = require("path")
 const { spawnSync } = require("child_process")
-let YAML
-try {
-  YAML = require("yaml")
-} catch (err) {
-  console.error("❌ 缺少依赖: yaml。请先在仓库根目录执行 npm install")
-  process.exit(1)
-}
 
 function fail(message, code = 1) {
   console.error(`❌ ${message}`)
@@ -190,15 +183,9 @@ function parseList(lines, startIndex, indent) {
 }
 
 function parseYaml(raw) {
-  const doc = YAML.parseDocument(raw, {
-    prettyErrors: true,
-    keepSourceTokens: true,
-  })
-  if (Array.isArray(doc.errors) && doc.errors.length > 0) {
-    const first = doc.errors[0]
-    throw new Error(first && first.message ? first.message : "YAML 语法错误")
-  }
-  return doc.toJS()
+  const lines = normalizeYamlLines(raw)
+  const parsed = parseBlock(lines, 0, 0)
+  return parsed.value
 }
 
 function dumpScalar(value) {
@@ -213,35 +200,31 @@ function dumpScalar(value) {
 }
 
 function dumpYaml(value, indent = 0) {
-  const rendered = YAML.stringify(value)
-  const base = typeof rendered === "string" ? rendered : ""
-  if (indent <= 0) {
-    return base.replace(/\n$/, "")
-  }
   const pad = " ".repeat(indent)
-  return base
-    .replace(/\n$/, "")
-    .split("\n")
-    .map((line) => `${pad}${line}`)
-    .join("\n")
-}
-
-function readYamlDocument(filePath) {
-  ensureFile(filePath)
-  const raw = fs.readFileSync(filePath, "utf-8")
-  try {
-    const doc = YAML.parseDocument(raw, {
-      prettyErrors: true,
-      keepSourceTokens: true,
-    })
-    if (Array.isArray(doc.errors) && doc.errors.length > 0) {
-      const first = doc.errors[0]
-      throw new Error(first && first.message ? first.message : "YAML 语法错误")
-    }
-    return doc
-  } catch (err) {
-    fail(`YAML 解析失败: ${filePath} (${String(err)})`)
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (isObject(item) || Array.isArray(item)) {
+          const nested = dumpYaml(item, indent + 2)
+          return `${pad}-\n${nested}`
+        }
+        return `${pad}- ${dumpScalar(item)}`
+      })
+      .join("\n")
   }
+  if (isObject(value)) {
+    return Object.keys(value)
+      .map((key) => {
+        const v = value[key]
+        if (isObject(v) || Array.isArray(v)) {
+          const nested = dumpYaml(v, indent + 2)
+          return `${pad}${key}:\n${nested}`
+        }
+        return `${pad}${key}: ${dumpScalar(v)}`
+      })
+      .join("\n")
+  }
+  return `${pad}${dumpScalar(value)}`
 }
 
 function readYaml(filePath) {
@@ -257,16 +240,6 @@ function readYaml(filePath) {
 function writeYamlAtomic(filePath, data) {
   const tmpPath = `${filePath}.tmp-${process.pid}`
   const content = `${dumpYaml(data)}\n`
-  fs.writeFileSync(tmpPath, content, "utf-8")
-  fs.renameSync(tmpPath, filePath)
-}
-
-function writeYamlDocumentAtomic(filePath, doc) {
-  const tmpPath = `${filePath}.tmp-${process.pid}`
-  let content = String(doc)
-  if (!content.endsWith("\n")) {
-    content += "\n"
-  }
   fs.writeFileSync(tmpPath, content, "utf-8")
   fs.renameSync(tmpPath, filePath)
 }
@@ -703,8 +676,7 @@ function todayUTC() {
 
 function patchProgressEntry(filePath, taskSlug, fields) {
   if (!fs.existsSync(filePath)) return
-  const doc = readYamlDocument(filePath)
-  const state = doc.toJS()
+  const state = readYaml(filePath)
   if (!isObject(state)) return
   if (!Array.isArray(state.progress_log)) {
     state.progress_log = []
@@ -720,8 +692,7 @@ function patchProgressEntry(filePath, taskSlug, fields) {
   }
   const entry = state.progress_log[idx]
   Object.assign(entry, fields)
-  doc.set("progress_log", state.progress_log)
-  writeYamlDocumentAtomic(filePath, doc)
+  writeYamlAtomic(filePath, state)
 }
 
 function trimProgressForPrint(filePath, limit) {
@@ -1019,8 +990,7 @@ function main() {
     if (!file || !dotPath || rawVal === undefined) {
       fail("state set 需要 --file --path --value")
     }
-    const doc = readYamlDocument(file)
-    const state = doc.toJS()
+    const state = readYaml(file)
     const errors = validateState(state)
     if (errors.length > 0) {
       fail(`写入前 state 校验失败: ${errors.join("; ")}`)
@@ -1031,8 +1001,7 @@ function main() {
     if (afterErrors.length > 0) {
       fail(`写入后 state 校验失败: ${afterErrors.join("; ")}`)
     }
-    doc.setIn(dotPath.split("."), value)
-    writeYamlDocumentAtomic(file, doc)
+    writeYamlAtomic(file, state)
     info(`✅ 已更新 ${file}: ${dotPath}=${String(rawVal)}`)
     process.exit(0)
   }
