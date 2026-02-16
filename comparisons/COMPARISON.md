@@ -28,8 +28,8 @@
 | 质量门禁 | ✅ gate.sh（脚本级阻断） | ⚠️ code-review 流程 | ❌ | ❌ | ⚠️ prompt 级检查 |
 | 代码审查 | ✅ Phase 5 Review（Reviewer agent） | ✅ code-review | ❌ | ❌ | ✅ code-review 铁律 |
 | Session 恢复 | ✅ SessionStart Hook 全自动 | ❌ | ❌ | ✅ session-catchup.py 半自动 | ❌ |
-| Post-MVP 变更 | ✅ CR / Hotfix / 约束变更 / Baseline 整理 | ✅ sprint 迭代 | ✅ archive + 新 change | ❌ | ❌ |
-| 需求防漂移 | ✅ baseline 确认 + CR 审计链 | ⚠️ PRD 无确认 | ⚠️ proposal 无确认 | ❌ | ❌ |
+| Post-MVP 变更 | ✅ 新增功能变更 / Hotfix / 约束变更 / Baseline 整理 | ✅ sprint 迭代 | ✅ archive + 新 change | ❌ | ❌ |
+| 需求防漂移 | ✅ baseline 确认 + 变更审计链 | ⚠️ PRD 无确认 | ⚠️ proposal 无确认 | ❌ | ❌ |
 | 注意力管理 | ✅ PreToolUse/PostToolUse/Stop 三层 Hook | ❌ | ❌ | ✅ 2-Action Rule + 钩子 | ⚠️ 1% 触发规则 |
 
 **覆盖度**: STEP 12/12 | BMAD 8/12 | OpenSpec 5/12 | planning-with-files 3/12 | superpowers 5/12
@@ -59,7 +59,7 @@ STEP 以"少角色 + 硬绑定 + 对抗性"换取可靠性；BMAD 以"多角色 
 | BDD 场景 ID 硬匹配 | ✅ [S-xxx-xx] | ❌ | ❌ | ❌ | ❌ |
 | 状态机 | ✅ state.yaml（Phase + Task + next_action） | ❌ | ❌ | ⚠️ task_plan.md 手动 | ❌ |
 | Gate 失败分级 | ✅ 根因分析 → 3 轮上限 → blocked | ❌ | ❌ | ❌ | ⚠️ 铁律语言约束 |
-| 需求基线确认 | ✅ baseline.md + CR 审计链 | ❌ | ❌ | ❌ | ❌ |
+| 需求基线确认 | ✅ baseline.md + 变更审计链 | ❌ | ❌ | ❌ | ❌ |
 | 防遗忘 | ✅ 2-Action Rule + Pre-decision Read | ❌ | ❌ | ✅ 原创 2-Action Rule | ❌ |
 | 防撒谎 | ✅ Agent 约束 + gate.sh 真实执行验证 | ❌ | ❌ | ❌ | ✅ 铁律语言 |
 
@@ -88,7 +88,7 @@ STEP 以"少角色 + 硬绑定 + 对抗性"换取可靠性；BMAD 以"多角色 
 1. 可执行质量门禁（gate.sh + scenario-check.sh 是真实脚本）
 2. BDD 场景矩阵 + ID 硬匹配覆盖率验证
 3. 全自动 Session 恢复（SessionStart Hook）
-4. 需求基线确认 + CR 审计链 + Baseline 整理流程
+4. 需求基线确认 + 变更审计链 + Baseline 整理流程
 5. Agent 模型路由（7 角色绑定不同模型）
 6. 三层注意力管理 Hook（PreToolUse / PostToolUse / Stop）
 7. Gate 失败分级处理（根因分析 → 3 轮 → blocked）

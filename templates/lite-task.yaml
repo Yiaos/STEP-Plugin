@@ -1,5 +1,5 @@
-# STEP Lite Task 模板 — Lite Mode L1 阶段生成，存放于 .step/tasks/
-# 文件名: .step/tasks/{slug}.yaml（如 fix-empty-password.yaml）
+# STEP Lite Task 模板 — Lite Mode L1 阶段生成
+# 文件名: .step/changes/{change}/tasks/{slug}.yaml
 id: task-slug       # 语义化 slug，与文件名一致（不含 .yaml）
 title: "任务标题"
 mode: lite

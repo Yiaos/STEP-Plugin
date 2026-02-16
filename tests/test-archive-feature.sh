@@ -22,105 +22,124 @@ assert "[S-007-01] step-archive.sh 存在且可执行" bash -c "
   [ -x '$SCRIPT_DIR/scripts/step-archive.sh' ]
 "
 
-# [S-007-02] step-archive.sh 归档 done 状态任务
-assert "[S-007-02] step-archive.sh 归档 done 状态任务" bash -c "
+# [S-007-02] step-archive.sh 归档已完成变更
+assert "[S-007-02] step-archive.sh 归档已完成变更" bash -c "
   set -e
   tmpdir=\$(mktemp -d)
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
-  mkdir -p .step/tasks .step/archive
-  printf 'id: fix-bug\nstatus: done\n' > .step/tasks/fix-bug.yaml
+  mkdir -p .step/changes/fix-bug/tasks .step/archive
+  printf 'id: fix-bug\nstatus: done\n' > .step/changes/fix-bug/tasks/fix-bug.yaml
   bash '$SCRIPT_DIR/scripts/step-archive.sh' fix-bug 2>&1 | grep -q 'fix-bug'
-  [ -f .step/archive/*fix-bug.yaml ]
-  [ ! -f .step/tasks/fix-bug.yaml ]
+  ls .step/archive/*fix-bug >/dev/null
+  [ ! -d .step/changes/fix-bug ]
 "
 
-# [S-007-03] step-archive.sh 跳过非 done 任务
-assert "[S-007-03] step-archive.sh 跳过非 done 任务" bash -c "
+# [S-007-03] step-archive.sh 跳过未完成变更
+assert "[S-007-03] step-archive.sh 跳过未完成变更" bash -c "
   set -e
   tmpdir=\$(mktemp -d)
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
-  mkdir -p .step/tasks .step/archive
-  printf 'id: wip-task\nstatus: in_progress\n' > .step/tasks/wip-task.yaml
-  bash '$SCRIPT_DIR/scripts/step-archive.sh' wip-task 2>&1 | grep -q 'skipped'
-  [ -f .step/tasks/wip-task.yaml ]
+  mkdir -p .step/changes/wip/tasks .step/archive
+  printf 'id: wip-1\nstatus: done\n' > .step/changes/wip/tasks/wip-1.yaml
+  printf 'id: wip-2\nstatus: in_progress\n' > .step/changes/wip/tasks/wip-2.yaml
+  bash '$SCRIPT_DIR/scripts/step-archive.sh' wip 2>&1 | grep -q 'skipped'
+  [ -d .step/changes/wip ]
 "
 
-# [S-007-04] step-archive.sh --all 批量归档
-assert "[S-007-04] step-archive.sh --all 批量归档" bash -c "
+# [S-007-04] step-archive.sh --all 批量归档变更
+assert "[S-007-04] step-archive.sh --all 批量归档变更" bash -c "
   set -e
   tmpdir=\$(mktemp -d)
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
-  mkdir -p .step/tasks .step/archive
-  printf 'id: task-a\nstatus: done\n' > .step/tasks/task-a.yaml
-  printf 'id: task-b\nstatus: done\n' > .step/tasks/task-b.yaml
-  printf 'id: task-c\nstatus: in_progress\n' > .step/tasks/task-c.yaml
+  mkdir -p .step/changes/change-a/tasks .step/changes/change-b/tasks .step/changes/change-c/tasks .step/archive
+  printf 'id: a\nstatus: done\n' > .step/changes/change-a/tasks/a.yaml
+  printf 'id: b\nstatus: done\n' > .step/changes/change-b/tasks/b.yaml
+  printf 'id: c\nstatus: in_progress\n' > .step/changes/change-c/tasks/c.yaml
   output=\$(bash '$SCRIPT_DIR/scripts/step-archive.sh' --all 2>&1)
   echo \"\$output\" | grep -q 'Archived: 2'
-  [ -f .step/archive/*task-a.yaml ]
-  [ -f .step/archive/*task-b.yaml ]
-  [ -f .step/tasks/task-c.yaml ]
+  ls .step/archive/*change-a >/dev/null
+  ls .step/archive/*change-b >/dev/null
+  [ -d .step/changes/change-c ]
 "
 
-# [S-007-05] step-archive.sh 处理不存在的 slug
-assert "[S-007-05] step-archive.sh 处理不存在的 slug" bash -c "
+# [S-007-05] step-archive.sh 处理不存在的变更
+assert "[S-007-05] step-archive.sh 处理不存在的变更" bash -c "
   set -e
   tmpdir=\$(mktemp -d)
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
-  mkdir -p .step/tasks .step/archive
+  mkdir -p .step/changes .step/archive
   bash '$SCRIPT_DIR/scripts/step-archive.sh' nonexistent 2>&1 | grep -q 'not found'
 "
 
-# [S-007-06] step-archive.sh 归档文件名带日期前缀
-assert "[S-007-06] 归档文件名带 YYYY-MM-DD 日期前缀" bash -c "
+# [S-007-06] step-archive.sh 归档目录名带日期前缀
+assert "[S-007-06] 归档目录名带 YYYY-MM-DD 日期前缀" bash -c "
   set -e
   tmpdir=\$(mktemp -d)
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
-  mkdir -p .step/tasks .step/archive
-  printf 'id: dated-task\nstatus: done\n' > .step/tasks/dated-task.yaml
-  bash '$SCRIPT_DIR/scripts/step-archive.sh' dated-task >/dev/null 2>&1
+  mkdir -p .step/changes/dated-change/tasks .step/archive
+  printf 'id: dated-task\nstatus: done\n' > .step/changes/dated-change/tasks/dated-task.yaml
+  bash '$SCRIPT_DIR/scripts/step-archive.sh' dated-change >/dev/null 2>&1
   today=\$(date +%F)
-  [ -f \".step/archive/\${today}-dated-task.yaml\" ]
+  [ -d \".step/archive/\${today}-dated-change\" ]
+"
+
+# [S-007-07] 归档当前变更会清空 state.current_change
+assert "[S-007-07] 归档当前变更会清空 current_change" bash -c "
+  set -e
+  tmpdir=\$(mktemp -d)
+  trap 'rm -rf \"\$tmpdir\"' EXIT
+  cd \"\$tmpdir\"
+  mkdir -p .step/changes/init/tasks .step/archive
+  printf 'id: t1\nstatus: done\n' > .step/changes/init/tasks/t1.yaml
+  cat > .step/state.yaml <<'INNER'
+current_change: "init"
+tasks:
+  current: t1
+INNER
+  bash '$SCRIPT_DIR/scripts/step-archive.sh' init >/dev/null 2>&1
+  grep -q '^current_change: ""' .step/state.yaml
+  grep -q '^  current: null' .step/state.yaml
 "
 
 # ── /archive 命令测试 ──
 
-# [S-007-07] archive.md 命令文件存在
-assert "[S-007-07] archive.md 命令文件存在" bash -c "
+# [S-007-08] archive.md 命令文件存在
+assert "[S-007-08] archive.md 命令文件存在" bash -c "
   [ -f '$SCRIPT_DIR/commands/archive.md' ]
 "
 
-# [S-007-08] archive.md 包含正确的 frontmatter
-assert "[S-007-08] archive.md 包含 description frontmatter" bash -c "
+# [S-007-09] archive.md 包含正确的 frontmatter
+assert "[S-007-09] archive.md 包含 description frontmatter" bash -c "
   head -3 '$SCRIPT_DIR/commands/archive.md' | grep -q 'description:'
 "
 
-# [S-007-09] archive.md 包含三种用法
-assert "[S-007-09] archive.md 包含三种用法" bash -c "
-  grep -q '/archive all' '$SCRIPT_DIR/commands/archive.md'
-  grep -q '/archive.*slug' '$SCRIPT_DIR/commands/archive.md' || grep -q '/archive {slug}' '$SCRIPT_DIR/commands/archive.md'
+# [S-007-10] archive.md 包含用法
+assert "[S-007-10] archive.md 包含用法" bash -c "
+  grep -q '/archive' '$SCRIPT_DIR/commands/archive.md'
+  grep -q '/archive {change-name}' '$SCRIPT_DIR/commands/archive.md' || grep -q '/archive.*change' '$SCRIPT_DIR/commands/archive.md'
 "
 
 # ── WORKFLOW.md 归档相关 ──
 
-# [S-007-10] WORKFLOW.md 包含归档触发方式
-assert "[S-007-10] WORKFLOW.md 包含归档触发方式" bash -c "
+# [S-007-11] WORKFLOW.md 包含归档触发方式
+assert "[S-007-11] WORKFLOW.md 包含归档触发方式" bash -c "
   grep -q '归档触发方式' '$SCRIPT_DIR/WORKFLOW.md' || grep -q '触发方式' '$SCRIPT_DIR/WORKFLOW.md'
   grep -q '/archive' '$SCRIPT_DIR/WORKFLOW.md'
   grep -q 'step-archive.sh' '$SCRIPT_DIR/WORKFLOW.md'
 "
 
-# [S-007-11] WORKFLOW.md 归档提示规则
-assert "[S-007-11] WORKFLOW.md 包含完成后提示归档" bash -c "
-  grep -q '所有任务.*完成' '$SCRIPT_DIR/WORKFLOW.md' || grep -q '任务.*done.*提示' '$SCRIPT_DIR/WORKFLOW.md'
+# [S-007-12] WORKFLOW.md 归档提示规则
+assert "[S-007-12] WORKFLOW.md 包含完成后提示归档" bash -c "
+  grep -q '变更下所有 tasks 的 status 都为 done' '$SCRIPT_DIR/WORKFLOW.md' || grep -q '变更已完成' '$SCRIPT_DIR/WORKFLOW.md'
 "
 
-# [S-007-12] SKILL.md 包含归档规则
-assert "[S-007-12] SKILL.md 包含归档规则" bash -c "
+# [S-007-13] SKILL.md 包含归档规则
+assert "[S-007-13] SKILL.md 包含归档规则" bash -c "
   grep -q '归档' '$SCRIPT_DIR/skills/step/SKILL.md'
   grep -q '/archive' '$SCRIPT_DIR/skills/step/SKILL.md'
 "

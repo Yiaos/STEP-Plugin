@@ -37,23 +37,31 @@ else
   fi
 fi
 
-# 检查是否有已完成但未归档的任务
+# 检查是否有可归档的变更（变更下所有任务都 done）
 ARCHIVE_COUNT=0
-if [ -d ".step/tasks" ]; then
-  for task_file in .step/tasks/*.yaml; do
+for change_dir in .step/changes/*; do
+  [ -d "$change_dir" ] || continue
+  tasks_dir="$change_dir/tasks"
+  [ -d "$tasks_dir" ] || continue
+
+  found=0
+  all_done=true
+  for task_file in "$tasks_dir"/*.yaml; do
     [ -f "$task_file" ] || continue
-    if grep -q '^status: done' "$task_file" 2>/dev/null; then
-      slug=$(basename "$task_file" .yaml)
-      # 检查是否已归档
-      if ! ls .step/archive/*-"${slug}.yaml" 2>/dev/null | grep -q . ; then
-        ARCHIVE_COUNT=$((ARCHIVE_COUNT + 1))
-      fi
+    found=1
+    if ! grep -q '^status:[[:space:]]*done' "$task_file" 2>/dev/null; then
+      all_done=false
+      break
     fi
   done
-fi
+
+  if [ "$found" -eq 1 ] && [ "$all_done" = true ]; then
+    ARCHIVE_COUNT=$((ARCHIVE_COUNT + 1))
+  fi
+done
 
 if [ "$ARCHIVE_COUNT" -gt 0 ]; then
-  echo "[STEP STOP CHECK] REMIND: ${ARCHIVE_COUNT} 个已完成任务待归档（/step archive 或自然语言\"归档\"）"
+  echo "[STEP STOP CHECK] REMIND: ${ARCHIVE_COUNT} 个变更可归档（/archive 或 /archive {change-name}）"
 fi
 
 # 综合判定

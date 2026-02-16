@@ -86,6 +86,7 @@ install() {
   chmod +x "$TARGET_DIR/scripts/scenario-check.sh"
   chmod +x "$TARGET_DIR/scripts/step-init.sh"
   chmod +x "$TARGET_DIR/scripts/step-stop-check.sh"
+  chmod +x "$TARGET_DIR/scripts/step-archive.sh"
   echo "  Set executable permissions"
 
   # 创建 symlinks

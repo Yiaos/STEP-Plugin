@@ -23,7 +23,7 @@ description: "启动 STEP 协议（Stateful Task Execution Protocol）。自动�
 2. 读取 `.step/baseline.md`
 3. 如果有当前任务，读取对应 task YAML
 4. 根据 current_phase 进入对应阶段
-5. 输出状态行：`📍 Phase X | Task: {slug} | Status: xxx | Next: xxx`
+5. 输出状态行：`📍 Phase X | Change: {name} | Task: {slug} | Status: xxx | Next: xxx`
 6. 从上次中断的位置继续
 
 ## 全阶段规则

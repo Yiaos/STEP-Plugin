@@ -7,6 +7,7 @@
 # STEP Protocol — 项目状态（由协议自动维护）
 project: "TODO"
 current_phase: "phase-0-discovery"
+current_change: "init"
 last_updated: ""
 last_agent: ""
 last_session_summary: ""
@@ -14,24 +15,14 @@ last_session_summary: ""
 established_patterns: {}
 
 tasks:
-  completed: []
   current: null
   upcoming: []
 
 # 关键决策摘要（倒序：最新条目在最前）
 key_decisions: []
-# 示例:
-# - decision: "选择 HttpOnly Cookie 方案替代 JWT"
-#   reason: "JWT 存在 CSRF 风险，Cookie 方案更安全且实现简单"
-#   phase: "phase-2-tech-design"
-#   date: "2026-02-15"
 
 known_issues: []
 constraints_quick_ref: []
 
 # 进度日志（倒序：最新条目在最前）
 progress_log: []
-# 示例:
-# - date: "2026-02-15"
-#   summary: "完成 T-001 auth 模块所有场景，gate standard 通过"
-#   next_action: "开始 T-002，先写 src/api/tasks.test.ts"

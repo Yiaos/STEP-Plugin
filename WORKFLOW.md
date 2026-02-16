@@ -16,7 +16,7 @@ Discovery   →   PRD        →   Tech Design →  Plan & Tasks →  Execution 
                                                    读 state.yaml
 
 Post-MVP:
-  Hotfix → Change Request → 回到 Phase 4
+  新增功能/Hotfix/约束变更 → 回到 Phase 1-4（按变更类型）
 ```
 
 ### 对话模式说明
@@ -55,18 +55,23 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义文件（`STEP/ag
 ```
 .step/
 ├── config.yaml               # 项目配置（agent 路由、文件路由、gate 命令）
-├── baseline.md                # Phase 1 输出：确认需求
-├── tech-comparison.md         # Phase 2 输出：技术方案对比
+├── baseline.md                # 需求基线（活快照）
 ├── decisions.md               # Phase 2 输出：架构决策日志
 ├── state.yaml                 # Phase 3+ 持续更新：项目状态机
-├── tasks/
-│   ├── user-register-api.yaml # 语义化 slug 命名（mode: full/lite 区分）
-│   ├── fix-empty-password.yaml
-│   └── ...
-├── archive/                   # 已完成任务归档
-│   └── 2026-02-15-user-register-api.yaml
-├── change-requests/
-│   └── 2026-02-15-CR-add-oauth-login.yaml  # 变更请求
+├── changes/                   # 所有变更（初始 + 后续）统一管理
+│   ├── init/                  # 初始开发
+│   │   ├── spec.md            # 需求说明（Phase 1 产出）
+│   │   ├── design.md          # 技术方案（Phase 2 产出）
+│   │   └── tasks/             # 任务 + BDD 场景（Phase 3 产出）
+│   │       ├── user-register-api.yaml
+│   │       └── ...
+│   └── 2026-02-20-add-dark-mode/  # 后续变更
+│       ├── spec.md
+│       ├── design.md
+│       └── tasks/
+│           └── dark-mode-toggle.yaml
+├── archive/                   # 已完成变更归档
+│   └── 2026-02-15-init/
 └── evidence/
     ├── user-register-api-gate.json      # gate 运行结果（gate.sh 自动生成）
     ├── user-register-api-scenario.json  # 场景覆盖结果（scenario-check.sh 自动生成）
@@ -74,7 +79,7 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义文件（`STEP/ag
 scripts/
 ├── gate.sh                    # 质量门禁
 ├── scenario-check.sh          # 场景覆盖检查
-└── step-archive.sh            # 任务归档
+└── step-archive.sh            # 变更归档
 ```
 
 ---
@@ -170,7 +175,7 @@ LLM 基于 Phase 0 讨论起草 baseline.md
 
 ## 状态
 - 确认时间: YYYY-MM-DD
-- 修改方式: 必须通过 Change Request
+- 修改方式: 必须通过新建变更（`.step/changes/YYYY-MM-DD-{slug}/`）
 ```
 
 ---
@@ -226,12 +231,12 @@ LLM: "好的，整体架构确定了。还有几个细节需要确认：
 
 用户: A, A
 
-LLM: → 写入 .step/tech-comparison.md + .step/decisions.md
+LLM: → 写入 .step/changes/{change}/design.md + .step/decisions.md
 ```
 
 ### 输出物
 
-- `.step/tech-comparison.md`：方案对比表
+- `.step/changes/{change}/design.md`：技术方案
 - `.step/decisions.md`：ADR 日志
 - 更新 `baseline.md` 的 Tech Stack
 
@@ -265,7 +270,7 @@ BDD 场景 (Given/When/Then) — 行为规格
 ### 任务 YAML 格式
 
 ```yaml
-# 文件名: .step/tasks/user-register-api.yaml
+# 文件名: .step/changes/{change}/tasks/user-register-api.yaml
 id: user-register-api          # 语义化 slug = 文件名（不含 .yaml）
 title: "用户注册 API"
 mode: full                     # full | lite
@@ -334,17 +339,17 @@ rollback: "git revert --no-commit HEAD~3"
 
 ### 命名规则
 
-| 元素       | 格式                                  | 示例                                           |
-| ---------- | ------------------------------------- | ---------------------------------------------- |
-| 任务文件名 | `{slug}.yaml`                         | `user-register-api.yaml`                       |
-| 任务 ID    | `{slug}`                              | `user-register-api`                            |
-| 场景 ID    | `S-{slug}-{seq}`                      | `S-user-register-api-01`                       |
-| 归档文件名 | `YYYY-MM-DD-{slug}.yaml`              | `2026-02-15-user-register-api.yaml`            |
-| Evidence   | `{slug}-gate.json`                    | `user-register-api-gate.json`                  |
-| Evidence   | `{slug}-scenario.json`                | `user-register-api-scenario.json`              |
-| Evidence   | `{slug}-review.md`                    | `user-register-api-review.md`                  |
-| Hotfix     | `YYYY-MM-DD-{slug}-hotfix-{seq}.yaml` | `2026-02-15-user-register-api-hotfix-001.yaml` |
-| CR         | `YYYY-MM-DD-CR-{slug}.yaml`           | `2026-02-15-CR-add-oauth.yaml`                 |
+| 元素       | 格式                                      | 示例                                              |
+| ---------- | ----------------------------------------- | ------------------------------------------------- |
+| 变更目录   | `.step/changes/{change}/`                 | `changes/init/`, `changes/2026-02-20-add-oauth/`  |
+| 变更 spec  | `.step/changes/{change}/spec.md`          | `changes/init/spec.md`                             |
+| 变更 design| `.step/changes/{change}/design.md`        | `changes/init/design.md`                            |
+| 任务文件   | `.step/changes/{change}/tasks/{slug}.yaml`| `changes/init/tasks/user-register-api.yaml`        |
+| 任务 ID    | `{slug}`                                  | `user-register-api`                                |
+| 场景 ID    | `S-{slug}-{seq}`                          | `S-user-register-api-01`                           |
+| 归档       | `.step/archive/YYYY-MM-DD-{change}/`      | `archive/2026-02-15-init/`                         |
+| Evidence   | `{slug}-gate.json`                        | `user-register-api-gate.json`                      |
+| Evidence   | `{slug}-scenario.json`                    | `user-register-api-scenario.json`                  |
 
 **Slug 命名原则（参考 OpenSpec）：**
 - 使用小写英文 + 连字符（kebab-case）
@@ -403,7 +408,7 @@ Step 1: 加载上下文
 
 Step 2: 写测试（按 routing.test_writing 派发 @step-qa）
   ┌────────────────────────────────────────────────┐
-  │ 读取 .step/tasks/user-register-api.yaml 的场景矩阵│
+  │ 读取 .step/changes/{change}/tasks/user-register-api.yaml 的场景矩阵│
   │ 为每个场景写测试，名称包含 [S-{slug}-xx]          │
   │ 不写任何实现代码                                  │
   │ 跑测试确认全部 FAIL                               │
@@ -665,14 +670,14 @@ Phase 5 Review 通过后，用户可选择触发部署策略建议。由 `@step-
 
 ---
 
-## Post-MVP: Change Request 与 Hotfix 流程
+## Post-MVP: 统一变更流程（新增功能 / Hotfix / 约束变更）
 
 MVP 完成后不是终点。后续的需求变更、bug 修复**同样遵循 STEP 协议**，所有过程记录在 `.step/` 下。
 
 ### 核心原则
 
 Post-MVP 的每一次变更都必须：
-1. **有记录** — CR / Hotfix 任务 YAML 写入 `.step/`
+1. **有记录** — 变更目录写入 `.step/changes/{change}/`（spec + design + tasks）
 2. **有场景** — 新增/修改的行为必须有 BDD 场景矩阵
 3. **有验证** — 走 gate（hotfix 必须 gate full 回归）
 4. **有审查** — Review + Commit，与 MVP 执行阶段相同
@@ -680,31 +685,26 @@ Post-MVP 的每一次变更都必须：
 ### 场景 1: 需求变更（新功能 / 修改行为）
 
 ```
-用户: "MVP 用起来不错，但需要加一个 XX 功能"
+用户: "MVP 用起来不错，但需要加一个 OAuth 登录"
   │
-  ├── 1. 创建 Change Request
-   │     .step/change-requests/2026-02-14-CR-add-oauth-login.yaml:
-   │       id: 2026-02-14-CR-add-oauth-login
-  │       type: feature  # feature | behavior_change | constraint_change
-  │       description: "新增 XX 功能"
-  │       impacts:
-  │         - baseline: "MVP Scope 新增 F-7"
-  │         - tasks: "需要新增任务 add-xx-feature"
-  │         - existing_code: "需要修改 src/api/xxx.ts"
-   │       decision: pending
-   │
-   ├── 2. 用户确认
-   │     decision: recorded / reverted
-   │
-   ├── 3. 如果 recorded:
-   │     → 更新 baseline.md（追加 F-7）
-   │     → 创建新 task add-xx-feature.yaml（含完整场景矩阵）
-   │     → 更新 state.yaml upcoming
-   │     → 进入 Phase 4 执行 add-xx-feature（完整 TDD + Gate + Review + Commit）
-   │     → 更新 state.yaml（记录 2026-02-14-CR-add-oauth-login 已完成）
-   │
-   └── 4. 如果 reverted:
-         → CR 状态标 reverted，归档
+  ├── 1. 创建变更文件夹
+  │     mkdir .step/changes/2026-02-14-add-oauth-login/tasks/
+  │     写入 spec.md（背景 + 需求 + 影响范围）
+  │     写入 design.md（技术方案）
+  │
+  ├── 2. 用户确认 spec
+  │     确认 → 继续; 撤回 → 删除变更文件夹
+  │
+  ├── 3. 创建任务
+  │     写入 tasks/{slug}.yaml（含完整 BDD 场景矩阵）
+  │     更新 state.yaml: current_change → 2026-02-14-add-oauth-login
+  │
+  ├── 4. Phase 4 执行（TDD + Gate + Review + Commit）
+  │
+  ├── 5. 更新 baseline.md 反映最新状态
+  │
+  └── 6. 归档变更
+        mv .step/changes/2026-02-14-add-oauth-login/ .step/archive/
 ```
 
 ### 场景 2: Bug 修复（Hotfix）
@@ -717,15 +717,15 @@ Post-MVP 的每一次变更都必须：
   │     → 读 task YAML 找到对应场景（S-user-register-api-03 密码太短）
   │     → 检查场景 status（如果是 pass → 测试没覆盖到这个 case）
   │
-  ├── 2. 创建 Hotfix 任务（记录在 .step/tasks/）
-  │     .step/tasks/2026-02-14-user-register-api-hotfix-001.yaml:
-  │       id: 2026-02-14-user-register-api-hotfix-001
-  │       type: hotfix
-  │       parent_task: user-register-api
-  │       bug_description: "空密码未返回 400"
-  │       root_cause: "zod schema 未校验空字符串"
+  ├── 2. 创建 Hotfix 变更
+  │     mkdir .step/changes/2026-02-14-register-hotfix/tasks/
+  │     写入 spec.md（bug 描述 + 根因 + 影响）
+  │     写入 design.md（修复方案 + 风险）
+  │     写入 tasks/register-empty-password.yaml:
+  │       id: register-empty-password
+  │       mode: lite
   │       scenarios:
-  │         - id: S-user-register-api-HF01
+  │         - id: S-register-empty-password-01
   │           given: "password 为空字符串"
   │           when: "POST /api/register"
   │           then: "返回 400"
@@ -733,13 +733,11 @@ Post-MVP 的每一次变更都必须：
   │           status: not_run
   │
   ├── 3. TDD 修复（完整 Phase 4 流程）
-  │     → 先写失败测试（按 routing.test_writing 派发 @step-qa）
-  │     → 修复代码
-  │     → gate standard → Review + Commit
+  │     → 先写失败测试 → 修复代码 → gate standard → Review + Commit
   │
   └── 4. 回归验证
         → gate full（确保不破坏其他功能）
-        → 更新 state.yaml（known_issues 移除已修复项，tasks.completed 追加 2026-02-14-user-register-api-hotfix-001）
+        → 归档变更到 .step/archive/
 ```
 
 ### 场景 3: 约束变更（影响大）
@@ -747,32 +745,28 @@ Post-MVP 的每一次变更都必须：
 ```
 用户: "我们需要把 cookie session 改成 JWT"
   │
-  ├── 1. 创建高影响 CR
-  │     .step/change-requests/2026-02-14-CR-002.yaml:
+  ├── 1. 创建约束变更
+  │     mkdir .step/changes/2026-02-14-migrate-cookie-to-jwt/tasks/
+  │     写入 spec.md:
   │       type: constraint_change
-  │       conflicts_with:
-  │         - "baseline.md C-3: 使用 cookie session"
-  │         - "ADR-003: 选择 cookie 的理由"
-  │       impact_scope:
-  │         - "user-register-api, user-login-api, user-profile-api 全部受影响"
-  │         - "auth middleware 全量重写"
+  │       冲突: baseline C-3（使用 cookie）+ ADR-003
+  │       影响: user-register/login/profile API + auth middleware
   │
-  ├── 2. 影响分析
-  │     LLM 分析哪些已完成任务需要修改
-  │     列出所有受影响文件和测试
+  ├── 2. 影响分析 + design.md
+  │     分析受影响文件和测试 → 写入 design.md
   │
-  ├── 3. 用户确认
-   │     → recorded → 更新 baseline + decisions + 受影响 task
-  │     → 创建迁移任务 .step/tasks/2026-02-14-migrate-cookie-to-jwt.yaml（含场景矩阵）
+  ├── 3. 用户确认 spec → 创建迁移任务
+  │     写入 tasks/migrate-cookie-to-jwt.yaml（含场景矩阵）
   │
-  └── 4. 执行迁移（完整 Phase 4 流程）
-        → TDD + gate full + Review + Commit
-        → 更新 state.yaml（记录迁移完成）
+  ├── 4. 执行迁移（完整 Phase 4 流程）
+  │     → TDD + gate full + Review + Commit
+  │
+  └── 5. 更新 baseline + decisions → 归档变更
 ```
 
 ### 场景 4: Baseline 整理（低频维护）
 
-经过多轮 CR/Hotfix 后，baseline 可能累积大量追加项、已移除功能、被替换的约束，可读性下降。此时可进行一次"整理"：
+经过多轮变更/Hotfix 后，baseline 可能累积大量追加项、已移除功能、被替换的约束，可读性下降。此时可进行一次"整理"：
 
 ```
 用户: "整理一下 baseline"
@@ -781,21 +775,21 @@ Post-MVP 的每一次变更都必须：
   │     mv .step/baseline.md .step/archive/YYYY-MM-DD-baseline-v{N}.md
   │
   ├── 2. 整理干净版本
-  │     读取旧 baseline + 所有 recorded CR + decisions.md
+  │     读取旧 baseline + 所有已归档变更 + decisions.md
   │     整理只反映当前状态的新 baseline.md：
   │       - 已移除的功能项直接删掉（不留删除线）
-  │       - 被 CR 修改过的约束直接写新值
+  │       - 被变更修改过的约束直接写新值
   │       - 已完成的保持 [x]，未完成的保持 [ ]
   │       - 注明"整理自 v{N}"
   │
   ├── 3. 用户确认
   │     展示新版 baseline → 用户确认
   │
-  ├── 4. 同时精简 state.yaml
-  │     - 合并冗余 progress_log 条目为一条总结
-  │     - 清理已解决的 known_issues
-  │     - 只保留仍有参考价值的 key_decisions
-  │     - tasks.completed 可保留或清空（已归档的任务可在 archive/ 查）
+   ├── 4. 同时精简 state.yaml
+   │     - 合并冗余 progress_log 条目为一条总结
+   │     - 清理已解决的 known_issues
+   │     - 只保留仍有参考价值的 key_decisions
+   │     - 清理失效的 current_change/current task 指针（若已归档）
   │
   ├── 5. 同时精简 decisions.md
   │     归档旧版到 .step/archive/YYYY-MM-DD-decisions-v{N}.md
@@ -850,7 +844,7 @@ Layer 4: 独立审查    ← Phase 5 QA（需求合规 + 代码质量）
 ### 测试生成提示词模板
 
 ```
-读取 .step/tasks/{slug}.yaml 中的 scenarios 字段。
+读取 .step/changes/{change}/tasks/{slug}.yaml 中的 scenarios 字段。
 
 为每个场景写一个测试用例，规则：
 1. 测试名称必须包含场景 ID，格式: [S-{slug}-xx]
@@ -890,7 +884,7 @@ description: "初始化 STEP 协议并开始全生命周期开发流程。自动
   1. 读取 .step/state.yaml
   2. 根据 current_phase 进入对应阶段
   3. 如果有 current task，显示状态行：
-     "📍 Phase X | Task: {slug} | Status: xxx | Next: xxx"
+     "📍 Phase X | Change: {name} | Task: {slug} | Status: xxx | Next: xxx"
   4. 从上次中断的位置继续
 
 在所有阶段中遵守以下规则：
@@ -904,7 +898,7 @@ Phase 5 (Review): 独立审查（需求合规 > 代码质量）。
 
 每次对话结束时必须更新 .step/state.yaml。
 next_action 必须精确到文件名和具体动作。
-不允许违反 baseline.md 约束，冲突时走 Change Request。
+不允许违反 baseline.md 约束，冲突时必须新建变更并更新 spec/design。
 ```
 
 ### SessionStart Hook
@@ -959,11 +953,15 @@ fi
 # 读取 state.yaml 内容
 STATE_CONTENT=$(cat "$STATE_FILE" 2>&1 || echo "Error reading state.yaml")
 
-# 读取当前任务（如果有）
+# 读取当前变更和任务（如果有）
 TASK_CONTENT=""
-CURRENT_TASK=$(grep "id:" "$STATE_FILE" 2>/dev/null | head -1 | sed 's/.*id: //' | tr -d ' ' || true)
-if [ -n "$CURRENT_TASK" ] && [ -f ".step/tasks/${CURRENT_TASK}.yaml" ]; then
-  TASK_CONTENT=$(cat ".step/tasks/${CURRENT_TASK}.yaml" 2>&1 || echo "")
+CURRENT_CHANGE=$(grep 'current_change:' "$STATE_FILE" 2>/dev/null | head -1 | sed 's/.*current_change: *//' | tr -d ' "'"'" || true)
+CURRENT_TASK=$(grep -E "^\s+current:" "$STATE_FILE" 2>/dev/null | head -1 | sed 's/.*current: *//' | tr -d ' "'"'" || true)
+if [ -n "$CURRENT_CHANGE" ] && [ -n "$CURRENT_TASK" ]; then
+  TASK_PATH=".step/changes/${CURRENT_CHANGE}/tasks/${CURRENT_TASK}.yaml"
+  if [ -f "$TASK_PATH" ]; then
+    TASK_CONTENT=$(cat "$TASK_PATH" 2>&1 || echo "")
+  fi
 fi
 
 # 读取 baseline
@@ -1036,9 +1034,9 @@ Session 开始
 
 ### Session 启动
 1. 读取 `.step/state.yaml`
-2. 读取当前 task YAML（如果 Phase 4+）
+2. 读取当前 change 的 spec + 当前 task YAML（如果 Phase 4+）
 3. 读取 `.step/baseline.md`
-4. 输出状态行: "📍 Phase X | Task: {slug} | Status: xxx"
+4. 输出状态行: "📍 Phase X | Change: {name} | Task: {slug} | Status: xxx"
 
 ### Phase 规则
 - Phase 0 (Discovery): 开放式讨论，用户主导，不逐个提问
@@ -1067,13 +1065,13 @@ Session 开始
 ### 防漂移
 - 不违反 baseline.md 约束
 - 不违反 decisions.md ADR
-- 冲突时先写 Change Request
-- Post-MVP 变更走 CR 流程（遵循完整 STEP）
+- 冲突时先新建变更并更新 spec/design
+- Post-MVP 变更走 changes/ 流程（遵循完整 STEP）
 - Bug 修复走 Hotfix 流程（遵循完整 STEP）
 
 ### 归档
-- 任务完成后，使用 `/archive` 命令或说 "归档 xxx" 归档到 `.step/archive/`
-- 归档脚本: `./scripts/step-archive.sh [slug|--all]`
+- 变更完成后，使用 `/archive` 命令或说 "归档 {change-name}" 归档到 `.step/archive/`
+- 归档脚本: `./scripts/step-archive.sh [change-name|--all]`
 ```
 
 ---
@@ -1083,10 +1081,11 @@ Session 开始
 初始化逻辑在 `scripts/step-init.sh` 中实现，由 `/step` 命令调用。主要功能：
 
 1. **项目检测** — `detect_project()` 扫描 16 种包管理器/清单文件 + 6 种工具目录，判断是已有项目还是绿地项目
-2. **创建目录** — `.step/tasks/`, `.step/archive/`, `.step/change-requests/`, `.step/evidence/`, `scripts/`
-3. **复制模板** — 从 `templates/` 复制 `config.yaml`, `state.yaml`, `baseline.md`, `decisions.md`
-4. **复制脚本** — 复制 `gate.sh`, `scenario-check.sh` 到项目 `scripts/` 目录
-5. **已有项目提示** — 检测到已有代码时，提示 LLM 先分析现有代码结构再讨论新需求
+2. **创建目录** — `.step/changes/init/tasks/`, `.step/archive/`, `.step/evidence/`, `scripts/`
+3. **创建初始变更文档** — `.step/changes/init/spec.md` + `.step/changes/init/design.md`
+4. **复制模板** — 从 `templates/` 复制 `config.yaml`, `state.yaml`, `baseline.md`, `decisions.md`
+5. **复制脚本** — 复制 `gate.sh`, `scenario-check.sh` 到项目 `scripts/` 目录
+6. **已有项目提示** — 检测到已有代码时，提示 LLM 先分析现有代码结构再讨论新需求
 
 详见 `scripts/step-init.sh` 源码。
 
@@ -1111,7 +1110,7 @@ Session 开始
 | Phase 流转顺序   | LLM 可能跳过阶段 | Hook 注入 current_phase，SKILL.md 明确规则 |
 | TDD 先测试后实现 | LLM 可能先写实现 | Developer agent 约束 + gate 验证测试存在   |
 | 每次跑 gate      | LLM 可能跳过     | SKILL.md 硬规则 + Review 阶段检查 evidence |
-| baseline 确认    | LLM 可能直接改   | 文档标记确认 + CR 流程约束                 |
+| baseline 确认    | LLM 可能直接改   | 文档标记确认 + changes/ 流程约束           |
 | next_action 恢复 | LLM 可能不遵守   | Hook 注入 state.yaml，包含 next_action     |
 
 ### 不能保证（需要外部机制）
@@ -1141,7 +1140,7 @@ Session 开始
 | ------------------------- | -------------------------- |
 | baseline.md 首版确认      | Phase 1 出口，确认需求基线 |
 | 技术方案选择              | 有多个可选方案时需用户决策 |
-| 需求变更（CR）            | 影响 baseline 范围         |
+| 需求变更（新建变更）      | 影响 baseline 范围         |
 | git push --force / rebase | 可能丢失他人工作           |
 | 删除用户数据或不可逆操作  | 无法撤销                   |
 
@@ -1193,7 +1192,7 @@ LLM 输出（一次性，不分段）:
 
 用户: "可以" / 修改后确认
 
-→ 写入 .step/tasks/fix-empty-password.yaml
+→ 写入 .step/changes/{change}/tasks/fix-empty-password.yaml
 → 进入 L2
 
 批量任务处理（用户一次提交多个小任务时）:
@@ -1210,7 +1209,7 @@ LLM 输出（批量展示，一次确认）:
 
 用户: "可以"
 
-→ 写入 3 个 YAML 到 .step/tasks/
+→ 写入 3 个 YAML 到 .step/changes/{change}/tasks/
 → L2 逐个执行（每个任务独立 TDD + gate + commit）
 → 其中某个发现复杂度超预期 → 仅该任务升级 Full Mode，其他继续 Lite
 ```
@@ -1291,7 +1290,7 @@ LLM: "✅ 已完成并提交。请 check 以下变更：
 ### Lite Task YAML 格式
 
 ```yaml
-# .step/tasks/fix-empty-password.yaml
+# .step/changes/{change}/tasks/fix-empty-password.yaml
 id: fix-empty-password
 title: "修复空密码未报错"
 mode: lite
@@ -1330,32 +1329,30 @@ done_when:
   - "gate.sh standard fix-empty-password"
 ```
 
-### 任务归档
+### 变更归档
 
-`.step/tasks/` 存放所有活跃/未完成任务，`.step/archive/` 存放已完成任务。两种模式的任务都统一归档。
+`.step/changes/` 存放所有活跃变更，`.step/archive/` 存放已完成变更。变更完成后整个文件夹归档。
 
 **归档触发方式（三选一）：**
 
-1. **任务全部完成后提示**：当所有 tasks 的 status 都为 done 时，LLM 主动提示：
-   > "所有任务已完成。是否要归档？可以说「归档」或 `/archive`"
-2. **自然语言**：用户说 "归档 fix-empty-password" 或 "归档所有任务"
-3. **命令**：`/archive`、`/archive all`、`/archive fix-empty-password`
+1. **变更所有任务完成后提示**：当变更下所有 tasks 的 status 都为 done 时，LLM 主动提示：
+   > "变更已完成。是否要归档？可以说「归档」或 `/archive`"
+2. **自然语言**：用户说 "归档" 或 "归档 init"
+3. **命令**：`/archive`、`/archive {change-name}`
 
 **归档操作：**
 
 ```
-# 归档指定任务
-./scripts/step-archive.sh fix-empty-password
-  → .step/tasks/fix-empty-password.yaml
-  → .step/archive/2026-02-15-fix-empty-password.yaml
+# 归档指定变更（整个文件夹移入 archive/）
+mv .step/changes/init/ .step/archive/2026-02-15-init/
 
-# 归档全部已完成任务
-./scripts/step-archive.sh --all
-  → 遍历 .step/tasks/，status: done 的全部移到 archive/
+# 归档后更新
+→ baseline.md 反映最新状态
+→ state.yaml current_change 清空（如果归档的是当前变更）
 ```
 
 **归档规则：**
-- 仅 status 为 done 且 gate 通过 且 Review 通过的任务可归档
+- 变更下所有任务 status 为 done 且 gate 通过 且 Review 通过才可归档
 - 归档脚本自动检查 `status: done`，未完成的自动跳过
 - 文件名加日期前缀便于按时间查找
 - 归档不是删除，仍可 grep 搜索历史决策
@@ -1396,7 +1393,7 @@ done_when:
 | #   | 反馈                                         | 本文档如何处理                                                                              |
 | --- | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | 1   | Phase 0/2 应该是开放式讨论                   | Phase 0/2 改为"用户主导的开放式讨论"，Phase 1/3 才用选择题确认细节                          |
-| 2   | Post-MVP 变更和 bug 修复                     | 新增"Post-MVP"章节：Change Request（需求变更）+ Hotfix（bug）+ 约束变更                     |
+| 2   | Post-MVP 变更和 bug 修复                     | 新增"Post-MVP"章节：统一变更目录（spec + design + tasks）覆盖新增功能、Hotfix、约束变更      |
 | 3   | 场景规则是 BDD                               | 场景 = BDD Given/When/Then = 行为规格。测试类型由 test_type 字段指定                        |
 | 4   | 用 hook 保证规则生效                         | 新增 SessionStart hook（自动注入 state.yaml 到上下文）+ `/step` 命令                        |
 | 5   | 统一使用 opencode，删除 tool                 | config.yaml 改为 routing（agent 路由）+ file_routing（文件分流）+ gate（命令）              |

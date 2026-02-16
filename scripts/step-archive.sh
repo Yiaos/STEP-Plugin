@@ -2,14 +2,15 @@
 # chmod +x scripts/step-archive.sh
 set -euo pipefail
 
-TASKS_DIR=".step/tasks"
+CHANGES_DIR=".step/changes"
 ARCHIVE_DIR=".step/archive"
+STATE_FILE=".step/state.yaml"
 TODAY="$(date +%F)"
 
 print_usage() {
   cat <<'USAGE'
 Usage:
-  ./scripts/step-archive.sh [slug1] [slug2] ...
+  ./scripts/step-archive.sh [change-name1] [change-name2] ...
   ./scripts/step-archive.sh --all
 USAGE
 }
@@ -18,33 +19,93 @@ ensure_dirs() {
   mkdir -p "$ARCHIVE_DIR"
 }
 
-is_done() {
-  local file="$1"
-  if grep -q "^status:[[:space:]]*done" "$file"; then
+list_changes() {
+  if [ -d "$CHANGES_DIR" ]; then
+    for dir in "$CHANGES_DIR"/*; do
+      [ -d "$dir" ] || continue
+      basename "$dir"
+    done
+  fi
+}
+
+change_exists() {
+  local name="$1"
+  [ -d "$CHANGES_DIR/$name" ]
+}
+
+change_all_tasks_done() {
+  local name="$1"
+  local tasks_dir="$CHANGES_DIR/$name/tasks"
+
+  if [ ! -d "$tasks_dir" ]; then
+    return 1
+  fi
+
+  local found=0
+  local task_file=""
+  for task_file in "$tasks_dir"/*.yaml; do
+    [ -f "$task_file" ] || continue
+    found=1
+    if ! grep -q '^status:[[:space:]]*done' "$task_file"; then
+      return 1
+    fi
+  done
+
+  [ "$found" -eq 1 ]
+}
+
+next_archive_path() {
+  local name="$1"
+  local base="$ARCHIVE_DIR/${TODAY}-${name}"
+  local target="$base"
+  local n=1
+
+  while [ -e "$target" ]; do
+    target="${base}-${n}"
+    n=$((n + 1))
+  done
+
+  printf "%s" "$target"
+}
+
+reset_state_if_current_change_archived() {
+  local archived_name="$1"
+
+  if [ ! -f "$STATE_FILE" ]; then
     return 0
   fi
-  return 1
-}
 
-archive_file() {
-  local file="$1"
-  local slug="$2"
-  local dest="$ARCHIVE_DIR/${TODAY}-${slug}.yaml"
-  mv "$file" "$dest"
-  printf "  ✅ %s → %s\n" "$slug" "$dest"
-}
+  local current_change=""
+  current_change=$(grep '^current_change:' "$STATE_FILE" 2>/dev/null | head -1 | sed 's/^current_change:[[:space:]]*//' | tr -d ' "' || true)
 
-list_task_files() {
-  if [ -d "$TASKS_DIR" ]; then
-    ls "$TASKS_DIR"/*.yaml 2>/dev/null || true
+  if [ "$current_change" = "$archived_name" ]; then
+    sed -i.bak 's/^current_change:.*/current_change: ""/' "$STATE_FILE"
+    sed -i.bak 's/^\([[:space:]]*current:\).*/\1 null/' "$STATE_FILE"
+    rm -f "$STATE_FILE.bak"
   fi
 }
 
-slug_from_path() {
-  local file="$1"
-  local base
-  base="$(basename "$file")"
-  printf "%s" "${base%.yaml}"
+archive_change() {
+  local name="$1"
+
+  if ! change_exists "$name"; then
+    printf "  ⚠️  %s (not found, skipped)\n" "$name"
+    return 2
+  fi
+
+  if ! change_all_tasks_done "$name"; then
+    printf "  ⏭️ %s (tasks not all done, skipped)\n" "$name"
+    return 3
+  fi
+
+  local source="$CHANGES_DIR/$name"
+  local target
+  target=$(next_archive_path "$name")
+
+  mv "$source" "$target"
+  reset_state_if_current_change_archived "$name"
+  printf "  ✅ %s → %s\n" "$name" "$target"
+  return 0
 }
 
 main() {
@@ -53,74 +114,49 @@ main() {
     exit 1
   fi
 
-  printf "📦 Archiving completed tasks...\n"
+  printf "📦 Archiving completed changes...\n"
   ensure_dirs
 
   local archived=0
   local skipped=0
 
   if [ "$1" = "--all" ]; then
-    local files
-    files=$(list_task_files)
-    if [ -z "$files" ]; then
-      printf "📊 Archived: 0 task(s)\n"
+    local names=""
+    names=$(list_changes)
+    if [ -z "$names" ]; then
+      printf "📊 Archived: 0 change(s)\n"
       return 0
     fi
 
-    for file in $files; do
-      local slug
-      slug="$(slug_from_path "$file")"
-      if is_done "$file"; then
-        archive_file "$file" "$slug"
+    local name=""
+    for name in $names; do
+      if archive_change "$name"; then
         archived=$((archived + 1))
       else
-        local status
-        status=$(grep -E "^status:" "$file" | head -n 1 | sed 's/^status:[[:space:]]*//')
-        if [ -z "$status" ]; then
-          status="unknown"
-        fi
-        printf "  ⏭️ %s (status: %s, skipped)\n" "$slug" "$status"
         skipped=$((skipped + 1))
       fi
     done
 
-    if [ "$archived" -eq 0 ]; then
-      printf "📊 Archived: 0 task(s)\n"
-      return 0
+    printf "📊 Archived: %s change(s)\n" "$archived"
+    if [ "$skipped" -gt 0 ]; then
+      printf "📊 Skipped: %s change(s)\n" "$skipped"
     fi
-
-    printf "📊 Archived: %s task(s)\n" "$archived"
     return 0
   fi
 
-  for slug in "$@"; do
-    local file="$TASKS_DIR/${slug}.yaml"
-    if [ ! -f "$file" ]; then
-      printf "  ⚠️  %s (not found, skipped)\n" "$slug"
-      skipped=$((skipped + 1))
-      continue
-    fi
-
-    if is_done "$file"; then
-      archive_file "$file" "$slug"
+  local name=""
+  for name in "$@"; do
+    if archive_change "$name"; then
       archived=$((archived + 1))
     else
-      local status
-      status=$(grep -E "^status:" "$file" | head -n 1 | sed 's/^status:[[:space:]]*//')
-      if [ -z "$status" ]; then
-        status="unknown"
-      fi
-      printf "  ⏭️ %s (status: %s, skipped)\n" "$slug" "$status"
       skipped=$((skipped + 1))
     fi
   done
 
-  if [ "$archived" -eq 0 ]; then
-    printf "📊 Archived: 0 task(s)\n"
-    return 0
+  printf "📊 Archived: %s change(s)\n" "$archived"
+  if [ "$skipped" -gt 0 ]; then
+    printf "📊 Skipped: %s change(s)\n" "$skipped"
   fi
-
-  printf "📊 Archived: %s task(s)\n" "$archived"
 }
 
 main "$@"

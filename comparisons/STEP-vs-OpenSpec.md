@@ -65,22 +65,21 @@ openspec/changes/add-dark-mode/
 .step/
 ├── config.yaml      # 模型路由 + gate 配置
 ├── state.yaml       # 状态机（倒序，最新在前）
-├── baseline.md      # 需求基线（确认 + CR）
+├── baseline.md      # 需求基线（活快照）
 ├── decisions.md     # ADR 日志
-├── tasks/           # BDD 场景矩阵
-├── change-requests/ # 变更审计
+├── changes/         # 统一变更目录（spec + design + tasks）
 ├── evidence/        # gate 运行证据
 └── archive/         # 历史版本归档
 ```
-特点：全局状态机 + 任务级 BDD 场景。archive/ 归档历史版本。Baseline 整理流程保持文件干净。
+特点：全局状态机 + 变更目录（init 与后续变更统一结构）。archive/ 归档历史版本。Baseline 整理流程保持文件干净。
 
 | 维度 | STEP | OpenSpec |
 |------|------|---------|
-| 组织方式 | 全局状态 + 任务 YAML | 按变更独立文件夹 |
-| 需求表达 | baseline.md（全局确认） + task YAML（BDD） | proposal.md + specs/ |
+| 组织方式 | 全局状态 + 变更目录（spec/design/tasks） | 按变更独立文件夹 |
+| 需求表达 | baseline.md（全局确认） + tasks YAML（BDD） | proposal.md + specs/ |
 | 状态追踪 | state.yaml（机器可读，倒序） | tasks.md checkbox |
 | 归档 | archive/ + Baseline 整理流程 | archive/ 按日期 |
-| 并行功能 | 不支持（聚焦单任务 TDD） | 支持（多变更文件夹） |
+| 并行功能 | 支持（多变更文件夹） | 支持（多变更文件夹） |
 
 ## 4. 执行阶段对比
 
@@ -100,13 +99,13 @@ openspec/changes/add-dark-mode/
 
 ### STEP
 - Phase 1 起草 baseline.md → 分段确认 → 用户确认
-- 确认后修改 → 必须提交 Change Request → 审计记录
-- Baseline 整理：多轮 CR 后归档旧版 → 合成干净快照 → 同时精简 state.yaml + decisions.md
+- 确认后修改 → 必须新建变更（changes/）→ 审计记录
+- Baseline 整理：多轮变更后归档旧版 → 合成干净快照 → 同时精简 state.yaml + decisions.md
 
 ### OpenSpec
 - /opsx:new → proposal.md 起草
 - 随时修改 proposal/specs/design/tasks
-- 无确认、无 CR、无审计
+- 无确认、无变更审计
 
 STEP 适合需要变更追溯的场景；OpenSpec 适合个人快速迭代。
 
@@ -134,7 +133,7 @@ OpenSpec 的最大优势是平台兼容性。
 1. 可执行门禁脚本
 2. TDD 机制 + BDD 场景矩阵
 3. Session 恢复
-4. 需求确认 + CR 审计
+4. 需求确认 + 变更审计
 5. 角色系统 + 模型绑定
 6. 结构化状态机
 7. 代码审查阶段

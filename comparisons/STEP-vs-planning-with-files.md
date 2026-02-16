@@ -17,7 +17,7 @@
 | 任务完成度不足 | BDD 场景矩阵 + gate.sh 硬门禁 | ❌ |
 | 跨 Session 上下文丢失 | SessionStart Hook 全自动注入 | session-catchup.py 半自动 |
 | 长对话遗忘/幻觉 | 三层 Hook（PreToolUse/PostToolUse/Stop）+ 2-Action Rule（已吸收） | 2-Action Rule（原创）+ 三振出局 |
-| 需求漂移 | baseline 确认 + CR 审计链 | ❌ |
+| 需求漂移 | baseline 确认 + 变更审计链 | ❌ |
 | 同一错误反复重试 | gate 失败 → 根因分析 → 3 轮上限 → blocked | Three-Strikes Protocol |
 | 决策遗忘 | decisions.md ADR + Pre-decision Read | Pre-decision Read（原创） |
 | 调研上下文丢失 | decisions.md "替代方案"字段 | findings.md（更丰富） |
@@ -28,7 +28,7 @@
 |------|------------|--------------------------|
 | 文件数量 | 5+ 结构化文件 | 3 个自由格式文件 |
 | 状态管理 | state.yaml（机器可读状态机） | task_plan.md 中的文本标记 |
-| 需求管理 | baseline.md（可确认 + CR） | ❌ |
+| 需求管理 | baseline.md（可确认 + 变更） | ❌ |
 | 操作日志 | evidence/ + progress_log | progress.md（全过程流水账） |
 | 调研记录 | decisions.md "替代方案"字段 | findings.md（核心优势） |
 | 错误追踪 | gate 输出 + evidence/ | task_plan.md 错误日志 |
@@ -84,7 +84,7 @@ STEP 已吸收 planning-with-files 的核心注意力管理机制（2-Action Rul
 | 执行编码 | ✅ Phase 4（TDD + gate 检查点） | ✅ progress.md 记录 |
 | 审查验收 | ✅ Phase 5 Review | ❌ |
 | 调研记录 | ⚠️ decisions.md 部分覆盖 | ✅ findings.md |
-| Post-MVP | ✅ CR / Hotfix / 约束变更 / Baseline 整理 | ❌ |
+| Post-MVP | ✅ 新增功能变更 / Hotfix / 约束变更 / Baseline 整理 | ❌ |
 
 STEP 覆盖 8/8 核心阶段；planning-with-files 覆盖 2/8，但在调研记录上更深入。
 
@@ -101,7 +101,7 @@ planning-with-files 仍然独有的价值：
 STEP 独有的价值（planning-with-files 不覆盖）：
 - 全生命周期 6 阶段 + 7 角色
 - 可执行门禁脚本
-- 需求基线确认 + CR 审计链
+- 需求基线确认 + 变更审计链
 - SessionStart Hook 全自动恢复
 - BDD 场景矩阵 + ID 硬匹配
 

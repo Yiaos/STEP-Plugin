@@ -29,8 +29,8 @@ STEP 提供 6 阶段生命周期：
 - BDD 场景矩阵：每个场景有 ID，测试名必须包含 ID，100% 覆盖才能通过
 - Gate 门禁：lint + typecheck + test + scenario coverage
 - SessionStart Hook 自动恢复状态
-- baseline 确认 + Change Request 防漂移
-- Post-MVP 流程（CR、Hotfix、约束变更）同样遵循 STEP
+- baseline 活快照 + 变更审计链防漂移
+- Post-MVP 流程（新增功能、Hotfix、约束变更）同样遵循 STEP
 
 ## 3. 整体架构（Architecture）
 
@@ -126,7 +126,7 @@ oh-my-opencode preset   →  WITH   用户环境的实际模型 ID
 | SessionStart Hook 注入 | bash 脚本，确定性执行 | **硬保证** |
 | 阶段流转 / TDD 先测试 | SKILL.md 规则 + agent Critical Actions | 软保证（prompt） |
 | 按 routing 表派发 agent | LLM 自主决策 | 软保证（prompt） |
-| baseline 确认 | 契约 + CR 流程 | 软保证（无文件锁） |
+| baseline 确认 | 契约 + changes/ 流程 | 软保证（无文件锁） |
 
 ## 4. 安装（Installation）
 
@@ -159,7 +159,7 @@ bash uninstall.sh --project
 │   ├── step-init.sh        # 项目初始化
 │   ├── gate.sh             # 质量门禁 (quick/standard/full)
 │   ├── scenario-check.sh   # BDD 场景覆盖检查
-│   └── step-archive.sh     # 任务归档
+│   └── step-archive.sh     # 变更归档
 ├── agents/                 # 角色 agent 定义
 │   ├── pm.md               # 产品经理 (Phase 0-1)
 │   ├── architect.md        # 架构师 (Phase 2-3)
@@ -195,10 +195,9 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义（`agents/*.md`�
 # 新项目 → 自动初始化 .step/ 目录 → 进入 Phase 0
 # 已有项目 → 自动恢复到上次中断的阶段和任务
 
-# 归档已完成的任务
-/archive              # 交互式列出并归档
-/archive all          # 归档所有已完成任务
-/archive {slug}       # 归档指定任务
+# 归档已完成的变更
+/archive                     # 交互式列出并归档
+/archive {change-name}       # 归档指定变更
 ```
 
 ## 6. 项目文件结构（Project Files）
@@ -208,31 +207,34 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义（`agents/*.md`�
 ```
 .step/
 ├── config.yaml          # agent 路由、文件路由、gate 命令
-├── baseline.md          # 需求基线（Phase 1 确认）
+├── baseline.md          # 需求基线（活快照）
 ├── decisions.md         # 架构决策日志
 ├── state.yaml           # 项目状态机（Session 恢复核心）
-├── tasks/               # 任务定义（语义化 slug 命名）
-│   ├── user-register-api.yaml    # Full mode 任务
-│   └── fix-empty-password.yaml   # Lite mode 任务
-├── archive/             # 已完成任务归档
-│   └── 2026-02-15-user-register-api.yaml
-├── change-requests/     # 变更请求
+├── changes/             # 所有变更（初始 + 后续）统一管理
+│   ├── init/            # 初始开发
+│   │   ├── spec.md      # 需求说明（Phase 1）
+│   │   ├── design.md    # 技术方案（Phase 2）
+│   │   └── tasks/       # 任务 + BDD 场景（Phase 3）
+│   └── YYYY-MM-DD-xxx/  # 后续变更（结构相同）
+├── archive/             # 已完成变更归档
 └── evidence/            # gate 运行证据
 scripts/
 ├── gate.sh              # 质量门禁
-├── scenario-check.sh    # 场景覆盖检查
-└── step-archive.sh      # 任务归档
+└── scenario-check.sh    # 场景覆盖检查
 ```
 
 ### 命名规则
 
-任务使用**语义化 slug**（kebab-case）命名，而非序号。Full/Lite 通过 YAML `mode` 字段区分：
+变更和任务都使用语义化命名。初始开发固定 `init`，后续变更使用 `YYYY-MM-DD-{slug}`。任务 slug 使用 kebab-case，Full/Lite 通过 YAML `mode` 字段区分：
 
 | 元素 | 格式 | 示例 |
 |------|------|------|
-| 任务文件 | `{slug}.yaml` | `user-register-api.yaml` |
+| 变更目录 | `.step/changes/{change}/` | `.step/changes/init/` |
+| 变更 spec | `.step/changes/{change}/spec.md` | `.step/changes/init/spec.md` |
+| 变更 design | `.step/changes/{change}/design.md` | `.step/changes/init/design.md` |
+| 任务文件 | `.step/changes/{change}/tasks/{slug}.yaml` | `.step/changes/init/tasks/user-register-api.yaml` |
 | 场景 ID | `S-{slug}-{seq}` | `S-user-register-api-01` |
-| 归档 | `YYYY-MM-DD-{slug}.yaml` | `2026-02-15-user-register-api.yaml` |
+| 归档 | `.step/archive/YYYY-MM-DD-{change}/` | `.step/archive/2026-02-15-init/` |
 
 ## 7. 配置（Configuration）
 
@@ -284,7 +286,7 @@ Agent 默认模型在 `agents/*.md` frontmatter 中定义。用户可通过 oh-m
 
 ## 8. Lite Mode（快速通道）
 
-对于小型任务（bug fix、小功能、配置变更），STEP 提供 Lite Mode，3 个阶段代替 6 个阶段：
+对于小型任务（如 `fix-empty-password`、配置变更），STEP 提供 Lite Mode，3 个阶段代替 6 个阶段：
 
 ```
 L1 Quick Spec → L2 Execution → L3 Review
@@ -323,14 +325,17 @@ L1 Quick Spec → L2 Execution → L3 Review
 
 ### 归档
 
-任务完成后通过 `/archive` 命令或 "归档 xxx" 归档到 `.step/archive/`：
+变更完成后通过 `/archive` 命令或 "归档 xxx" 归档到 `.step/archive/`：
 
 ```
 .step/
-├── tasks/
-│   └── fix-empty-password.yaml      # 活跃任务
+├── changes/
+│   └── init/                              # 活跃变更
+│       ├── spec.md
+│       ├── design.md
+│       └── tasks/
 └── archive/
-    └── 2026-02-15-user-register-api.yaml  # 已归档
+    └── 2026-02-15-init/                   # 已归档变更
 ```
 
 完整协议规范详见 [WORKFLOW.md](WORKFLOW.md)。

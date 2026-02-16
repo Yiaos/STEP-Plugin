@@ -21,7 +21,7 @@
 | 执行编码 | Phase 4（TDD + gate 检查点） | dev-story | STEP 有脚本级门禁；BMAD 依赖流程引导 |
 | 代码审查 | Phase 5 Review（Reviewer agent） | code-review workflow | STEP 有"需求合规 > 代码质量"的固定步骤 |
 | Session 恢复 | SessionStart Hook 全自动 | ❌ 需人工重新加载 | STEP 独有优势 |
-| Post-MVP | CR / Hotfix / 约束变更 / Baseline 整理 | sprint 迭代 | STEP 有审计链；BMAD 更灵活 |
+| Post-MVP | 新增功能变更 / Hotfix / 约束变更 / Baseline 整理 | sprint 迭代 | STEP 有审计链；BMAD 更灵活 |
 | 注意力管理 | 三层 Hook + 2-Action Rule | ❌ | STEP 独有 |
 
 ## 3. 角色系统对比
@@ -64,7 +64,7 @@ Analyst、PM、Architect、Developer、UX Designer、Scrum Master、QA (Quinn)�
 | BDD 场景 ID 硬匹配 | ✅ [S-xxx-xx] 覆盖率验证 | ❌ |
 | Agent 模型绑定 | ✅ 不同角色→不同模型 | ❌ 同模型不同 persona |
 | Hook 自动注入 | ✅ 四层（SessionStart/PreToolUse/PostToolUse/Stop） | ❌ |
-| 需求基线确认 | ✅ baseline + CR 审计链 | ❌ PRD 无确认机制 |
+| 需求基线确认 | ✅ baseline + 变更审计链 | ❌ PRD 无确认机制 |
 | Gate 失败处理 | ✅ 根因分析 → 3 轮 → blocked | ❌ |
 | 注意力管理 | ✅ 2-Action Rule + Pre-decision Read | ❌ |
 | 倒序状态 | ✅ 最新决策/进度在 state.yaml 头部 | ❌ |
@@ -96,7 +96,7 @@ STEP 的保证是"可执行门禁 + prompt 约束"双层；BMAD 全部是 prompt
 1. 可执行门禁脚本
 2. BDD 场景矩阵 + ID 硬匹配
 3. 自动 Session 恢复
-4. 需求基线确认 + CR 审计链
+4. 需求基线确认 + 变更审计链
 5. 三层注意力管理 Hook
 6. 角色对抗性机制（QA ≠ Developer）
 7. Gate 失败分级处理

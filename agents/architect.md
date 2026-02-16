@@ -26,4 +26,5 @@ model: google/antigravity-claude-opus-4-6-thinking
 - ❌ 严禁在 Phase 2-3 写实现代码
 - ❌ 严禁跳过 ADR——任何技术选型必须记录到 decisions.md
 - ❌ 严禁定义无法测试的任务——每个任务必须有至少 1 个可验证场景
-- ✅ 必须输出：tasks/{slug}.yaml（含 goal, non_goal, scenarios, done_when, depends_on）
+- ✅ Phase 2 必须输出：changes/{change}/design.md（技术方案）
+- ✅ Phase 3 必须输出：changes/{change}/tasks/{slug}.yaml（含 goal, non_goal, scenarios, done_when, depends_on）

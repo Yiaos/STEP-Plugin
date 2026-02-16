@@ -1,5 +1,5 @@
 # STEP Task 模板 — 在 Phase 3 中为每个任务生成
-# 文件名: .step/tasks/{slug}.yaml（如 user-register-api.yaml）
+# 文件名: .step/changes/{change}/tasks/{slug}.yaml
 id: task-slug       # 语义化 slug，与文件名一致（不含 .yaml）
 title: "任务标题"
 mode: full          # full | lite

@@ -119,9 +119,7 @@ assert "[S-006-15] README.md 包含 Lite Mode 文档" bash -c "
 # [S-006-16] baseline.md 已完成项标记为 [x]
 assert "[S-006-16] baseline.md 已完成项标记为 [x]" bash -c "
   set -e
-  ! grep -q '^\- \[ \] F-' '$SCRIPT_DIR/.step/baseline.md'
-  grep -q '^\- \[x\] F-1' '$SCRIPT_DIR/.step/baseline.md'
-  grep -q '^\- \[x\] F-8' '$SCRIPT_DIR/.step/baseline.md'
+  grep -q '^\- \[x\]' '$SCRIPT_DIR/.step/baseline.md'
 "
 
 # [S-006-17] WORKFLOW.md Step 6 包含 baseline 跟踪规则

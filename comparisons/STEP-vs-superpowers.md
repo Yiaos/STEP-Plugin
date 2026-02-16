@@ -23,7 +23,7 @@
 | 代码审查 | ✅ Phase 5 Reviewer agent | ✅ code-review 铁律 |
 | 调试 | ✅ Gate 失败分级处理 | ✅ systematic-debugging |
 | Session 恢复 | ✅ SessionStart Hook 全自动 | ❌ |
-| Post-MVP | ✅ CR / Hotfix / Baseline 整理 | ❌ |
+| Post-MVP | ✅ 新增功能变更 / Hotfix / Baseline 整理 | ❌ |
 | 注意力管理 | ✅ 三层 Hook + 2-Action Rule | ⚠️ 1% 触发规则 |
 
 STEP 覆盖全链路；superpowers 聚焦执行节点纪律。
@@ -50,7 +50,7 @@ STEP 覆盖全链路；superpowers 聚焦执行节点纪律。
 | 不猜测错误原因 | Gate 失败 → 强模型根因分析 + QA "严禁猜测" | systematic-debugging 铁律 |
 | 不空洞审查 | Reviewer "必须列出至少 3 个具体发现" | receiving-code-review 反迎合 |
 | 不跳步执行 | depends_on 依赖链 + gate 阻断 | executing-plans 检查点 |
-| 不篡改需求 | baseline + CR 审计链 | 无对应机制 |
+| 不篡改需求 | baseline + 变更审计链 | 无对应机制 |
 | 证据留存 | evidence/ 目录 + gate 结果 | verification-before-completion |
 | 不撒谎 | Agent 约束 + gate.sh 真实执行验证 | 铁律语言 |
 
@@ -109,7 +109,7 @@ STEP 已内建了反作弊机制（Agent 约束 + 脚本验证），superpowers 
 - 全生命周期 6 阶段
 - 会话恢复状态机 + SessionStart Hook
 - 可执行门禁脚本
-- 需求基线 + CR 审计链
+- 需求基线 + 变更审计链
 - 角色分离与模型绑定
 - Baseline 整理流程
 - 倒序 state.yaml
@@ -140,7 +140,7 @@ STEP 已内建了反作弊机制（Agent 约束 + 脚本验证），superpowers 
 1. 全生命周期流程
 2. 会话恢复与状态机
 3. 可执行门禁脚本
-4. 需求基线 + CR 审计链
+4. 需求基线 + 变更审计链
 5. 角色分离与对抗性验证
 6. BDD 场景矩阵 + ID 硬匹配
 7. 结构化证据存档

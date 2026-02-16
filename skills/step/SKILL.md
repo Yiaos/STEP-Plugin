@@ -28,12 +28,14 @@ hooks:
 
 | 元素 | 格式 | 示例 |
 |------|------|------|
-| 任务文件 | `.step/tasks/{slug}.yaml` | `user-register-api.yaml` |
+| 变更目录 | `.step/changes/{change}/` | `changes/init/`, `changes/2026-02-20-add-dark-mode/` |
+| 变更 spec | `.step/changes/{change}/spec.md` | `changes/init/spec.md` |
+| 变更 design | `.step/changes/{change}/design.md` | `changes/init/design.md` |
+| 任务文件 | `.step/changes/{change}/tasks/{slug}.yaml` | `changes/init/tasks/user-register-api.yaml` |
 | 场景 ID | `S-{slug}-{seq}` | `S-user-register-api-01` |
-| 归档文件 | `.step/archive/YYYY-MM-DD-{slug}.yaml` | `2026-02-15-user-register-api.yaml` |
-| Hotfix | `YYYY-MM-DD-{slug}-hotfix-{seq}.yaml` | `2026-02-15-user-register-api-hotfix-001.yaml` |
+| 归档 | `.step/archive/YYYY-MM-DD-{change}/` | `archive/2026-02-15-init/` |
 
-**Slug 规则**: kebab-case、描述核心内容、不用序号前缀。Full/Lite 通过 YAML `mode` 字段区分。
+**命名规则**: 初始开发用 `init`，后续变更用 `YYYY-MM-DD-{slug}`。任务 slug 为 kebab-case。Full/Lite 通过 YAML `mode` 字段区分。
 
 ## Phase 规则
 
@@ -44,21 +46,21 @@ hooks:
 
 ### Phase 1: PRD（选择题确认）
 - LLM 起草 `baseline.md` → 分段展示 → 选择题逐项确认
-- 确认后写入 `.step/baseline.md`
-- 修改已确认的 baseline 必须走 Change Request
+- 确认后写入 `.step/baseline.md` + `.step/changes/{change}/spec.md`
+- 修改已确认的 baseline 必须通过新建变更（`.step/changes/YYYY-MM-DD-{slug}/`）
 
 ### Phase 2: Tech Design（开放式讨论）
 - LLM 提供全面技术方案对比（优劣势、适用场景、推荐理由）
 - 用户开放讨论，可追问细节、提出新方案
 - 整体确定后，细节用选择题快速确认
-- 输出: `.step/tech-comparison.md` + `.step/decisions.md`
+- 输出: `.step/changes/{change}/design.md` + `.step/decisions.md`（ADR）
 
 ### Phase 3: Plan & Tasks（结构化确认）
 - 生成任务图 + 依赖关系 + BDD 场景矩阵
 - 每个任务 YAML 含: happy_path / edge_cases / error_handling 场景
 - 场景 ID 格式: `S-{slug}-{seq}` (如 `S-user-register-api-01`)
 - 每个场景通过 `test_type` 指定验证方式（unit / integration / e2e），**三种类型都是必须的**
-- 用户审核确认后写入 `.step/tasks/`
+- 用户审核确认后写入 `.step/changes/{change}/tasks/`
 
 ### Phase 4: Execution（TDD + Gate）
 ```
@@ -129,9 +131,9 @@ Lite mode 跳过此检查点。
 
 ## 防漂移机制
 
-- baseline.md 确认后不可直接修改 → 走 Change Request
+- baseline.md 确认后不可直接修改 → 必须通过新建变更（changes/）
 - 不可引入未经 ADR 记录的架构决策
-- Post-MVP: 需求变更 → CR，Bug → Hotfix，约束变更 → 高影响 CR
+- Post-MVP: 需求变更 → 新建功能变更，Bug → Hotfix，约束变更 → 高影响变更
 
 ## 保证与限制
 
@@ -178,8 +180,8 @@ PostToolUse 提醒不可忽略：每次 Write/Edit 后评估是否触发了状�
 4. 如有重大决策，插入 `key_decisions` 列表最前（倒序；含 decision, reason, phase, date）
 
 ### 恢复 Session 时
-1. 读 state.yaml → 读当前 task → 读 baseline
-2. 输出: `📍 Phase X | Task: {slug} | Status: xxx | Next: xxx`
+1. 读 state.yaml → 读当前 change spec → 读当前 task → 读 baseline
+2. 输出: `📍 Phase X | Change: {name} | Task: {slug} | Status: xxx | Next: xxx`
 3. 从 next_action 继续
 
 ## Agent 路由（参考 .step/config.yaml）
@@ -227,14 +229,14 @@ STEP 定义 7 个角色，通过 `agents/*.md` 实现 subagent 模型绑定：
 
 ## Post-MVP 流程
 
-Post-MVP 变更**同样遵循 STEP 协议**，所有过程记录在 `.step/` 下：
+Post-MVP 变更**与初始开发结构统一**，每个变更都是 `.step/changes/` 下的一个独立文件夹：
 
-- **Change Request**: 需求变更 → `.step/change-requests/YYYY-MM-DD-CR-{slug}.yaml` → 用户确认 → 记录变更 → 更新 baseline → 创建新 task YAML（含场景矩阵） → Phase 4 执行 → gate + review + commit
-- **Hotfix**: Bug → 定位场景 → `.step/tasks/YYYY-MM-DD-{slug}-hotfix-{seq}.yaml` → TDD 修复 → gate full 回归 → review + commit → 更新 state.yaml
-- **约束变更**: 高影响 CR → 影响分析 → 创建迁移任务 → Phase 4 执行 → gate full
-- **Baseline 整理**: 经过多轮 CR/Hotfix 后 baseline 变得臃肿时，用户可说"整理 baseline"。流程：归档旧版到 `.step/archive/YYYY-MM-DD-baseline-v{N}.md` → 读取旧 baseline + 所有 recorded CR + decisions.md → 整理只反映当前状态的干净版本（删除已移除项、已替换约束写新值、保留完成标记）→ 用户确认后写入。同时精简 state.yaml（合并冗余 progress_log、清理已解决 known_issues、只保留核心 key_decisions）和 decisions.md（归档旧版、只保留支撑当前 baseline 的核心 ADR、合并琐碎条目）。旧版 decisions.md 归档到 `.step/archive/YYYY-MM-DD-decisions-v{N}.md`。审计链通过归档文件保留，当前文件只负责"现在为什么是这样"
+- **新增功能**: 新建 `.step/changes/YYYY-MM-DD-{slug}/`（含 spec.md + design.md + tasks/）→ 走 Phase 1-4 → gate + review + commit → 更新 baseline → 归档
+- **Hotfix**: 新建 `.step/changes/YYYY-MM-DD-{slug}-hotfix/`（含 spec.md + design.md + tasks/）→ TDD 修复 → gate full 回归 → review + commit → 归档
+- **约束变更**: 高影响变更 → spec.md 中注明影响分析 → 创建迁移任务 → Phase 4 执行 → gate full
+- **Baseline 整理**: 多轮变更后 baseline 臃肿时。流程：归档旧版到 archive/ → 合成干净快照 → 同时精简 state.yaml 和 decisions.md → 用户确认后写入。审计链通过归档文件保留
 
-**命名规则**: CR 和 Hotfix 文件名以日期开头（`YYYY-MM-DD-`），便于按时间查找。
+**命名规则**: 初始开发用 `init`，后续变更用 `YYYY-MM-DD-{slug}` 开头，便于按时间查找。
 
 ## 自主操作规则
 
@@ -248,7 +250,7 @@ Post-MVP 变更**同样遵循 STEP 协议**，所有过程记录在 `.step/` 下
 **需要确认：**
 - baseline 首版确认（Phase 1 出口）
 - 技术方案选择（多选项时）
-- 需求变更（CR）
+- 需求变更（新建变更）
 - git push --force / rebase
 - 不可逆操作
 
@@ -266,7 +268,7 @@ L1 Quick Spec → L2 Execution → L3 Review
 - 显式：`/step lite` 或 `/step full`
 
 ### L1: Quick Spec（派发 @step-pm，routing.lite_spec）
-- 编排器派发 @step-pm 起草 lite task spec → 用户确认 → 写入 `.step/tasks/{slug}.yaml`
+- 编排器派发 @step-pm 起草 lite task spec → 用户确认 → 写入 `.step/changes/{change}/tasks/{slug}.yaml`
 - 批量任务: 一次展示多个 lite task → 一次确认 → 逐个执行
 - 不分段确认、不修改 baseline 需求（允许完成标记 [ ] → [x]）、不做 ADR
 
@@ -290,13 +292,13 @@ L1 Quick Spec → L2 Execution → L3 Review
 
 ## 归档
 
-完成的任务（Full 和 Lite 均可）通过以下方式归档到 `.step/archive/YYYY-MM-DD-{slug}.yaml`：
+完成的变更（Full 和 Lite 均可）通过以下方式归档到 `.step/archive/YYYY-MM-DD-{change}/`：
 
 **触发方式：**
-1. **完成后提示** — 所有任务 done 时，LLM 主动提示用户是否归档
-2. **自然语言** — 用户说 "归档 {slug}" 或 "归档所有任务"
-3. **命令** — `/archive`、`/archive all`、`/archive {slug}`
+1. **完成后提示** — 当前变更下所有任务 done 时，LLM 主动提示用户是否归档
+2. **自然语言** — 用户说 "归档" 或 "归档 {change-name}"
+3. **命令** — `/archive`、`/archive {change-name}`
 
-**归档脚本**: `./scripts/step-archive.sh [slug|--all]`
+**归档脚本**: `./scripts/step-archive.sh [change-name|--all]`
 
-**规则**: 仅 status: done 的任务可归档，归档不是删除（仍可搜索历史）。
+**规则**: 仅变更下所有任务都为 status: done 才可归档，归档不是删除（仍可搜索历史）。

@@ -50,14 +50,14 @@
 - [x] Lite 批量处理 — 一次提交多个小任务，逐个 TDD + gate + commit
 - [x] Lite → Full 升级 — 执行中发现复杂度超预期时自动升级
 
-### Post-MVP 流程
-- [x] Change Request — 需求变更审计记录
-- [x] Hotfix — Bug 修复（TDD + gate full 回归）
-- [x] 约束变更 — 高影响 CR + 影响分析 + 迁移任务
-- [x] Baseline 整理 — 多轮 CR 后归档旧版 + 合成干净快照
+### Post-MVP 流程（统一变更结构）
+- [x] 新增功能 — changes/YYYY-MM-DD-{slug}/（spec + design + tasks）
+- [x] Hotfix — changes/YYYY-MM-DD-{slug}-hotfix/（spec + tasks）
+- [x] 约束变更 — 高影响变更 + 影响分析 + 迁移任务
+- [x] Baseline 整理 — 多轮变更后归档旧版 + 合成干净快照
 
 ### 防漂移机制
-- [x] baseline 活快照 + CR 审计链
+- [x] baseline 活快照 + 变更审计链（changes/ + archive/）
 - [x] decisions.md ADR 日志
 - [x] 角色分离与对抗性（QA 写测试 ≠ Developer 写实现）
 - [x] Gate 失败分级处理（根因分析 → 3 轮上限 → blocked）
@@ -66,9 +66,10 @@
 - [x] install.sh — 安装/卸载/强制重装
 - [x] step-init.sh — 项目初始化 + 16 种包管理器检测
 - [x] /step 命令 — 初始化或恢复 session
-- [x] /archive 命令 — 任务归档
+- [x] /archive 命令 — 变更归档
 - [x] config.yaml — Agent 路由 + 文件路由 + Gate 命令配置
-- [x] 模板体系 — state.yaml / baseline.md / decisions.md / task.yaml / lite-task.yaml / cr.yaml / config.yaml
+- [x] 模板体系 — state.yaml / baseline.md / decisions.md / spec.md / design.md / task.yaml / lite-task.yaml / config.yaml
+- [x] 统一变更结构 — changes/{change}/（spec.md + design.md + tasks/），初始开发和后续变更结构统一
 
 ### 文档
 - [x] WORKFLOW.md — 完整协议规范
@@ -80,7 +81,7 @@
 - C-2: state.yaml 模板向后兼容（新字段有默认值）
 - C-3: install.sh 必须能正确安装所有文件
 - C-4: test_writing model 通过 config.yaml 配置，不硬编码
-- C-5: baseline 变更走 CR 审计，方向性变更走 Phase 0-1
+- C-5: baseline 变更通过新建变更（changes/），方向性变更走 Phase 0-1
 
 ## 架构决策（ADR 索引）
 - ADR-005: Baseline 语义 — 活快照
@@ -93,4 +94,4 @@
 ## 状态
 - 整理时间: 2026-02-16
 - 整理自: v1
-- 修改方式: 必须通过 Change Request
+- 修改方式: 必须通过新建变更（`.step/changes/YYYY-MM-DD-{slug}/`）

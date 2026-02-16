@@ -7,6 +7,7 @@
 project: "STEP-Plugin"
 project_type: "existing"
 current_phase: "idle"
+current_change: ""
 last_updated: "2026-02-16"
 last_agent: "orchestrator"
 last_session_summary: "完整重建：baseline（协议全貌快照）+ decisions.md（精简为 4 条核心 ADR）+ state.yaml 同步精简。"
@@ -19,7 +20,6 @@ established_patterns:
   config_architecture: "agent .md → config.yaml routing → file_routing → gate"
 
 tasks:
-  completed: []
   current: null
   upcoming: []
 

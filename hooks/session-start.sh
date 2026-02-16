@@ -50,11 +50,21 @@ escape_for_json() {
 # 读取核心文件
 STATE_CONTENT=$(cat "$STATE_FILE" 2>&1 || echo "Error reading state.yaml")
 
-# 读取当前任务（slug 格式，如 user-register-api）
+# 读取当前变更和任务
 TASK_CONTENT=""
-CURRENT_TASK=$(grep -E "^\s+id:" "$STATE_FILE" 2>/dev/null | head -1 | sed 's/.*id: *//' | tr -d ' "'"'" || true)
-if [ -n "$CURRENT_TASK" ] && [ -f ".step/tasks/${CURRENT_TASK}.yaml" ]; then
-  TASK_CONTENT=$(cat ".step/tasks/${CURRENT_TASK}.yaml" 2>&1 || echo "")
+CURRENT_CHANGE=$(grep 'current_change:' "$STATE_FILE" 2>/dev/null | head -1 | sed 's/.*current_change: *//' | tr -d ' "'"'" || true)
+CURRENT_TASK=$(grep -E "^\s+current:" "$STATE_FILE" 2>/dev/null | head -1 | sed 's/.*current: *//' | tr -d ' "'"'" || true)
+if [ -n "$CURRENT_CHANGE" ] && [ -n "$CURRENT_TASK" ]; then
+  TASK_PATH=".step/changes/${CURRENT_CHANGE}/tasks/${CURRENT_TASK}.yaml"
+  if [ -f "$TASK_PATH" ]; then
+    TASK_CONTENT=$(cat "$TASK_PATH" 2>&1 || echo "")
+  fi
+fi
+
+# 读取当前变更的 spec.md
+SPEC_CONTENT=""
+if [ -n "$CURRENT_CHANGE" ] && [ -f ".step/changes/${CURRENT_CHANGE}/spec.md" ]; then
+  SPEC_CONTENT=$(cat ".step/changes/${CURRENT_CHANGE}/spec.md" 2>&1 || echo "")
 fi
 
 # 读取 baseline
@@ -77,6 +87,7 @@ fi
 
 STATE_ESC=$(escape_for_json "$STATE_CONTENT")
 TASK_ESC=$(escape_for_json "$TASK_CONTENT")
+SPEC_ESC=$(escape_for_json "$SPEC_CONTENT")
 BASELINE_ESC=$(escape_for_json "$BASELINE_CONTENT")
 ROUTING_ESC=$(escape_for_json "$ROUTING_CONTENT")
 SKILL_ESC=$(escape_for_json "$SKILL_CONTENT")
@@ -85,7 +96,7 @@ cat <<EOF
 {
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
-    "additionalContext": "<STEP_PROTOCOL>\nSTEP 协议已激活。\n\n## 核心规则\n${SKILL_ESC}\n\n## state.yaml\n${STATE_ESC}\n\n## 当前任务\n${TASK_ESC}\n\n## Baseline (摘要)\n${BASELINE_ESC}\n\n## Agent 路由表\n${ROUTING_ESC}\n\n## 恢复指令\n1. 根据 current_phase 和 routing 表选择对应 agent\n2. 输出状态行: 📍 Phase X | Task | Status | Next\n3. 从 next_action 继续工作\n4. Phase 4 按 file_routing 的 patterns 决定用 @step-developer 或 @step-designer\n5. 对话结束必须更新 state.yaml\n</STEP_PROTOCOL>"
+    "additionalContext": "<STEP_PROTOCOL>\nSTEP 协议已激活。\n\n## 核心规则\n${SKILL_ESC}\n\n## state.yaml\n${STATE_ESC}\n\n## 当前变更 spec\n${SPEC_ESC}\n\n## 当前任务\n${TASK_ESC}\n\n## Baseline (摘要)\n${BASELINE_ESC}\n\n## Agent 路由表\n${ROUTING_ESC}\n\n## 恢复指令\n1. 根据 current_phase 和 routing 表选择对应 agent\n2. 输出状态行: 📍 Phase X | Change: {name} | Task | Status | Next\n3. 从 next_action 继续工作\n4. Phase 4 按 file_routing 的 patterns 决定用 @step-developer 或 @step-designer\n5. 对话结束必须更新 state.yaml\n</STEP_PROTOCOL>"
   }
 }
 EOF
