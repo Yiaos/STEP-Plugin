@@ -441,7 +441,8 @@ Step 3: 写实现（按 config.yaml file_routing 选 agent）
   → 每实现一个场景，跑 gate lite
 
 Step 4: Gate 验证
-  ./scripts/gate.sh lite user-register-api   # 默认增量测试
+  ./scripts/gate.sh quick user-register-api  # 小改动快速门禁
+  ./scripts/gate.sh lite user-register-api   # 常规增量测试
   # Review 前或归档前
   ./scripts/gate.sh full user-register-api --all
   → 包含场景覆盖检查（scenario-check.sh）
@@ -1092,6 +1093,7 @@ Session 开始
 - 测试先行: 按 routing.test_writing 派发 @step-qa 写测试 → 确认 FAIL → 再写实现
 - 场景 ID: 测试名必须包含 [S-{slug}-xx]
 - Gate: `./scripts/gate.sh lite {slug}`（默认增量；Review 前与归档前必须跑 `full --all`）
+- Quick 模式：`./scripts/gate.sh quick {slug}`（模型判定小改动时使用）
 - 完成判定: 所有 scenario pass + gate pass → 才能标 done
 
 ### Gate 失败
@@ -1203,8 +1205,11 @@ Lite Mode 适用于**满足以下全部条件**的任务：
 ### 触发方式
 
 1. **自动检测**：输入描述短（< 100 字）+ 范围关键词（fix, 修复, 加个, 改下, tweak, patch）+ 无架构关键词（架构, 重构, 迁移, redesign）+ 已有 baseline
-2. **显式指定**：`/step/init lite` 或在对话中说"用 lite 模式"
+2. **显式指定**：`/step/init quick`、`/step/init lite`
 3. **强制 Full**：`/step/init full` 或在对话中说"用完整模式"
+
+Quick 模式不使用硬阈值（如文件数或关键词），由模型基于语义判断是否适用；
+若执行中发现风险高于预期，必须升级到 lite/full，并记录升级原因。
 4. **模式切换**：执行中发现复杂度超预期 → 升级到 Full Mode（反之不行）
 
 ### 3 阶段流程

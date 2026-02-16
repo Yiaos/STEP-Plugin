@@ -124,7 +124,7 @@ install() {
   echo "  ├── scripts/"
   echo "  │   ├── step-init.sh        # Project initialization"
   echo "  │   ├── step-stop-check.sh  # Stop hook state check"
-  echo "  │   ├── gate.sh             # Quality gate (lite/full, quick/standard compatible)"
+  echo "  │   ├── gate.sh             # Quality gate (quick/lite/full)"
   echo "  │   └── scenario-check.sh   # BDD scenario coverage check"
   echo "  ├── agents/                 # Role-based agent definitions"
   echo "  │   ├── pm.md               # Product Manager (Phase 0-1)"

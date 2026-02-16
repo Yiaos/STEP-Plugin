@@ -73,7 +73,7 @@ Step 2: 写测试（按 routing.test_writing 派发 @step-qa） → 确认全部
 Step 3: 写实现（按 file_routing 选 agent） → 每场景跑 gate lite
   若 config.worktree.enabled=true：先执行 ./scripts/step-worktree.sh create {change}
 
-Step 4: Gate 验证 → 默认 `gate.sh lite {slug}`（增量测试）
+Step 4: Gate 验证 → 小改动可 `gate.sh quick {slug}`，常规 `gate.sh lite {slug}`
 Step 5: Review + Commit（每完成一个任务都执行）
   commit 后询问是否合并回主分支并归档
   用户确认后执行 ./scripts/step-worktree.sh finalize {change}
@@ -87,7 +87,7 @@ Step 6: 更新 state.yaml + baseline.md 对应项 [ ] → [x] → 进入下一�
 
 1. **测试先行**: 按 `config.yaml` 的 `routing.test_writing` 派发 @step-qa 写测试 → 确认 FAIL → 再写实现（QA 写测试 + Developer 写实现 = 天然对抗性）
 2. **场景 ID 绑定**: 测试名必须包含 `[S-{slug}-xx]`
-3. **Gate 必须带 slug**: `./scripts/gate.sh lite {slug}`（或 `full`）——必须指定 task-slug，确保 evidence 自动保存到 `.step/evidence/{slug}-gate.json`
+3. **Gate 必须带 slug**: `./scripts/gate.sh quick|lite|full {slug}`——必须指定 task-slug，确保 evidence 自动保存到 `.step/evidence/{slug}-gate.json`
 4. **增量优先 + 全量兜底**: 日常执行默认增量 gate；Phase 5 Review 前、归档前必须执行一次 `./scripts/gate.sh full {slug} --all`
 5. **场景 100% 覆盖**: `scenario-check.sh` 验证每个场景 ID 都有对应测试
 6. **所有测试类型必须**: unit / integration / e2e 都是必须的，不可跳过
@@ -277,7 +277,10 @@ L1 Quick Spec → L2 Execution → L3 Review
 
 ### 触发
 - 自动：短输入 + 范围关键词(fix/修复/加个/改下) + 无架构词 + 有 baseline
-- 显式：`/step/init lite` 或 `/step/init full`
+- 显式：`/step/init quick` / `lite` / `full`
+
+Quick 模式由模型语义判断是否适用，不使用文件数/关键词硬约束；
+若发现风险上升，必须升级到 lite/full，并记录 `escalation_reason`。
 
 ### L1: Quick Spec（派发 @step-pm，routing.lite_spec）
 - 编排器派发 @step-pm 起草 lite task spec → 用户确认 → 写入 `.step/changes/{change}/tasks/{slug}.yaml`
@@ -288,7 +291,7 @@ L1 Quick Spec → L2 Execution → L3 Review
 - ✅ TDD 必须（测试先行）
 - ✅ BDD 场景 100% 覆盖必须
 - ✅ 场景 ID: `[S-{slug}-xx]`
-- Gate: `gate.sh lite {slug}`（默认增量）
+- Gate: `gate.sh quick {slug}`（小改动）或 `gate.sh lite {slug}`（常规增量）
 - e2e 按需
 - Gate lite 通过 → 先执行 `gate.sh full {slug} --all` → **完整 Code Review**（需求合规 > 代码质量）
 - Review 通过 → Commit → 更新 state.yaml + baseline.md

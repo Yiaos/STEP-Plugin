@@ -27,6 +27,10 @@ assert "[S-017-03] README 使用 /step/init" bash -c "
   grep -q '/step/init' '$SCRIPT_DIR/README.md'
 "
 
+assert "[S-017-04] init 命令文档包含 quick 模式" bash -c "
+  grep -q '/step/init quick' '$SCRIPT_DIR/commands/init.md'
+"
+
 echo ""
 echo "=== 结果: $PASS/$TOTAL passed, $FAIL failed ==="
 [ "$FAIL" -eq 0 ]

@@ -1,11 +1,9 @@
 #!/bin/bash
 # STEP Gate — 质量门禁
-# Usage: ./scripts/gate.sh [lite|full|quick|standard] [task-slug] [--all]
+# Usage: ./scripts/gate.sh [quick|lite|full] [task-slug] [--all] [--quick-reason <text>] [--escalated true|false] [--escalation-reason <text>]
+#   quick    — 轻量门禁（lint + 记录证据）
 #   lite     — lint + typecheck + test + scenario coverage
 #   full     — lite + build
-# Deprecated:
-#   quick    — 已弃用，等价于 lite
-#   standard — 已弃用，等价于 lite
 
 set -euo pipefail
 
@@ -15,26 +13,47 @@ CORE_SCRIPT="${SCRIPT_DIR}/step-core.js"
 LEVEL_RAW=${1:-lite}
 TASK_ID=${2:-""}
 RUN_MODE="incremental"
+QUICK_REASON="${STEP_QUICK_REASON:-}"
+ESCALATED="${STEP_ESCALATED:-}"
+ESCALATION_REASON="${STEP_ESCALATION_REASON:-}"
 
-if [ "${3:-}" = "--all" ]; then
-  RUN_MODE="all"
+if [ "$#" -ge 3 ]; then
+  set -- "${@:3}"
+else
+  set --
 fi
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --all)
+      RUN_MODE="all"
+      shift
+      ;;
+    --quick-reason)
+      QUICK_REASON="${2:-}"
+      shift 2
+      ;;
+    --escalated)
+      ESCALATED="${2:-}"
+      shift 2
+      ;;
+    --escalation-reason)
+      ESCALATION_REASON="${2:-}"
+      shift 2
+      ;;
+    *)
+      echo "❌ Unknown option: $1"
+      exit 2
+      ;;
+  esac
+done
 
 case "$LEVEL_RAW" in
-  quick)
-    echo "⚠️  gate level 'quick' 已弃用，自动映射到 'lite'"
-    LEVEL="lite"
-    ;;
-  standard)
-    echo "⚠️  gate level 'standard' 已弃用，自动映射到 'lite'"
-    LEVEL="lite"
-    ;;
-  lite|full)
+  quick|lite|full)
     LEVEL="$LEVEL_RAW"
     ;;
   *)
     echo "❌ Invalid level: $LEVEL_RAW"
-    echo "Usage: ./scripts/gate.sh [lite|full|quick|standard] [task-slug]"
+    echo "Usage: ./scripts/gate.sh [quick|lite|full] [task-slug]"
     exit 2
     ;;
 esac
@@ -49,4 +68,9 @@ if [ ! -f "$CORE_SCRIPT" ]; then
   exit 1
 fi
 
-node "$CORE_SCRIPT" gate run --level "$LEVEL" --task "$TASK_ID" --mode "$RUN_MODE" --config .step/config.yaml
+CMD=(node "$CORE_SCRIPT" gate run --level "$LEVEL" --task "$TASK_ID" --mode "$RUN_MODE" --config .step/config.yaml)
+[ -n "$QUICK_REASON" ] && CMD+=(--quick-reason "$QUICK_REASON")
+[ -n "$ESCALATED" ] && CMD+=(--escalated "$ESCALATED")
+[ -n "$ESCALATION_REASON" ] && CMD+=(--escalation-reason "$ESCALATION_REASON")
+
+"${CMD[@]}"

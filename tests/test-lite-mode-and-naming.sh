@@ -38,12 +38,12 @@ assert "[S-006-03] AGENTS.md 不包含自主操作规则" bash -c "
 
 # ── Lite Mode ──
 
-# [S-006-04] gate.sh 使用 lite/full（兼容 quick/standard）
-assert "[S-006-04] gate.sh 使用 lite/full 并兼容旧级别" bash -c "
+# [S-006-04] gate.sh 使用 quick/lite/full
+assert "[S-006-04] gate.sh 使用 quick/lite/full" bash -c "
   grep -q 'lite' '$SCRIPT_DIR/scripts/gate.sh'
   grep -q 'full' '$SCRIPT_DIR/scripts/gate.sh'
   grep -q 'quick' '$SCRIPT_DIR/scripts/gate.sh'
-  grep -q 'standard' '$SCRIPT_DIR/scripts/gate.sh'
+  ! grep -q 'standard' '$SCRIPT_DIR/scripts/gate.sh'
 "
 
 # [S-006-05] step-init.sh 创建 archive 目录（无 lite 目录）

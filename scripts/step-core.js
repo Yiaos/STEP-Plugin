@@ -655,7 +655,7 @@ function getGateCommands(configPath) {
   }
 }
 
-function writeGateEvidence(taskSlug, level, pass, results) {
+function writeGateEvidence(taskSlug, level, pass, results, metadata) {
   ensureEvidenceDir()
   const payload = {
     task_id: taskSlug,
@@ -663,6 +663,7 @@ function writeGateEvidence(taskSlug, level, pass, results) {
     timestamp: isoNow(),
     passed: pass,
     results,
+    ...(metadata || {}),
   }
   const evidencePath = path.join(".step", "evidence", `${taskSlug}-gate.json`)
   fs.writeFileSync(evidencePath, `${JSON.stringify(payload, null, 2)}\n`, "utf-8")
@@ -784,8 +785,8 @@ function applyIncrementalTestFiles(baseCommand, testFiles) {
   }
 }
 
-function runGate(level, taskSlug, configPath, mode) {
-  if (!(level === "lite" || level === "full")) {
+function runGate(level, taskSlug, configPath, mode, metadata) {
+  if (!(level === "quick" || level === "lite" || level === "full")) {
     fail(`不支持的 gate 级别: ${level}`)
   }
   if (!taskSlug) {
@@ -797,7 +798,7 @@ function runGate(level, taskSlug, configPath, mode) {
 
   const commands = getGateCommands(configPath)
   const dangerousExecutables = new Set(commands.dangerous_executables)
-  const testFiles = getTaskTestFiles(taskSlug, null)
+  const testFiles = level === "quick" ? [] : getTaskTestFiles(taskSlug, null)
   let testCommand = commands.test
   let testScope = "all"
   if (mode === "incremental") {
@@ -811,11 +812,12 @@ function runGate(level, taskSlug, configPath, mode) {
     }
   }
 
-  const checks = [
-    ["lint", commands.lint],
-    ["typecheck", commands.typecheck],
-    ["test", testCommand],
-  ]
+  const checks = []
+  checks.push(["lint", commands.lint])
+  if (level !== "quick") {
+    checks.push(["typecheck", commands.typecheck])
+    checks.push(["test", testCommand])
+  }
   if (level === "full") {
     checks.push(["build", commands.build])
   }
@@ -842,25 +844,32 @@ function runGate(level, taskSlug, configPath, mode) {
     }
   }
 
-  info("--- scenario-coverage ---")
-  const scCode = checkScenarioCoverage(taskSlug, null)
-  if (scCode === 0) {
-    info("  ✅ scenario-coverage: PASS")
-    results.push({ name: "scenario-coverage", status: "pass" })
+  if (level === "quick") {
+    info("--- scenario-coverage ---")
+    info("  ⏭️ scenario-coverage: SKIPPED (quick mode)")
+    results.push({ name: "scenario-coverage", status: "skipped" })
   } else {
-    info("  ❌ scenario-coverage: FAIL")
-    results.push({ name: "scenario-coverage", status: "fail" })
-    pass = false
+    info("--- scenario-coverage ---")
+    const scCode = checkScenarioCoverage(taskSlug, null)
+    if (scCode === 0) {
+      info("  ✅ scenario-coverage: PASS")
+      results.push({ name: "scenario-coverage", status: "pass" })
+    } else {
+      info("  ❌ scenario-coverage: FAIL")
+      results.push({ name: "scenario-coverage", status: "fail" })
+      pass = false
+    }
   }
 
   info("")
-  writeGateEvidence(taskSlug, `${level}:${mode}:${testScope}`, pass, results)
+  writeGateEvidence(taskSlug, `${level}:${mode}:${testScope}`, pass, results, metadata)
   patchProgressEntry(path.join(".step", "state.yaml"), taskSlug, {
     gate_status: pass ? "pass" : "fail",
     gate_level: level,
     gate_mode: mode,
     gate_scope: testScope,
     gate_at: isoNow(),
+    ...(metadata || {}),
   })
 
   if (pass) {
@@ -902,7 +911,7 @@ function usage() {
   info("  step-core.js state patch-progress --file <path> --task <slug> --set k=v[,k=v]")
   info("  step-core.js scenario check --task <slug> [--change <name>]")
   info("  step-core.js gate test-files --task <slug> [--change <name>] [--json]")
-  info("  step-core.js gate run --level lite|full --task <slug> [--mode incremental|all] [--config .step/config.yaml]")
+  info("  step-core.js gate run --level quick|lite|full --task <slug> [--mode incremental|all] [--quick-reason <text>] [--escalated true|false] [--escalation-reason <text>] [--config .step/config.yaml]")
   info("  step-core.js status report [--root .step]")
 }
 
@@ -1032,7 +1041,11 @@ function main() {
     const task = args.task
     const config = args.config || ".step/config.yaml"
     const mode = args.mode || "incremental"
-    const code = runGate(level, task, config, mode)
+    const metadata = {}
+    if (args["quick-reason"]) metadata.quick_reason = String(args["quick-reason"])
+    if (args.escalated) metadata.escalated = String(args.escalated)
+    if (args["escalation-reason"]) metadata.escalation_reason = String(args["escalation-reason"])
+    const code = runGate(level, task, config, mode, metadata)
     process.exit(code)
   }
 

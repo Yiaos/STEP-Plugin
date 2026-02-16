@@ -1,5 +1,5 @@
 #!/bin/bash
-# T-012 测试：gate 级别映射与 slug 强制
+# T-012 测试：gate 级别与 slug 强制
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
 PASS=0; FAIL=0; TOTAL=0
 
@@ -13,7 +13,7 @@ assert() {
   fi
 }
 
-echo "=== T-012: gate 级别映射与 slug 强制 ==="
+echo "=== T-012: gate 级别与 slug 强制 ==="
 
 # [S-012-01] 不带 slug 直接失败
 assert "[S-012-01] gate lite 缺少 slug 失败" bash -c "
@@ -25,14 +25,14 @@ assert "[S-012-01] gate lite 缺少 slug 失败" bash -c "
   echo \"\$out\" | grep -q '必须指定 task slug'
 "
 
-# [S-012-02] quick 映射到 lite
-assert "[S-012-02] quick 映射到 lite" bash -c "
-  grep -q \"gate level 'quick'\" '$SCRIPT_DIR/scripts/gate.sh'
+# [S-012-02] quick 作为正式级别存在
+assert "[S-012-02] quick 作为正式级别存在" bash -c "
+  grep -q 'quick|lite|full' '$SCRIPT_DIR/scripts/gate.sh'
 "
 
-# [S-012-03] standard 映射到 lite
-assert "[S-012-03] standard 映射到 lite" bash -c "
-  grep -q \"gate level 'standard'\" '$SCRIPT_DIR/scripts/gate.sh'
+# [S-012-03] standard 不再支持
+assert "[S-012-03] standard 不再支持" bash -c "
+  ! grep -q 'standard' '$SCRIPT_DIR/scripts/gate.sh'
 "
 
 echo ""
