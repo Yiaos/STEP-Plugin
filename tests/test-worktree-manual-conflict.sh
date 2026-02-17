@@ -27,10 +27,13 @@ assert "[S-014-01] create 不写 git config 自定义键" bash -c "
   mkdir -p .step scripts
   cp '$SCRIPT_DIR/scripts/step-worktree.sh' scripts/step-worktree.sh
   chmod +x scripts/step-worktree.sh
-  cat > .step/config.yaml <<'CFG'
-worktree:
-  enabled: true
-  branch_prefix: "change/"
+  cat > .step/config.json <<'CFG'
+{
+  "worktree": {
+    "enabled": true,
+    "branch_prefix": "change/"
+  }
+}
 CFG
   printf 'v1\n' > a.txt
   git add .

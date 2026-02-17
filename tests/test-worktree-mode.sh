@@ -15,15 +15,15 @@ assert() {
 
 echo "=== T-010: worktree 模式配置与脚本行为 ==="
 
-# [S-010-01] templates/config.yaml 包含 worktree 配置项
+# [S-010-01] templates/config.json 包含 worktree 配置项
 assert "[S-010-01] config 模板包含 worktree 字段" bash -c "
   set -e
-  grep -q '^worktree:' '$SCRIPT_DIR/templates/config.yaml'
-  grep -q 'enabled:' '$SCRIPT_DIR/templates/config.yaml'
-  grep -q 'branch_prefix:' '$SCRIPT_DIR/templates/config.yaml'
-  ! grep -q 'base_branch:' '$SCRIPT_DIR/templates/config.yaml'
-  ! grep -q 'auto_create:' '$SCRIPT_DIR/templates/config.yaml'
-  ! grep -q 'ask_archive_and_merge_after_commit:' '$SCRIPT_DIR/templates/config.yaml'
+  grep -q 'worktree' '$SCRIPT_DIR/templates/config.json'
+  grep -q 'enabled' '$SCRIPT_DIR/templates/config.json'
+  grep -q 'branch_prefix' '$SCRIPT_DIR/templates/config.json'
+  ! grep -q 'base_branch' '$SCRIPT_DIR/templates/config.json'
+  ! grep -q 'auto_create' '$SCRIPT_DIR/templates/config.json'
+  ! grep -q 'ask_archive_and_merge_after_commit' '$SCRIPT_DIR/templates/config.json'
 "
 
 # [S-010-02] 文档包含 worktree 自动流程说明
@@ -56,31 +56,56 @@ exit 0
 GATE
   chmod +x scripts/gate.sh
 
-  cat > .step/config.yaml <<'CFG'
-worktree:
-  enabled: true
-  branch_prefix: "change/"
+  cat > .step/config.json <<'CFG'
+{
+  "worktree": {
+    "enabled": true,
+    "branch_prefix": "change/"
+  }
+}
 CFG
 
   mkdir -p .step/changes/demo-change/tasks
-  cat > .step/changes/demo-change/tasks/demo-task.yaml <<'TASK'
-id: demo-task
-title: demo
-mode: lite
-status: done
-done_when: []
-scenarios:
-  - id: S-demo-task-01
-    test_file: test/demo.test.ts
+  cat > .step/changes/demo-change/tasks/demo-task.md <<'TASK'
+# demo
+\`\`\`json task
+{
+  "id": "demo-task",
+  "title": "demo",
+  "mode": "lite",
+  "status": "done",
+  "done_when": [],
+  "scenarios": [
+    {
+      "id": "S-demo-task-01",
+      "test_file": "test/demo.test.ts"
+    }
+  ]
+}
+\`\`\`
 TASK
   mkdir -p test
   cat > test/demo.test.ts <<'TEST'
 it('[S-demo-task-01] ok', () => {})
 TEST
-  cat > .step/state.yaml <<'STATE'
-current_change: "demo-change"
-tasks:
-  current: "demo-task"
+  cat > .step/state.json <<'STATE'
+{
+  "project": "demo",
+  "current_phase": "phase-4-execution",
+  "current_change": "demo-change",
+  "last_updated": "2026-02-16",
+  "last_agent": "tester",
+  "last_session_summary": "",
+  "established_patterns": {},
+  "tasks": {
+    "current": "demo-task",
+    "upcoming": []
+  },
+  "key_decisions": [],
+  "known_issues": [],
+  "constraints_quick_ref": [],
+  "progress_log": []
+}
 STATE
 
   printf 'main-v1\n' > app.txt

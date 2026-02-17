@@ -24,7 +24,7 @@ BMAD 更像“团队协作与迭代管理框架”，STEP 更像“AI 代理驱�
 ### 4) 会话连续性
 
 - BMAD：通常靠工具链和团队习惯维持上下文。
-- STEP：通过 `state.yaml` + hooks 自动恢复当前 phase/change/task。
+- STEP：通过 `state.json` + hooks 自动恢复当前 phase/change/task。
 
 ### 5) 变更管理落地
 

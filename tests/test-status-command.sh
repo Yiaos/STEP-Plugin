@@ -21,29 +21,14 @@ assert "[S-019-01] step-core status report 输出核心字段" bash -c "
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
   mkdir -p .step/changes/init/tasks .step/evidence
-  cat > .step/state.yaml <<'STATE'
-project: demo
-current_phase: phase-4-execution
-current_change: init
-last_updated: "2026-02-16"
-last_agent: orchestrator
-last_session_summary: "x"
-established_patterns: {}
-tasks:
-  current: demo
-  upcoming: []
-key_decisions: []
-known_issues: []
-constraints_quick_ref: []
-progress_log: []
+  cat > .step/state.json <<'STATE'
+{\"project\":\"demo\",\"current_phase\":\"phase-4-execution\",\"current_change\":\"init\",\"last_updated\":\"2026-02-16\",\"last_agent\":\"orchestrator\",\"last_session_summary\":\"x\",\"established_patterns\":{},\"tasks\":{\"current\":\"demo\",\"upcoming\":[]},\"key_decisions\":[],\"known_issues\":[],\"constraints_quick_ref\":[],\"progress_log\":[]}
 STATE
-  cat > .step/changes/init/tasks/demo.yaml <<'TASK'
-id: demo
-title: demo
-mode: lite
-status: done
-done_when: []
-scenarios: []
+  cat > .step/changes/init/tasks/demo.md <<'TASK'
+# demo
+\`\`\`json task
+{\"id\":\"demo\",\"title\":\"demo\",\"mode\":\"lite\",\"status\":\"done\",\"done_when\":[],\"scenarios\":[]}
+\`\`\`
 TASK
   cat > .step/evidence/demo-gate.json <<'E'
 {\"passed\": true}

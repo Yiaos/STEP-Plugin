@@ -15,30 +15,33 @@ description: "初始化或恢复 STEP 协议（Stateful Task Execution Protocol�
 
 1. 找到 STEP 插件根目录（`~/.config/opencode/tools/step/`）
 2. 运行 `bash ~/.config/opencode/tools/step/scripts/step-init.sh`
-3. 将 state.yaml 的 `current_phase` 设为 `phase-0-discovery`
+3. 将 state.json 的 `current_phase` 设为 `phase-0-discovery`
 4. 若输出包含 `[EXISTING PROJECT`：
    - 分析现有代码结构、框架与约定
    - 识别 established patterns（命名、架构、测试策略）
    - 将上下文写入 `.step/baseline.md`
-   - 设置 `state.yaml` 的 `established_patterns`
+   - 设置 `state.json` 的 `established_patterns`
 5. 若是全新项目，进入 Phase 0 Discovery
 
 ## 如果 .step/ 已存在（恢复 Session）
 
-1. 读取 `.step/state.yaml`
+1. 读取 `.step/state.json`
 2. 读取 `.step/baseline.md`
-3. 如果有当前任务，读取对应 task YAML
+3. 如果有当前任务，读取对应 task Markdown(JSON 代码块)
 4. 根据 `current_phase` 进入对应阶段
 5. 输出状态行：`📍 Phase X | Change: {name} | Task: {slug} | Status: xxx | Next: xxx`
 6. 从上次中断位置继续
 
 ## Worktree 自动模式（可选）
 
-如果 `.step/config.yaml` 中：
+如果 `.step/config.json` 中：
 
-```yaml
-worktree:
-  enabled: true
+```json
+{
+  "worktree": {
+    "enabled": true
+  }
+}
 ```
 
 则在变更开始阶段自动创建独立 worktree：
@@ -58,4 +61,4 @@ worktree:
 - Phase 4 (Execution): TDD + gate + review + commit
 - Phase 5 (Review): 独立审查（需求合规 > 代码质量）
 
-每次对话结束必须更新 `.step/state.yaml`。`next_action` 必须精确到文件名和动作。
+每次对话结束必须更新 `.step/state.json`。`next_action` 必须精确到文件名和动作。

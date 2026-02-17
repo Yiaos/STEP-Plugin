@@ -25,28 +25,38 @@ assert "[S-021-01] gate evidence 记录 escalated 信息" bash -c "
   cp '$SCRIPT_DIR/scripts/step-core.js' scripts/step-core.js
   chmod +x scripts/gate.sh scripts/step-core.js
 
-  cat > .step/config.yaml <<'CFG'
-routing: {}
-file_routing: {}
-gate:
-  lint: "echo lint"
-  typecheck: "echo tc"
-  test: "echo test"
-  build: "echo build"
+  cat > .step/config.json <<'CFG'
+{
+  "routing": {},
+  "file_routing": {},
+  "gate": {
+    "lint": "echo lint",
+    "typecheck": "echo tc",
+    "test": "echo test",
+    "build": "echo build"
+  }
+}
 CFG
 
-  cat > .step/changes/init/tasks/demo.yaml <<'TASK'
-id: demo
-title: demo
-mode: quick
-status: planned
-done_when: []
-scenarios: []
+  cat > .step/changes/init/tasks/demo.md <<'TASK'
+# demo
+\`\`\`json task
+{
+  "id": "demo",
+  "title": "demo",
+  "mode": "lite",
+  "status": "planned",
+  "done_when": [],
+  "scenarios": []
+}
+\`\`\`
 TASK
 
   bash scripts/gate.sh quick demo --quick-reason "small refactor" --escalated true --escalation-reason "touch behavior" >/dev/null 2>&1
-  grep -q '"escalated": "true"' .step/evidence/demo-gate.json
-  grep -q '"escalation_reason": "touch behavior"' .step/evidence/demo-gate.json
+  grep -q 'escalated' .step/evidence/demo-gate.json
+  grep -q 'true' .step/evidence/demo-gate.json
+  grep -q 'escalation_reason' .step/evidence/demo-gate.json
+  grep -q 'touch behavior' .step/evidence/demo-gate.json
 "
 
 echo ""

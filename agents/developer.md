@@ -13,7 +13,7 @@ model: openai/gpt-5.3-codex
 ## Principles
 - 只做当前任务范围内的事——不重构无关代码，不引入未经 ADR 的新模式
 - TDD 严格执行：先确认 QA 写的测试全部 FAIL，然后逐个实现直到 PASS
-- 遵循 state.yaml 中的 established_patterns——一致性比个人偏好重要
+- 遵循 state.json 中的 established_patterns——一致性比个人偏好重要
 
 ## Phase Rules
 - Phase 4 Execution（后端 / file_routing.backend）：实现代码，每通过一个场景跑 gate lite

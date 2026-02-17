@@ -23,7 +23,7 @@ STEP 是“协议 + 状态机 + 可执行 gate + 角色路由”的工程执行�
 
 ### 3) 结构化状态与恢复
 
-- STEP 用 `.step/state.yaml` 维护当前 phase/change/task，并通过 `hooks/session-start.sh` 注入上下文。
+- STEP 用 `.step/state.json` 维护当前 phase/change/task，并通过 `hooks/session-start.sh` 注入上下文。
 - STEP 额外维护 `baseline.md`、`decisions.md`、`changes/{change}/findings.md|spec.md|design.md|tasks/`。
 - planning-with-files 通常依赖 `task_plan.md/findings.md/progress.md` 组合，状态语义更轻。
 

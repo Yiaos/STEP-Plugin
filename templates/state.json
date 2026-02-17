@@ -1,0 +1,17 @@
+{
+  "project": "TODO",
+  "current_phase": "phase-0-discovery",
+  "current_change": "init",
+  "last_updated": "",
+  "last_agent": "",
+  "last_session_summary": "",
+  "established_patterns": {},
+  "tasks": {
+    "current": null,
+    "upcoming": []
+  },
+  "key_decisions": [],
+  "known_issues": [],
+  "constraints_quick_ref": [],
+  "progress_log": []
+}

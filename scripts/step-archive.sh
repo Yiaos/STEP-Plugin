@@ -4,8 +4,30 @@ set -euo pipefail
 
 CHANGES_DIR=".step/changes"
 ARCHIVE_DIR=".step/archive"
-STATE_FILE=".step/state.yaml"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+CORE_SCRIPT="${SCRIPT_DIR}/step-core.js"
+STATE_FILE=".step/state.json"
 TODAY="$(date +%F)"
+
+task_status_is() {
+  local task_file="$1"
+  local expected="$2"
+  node -e '
+const fs = require("fs")
+const file = process.argv[1]
+const expected = process.argv[2]
+const raw = fs.readFileSync(file, "utf-8").replace(/\r\n/g, "\n")
+let data
+if (file.endsWith(".md")) {
+  const m = raw.match(/```json(?:\s+task)?\n([\s\S]*?)\n```/)
+  if (!m) process.exit(2)
+  data = JSON.parse(m[1])
+} else {
+  data = JSON.parse(raw)
+}
+process.exit(data && data.status === expected ? 0 : 1)
+' "$task_file" "$expected" >/dev/null 2>&1
+}
 
 print_usage() {
   cat <<'USAGE'
@@ -43,10 +65,10 @@ change_all_tasks_done() {
 
   local found=0
   local task_file=""
-  for task_file in "$tasks_dir"/*.yaml; do
+  for task_file in "$tasks_dir"/*.md; do
     [ -f "$task_file" ] || continue
     found=1
-    if ! grep -q '^status:[[:space:]]*done' "$task_file"; then
+    if ! task_status_is "$task_file" "done"; then
       return 1
     fi
   done
@@ -76,12 +98,11 @@ reset_state_if_current_change_archived() {
   fi
 
   local current_change=""
-  current_change=$(grep '^current_change:' "$STATE_FILE" 2>/dev/null | head -1 | sed 's/^current_change:[[:space:]]*//' | tr -d ' "' || true)
+  current_change=$(node "$CORE_SCRIPT" state get --file "$STATE_FILE" --path current_change 2>/dev/null || true)
 
   if [ "$current_change" = "$archived_name" ]; then
-    sed -i.bak 's/^current_change:.*/current_change: ""/' "$STATE_FILE"
-    sed -i.bak 's/^\([[:space:]]*current:\).*/\1 null/' "$STATE_FILE"
-    rm -f "$STATE_FILE.bak"
+    node "$CORE_SCRIPT" state set --file "$STATE_FILE" --path current_change --value ""
+    node "$CORE_SCRIPT" state set --file "$STATE_FILE" --path tasks.current --value null
   fi
 }
 

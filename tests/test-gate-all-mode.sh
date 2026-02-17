@@ -25,25 +25,36 @@ assert "[S-016-01] gate --all 不追加 task 测试文件参数" bash -c "
   cp '$SCRIPT_DIR/scripts/step-core.js' scripts/step-core.js
   chmod +x scripts/gate.sh scripts/step-core.js
 
-  cat > .step/config.yaml <<'CFG'
-routing: {}
-file_routing: {}
-gate:
-  lint: "echo lint"
-  typecheck: "echo typecheck"
-  test: "bash tests/fake-runner.sh"
-  build: "echo build"
+  cat > .step/config.json <<'CFG'
+{
+  "routing": {},
+  "file_routing": {},
+  "gate": {
+    "lint": "echo lint",
+    "typecheck": "echo typecheck",
+    "test": "bash tests/fake-runner.sh",
+    "build": "echo build"
+  }
+}
 CFG
 
-  cat > .step/changes/init/tasks/demo.yaml <<'TASK'
-id: demo
-title: demo
-mode: lite
-status: planned
-done_when: []
-scenarios:
-  - id: S-demo-01
-    test_file: test/a.test.ts
+  cat > .step/changes/init/tasks/demo.md <<'TASK'
+# demo
+\`\`\`json task
+{
+  "id": "demo",
+  "title": "demo",
+  "mode": "lite",
+  "status": "planned",
+  "done_when": [],
+  "scenarios": [
+    {
+      "id": "S-demo-01",
+      "test_file": "test/a.test.ts"
+    }
+  ]
+}
+\`\`\`
 TASK
 
   cat > test/a.test.ts <<'A'

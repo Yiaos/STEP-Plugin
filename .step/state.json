@@ -1,0 +1,54 @@
+{
+  "project": "STEP-Plugin",
+  "project_type": "existing",
+  "current_phase": "idle",
+  "current_change": "",
+  "last_updated": "2026-02-16",
+  "last_agent": "orchestrator",
+  "last_session_summary": "Full rebuild: baseline snapshot, decisions reduced to four core ADRs, and state synced.",
+  "established_patterns": {
+    "hook_mechanism": "SKILL.md frontmatter -> PreToolUse/PostToolUse/Stop",
+    "attention_injection": "cat state.json | head -25 -> inject behavior rules and state data",
+    "quality_gates": "gate.sh + scenario-check.sh + step-stop-check.sh",
+    "agent_system": "7 roles with BMAD-style prompts",
+    "config_architecture": "agent .md -> config.json routing -> file_routing -> gate"
+  },
+  "tasks": {
+    "current": null,
+    "upcoming": []
+  },
+  "key_decisions": [
+    {
+      "decision": "Baseline semantics changed from frozen contract to live snapshot (ADR-005)",
+      "reason": "No filesystem write protection, so frozen semantics conflicted with reality; CR is now audit record",
+      "date": "2026-02-15"
+    },
+    {
+      "decision": "Adopt 7-role agent system with BMAD-style prompts",
+      "reason": "Role separation enables adversarial checks and improves LLM behavior quality",
+      "date": "2026-02-15"
+    },
+    {
+      "decision": "Embed behavior rules at the top of state",
+      "reason": "Mixed rule+data injection gives higher adherence",
+      "date": "2026-02-14"
+    }
+  ],
+  "known_issues": [],
+  "constraints_quick_ref": [
+    "Scripts support macOS bash 3.2+ and Linux bash 4+",
+    "state format backward compatibility"
+  ],
+  "progress_log": [
+    {
+      "date": "2026-02-16",
+      "summary": "Full rebuild: baseline snapshot, decisions simplified to four core ADRs, and state streamlined.",
+      "next_action": "idle - wait for next user task"
+    },
+    {
+      "date": "2026-02-15",
+      "summary": "MVP complete plus post-MVP updates: 7-role agent system, routing, injection, archive, baseline semantic change, and consistency fixes.",
+      "next_action": "idle"
+    }
+  ]
+}

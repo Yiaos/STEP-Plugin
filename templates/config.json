@@ -1,0 +1,53 @@
+{
+  "routing": {
+    "discovery": { "agent": "step-pm" },
+    "prd": { "agent": "step-pm" },
+    "lite_spec": {
+      "agent": "step-pm",
+      "note": "Lite L1 Quick Spec, lightweight requirement confirmation"
+    },
+    "tech_design": { "agent": "step-architect" },
+    "planning": { "agent": "step-architect" },
+    "scenario": { "agent": "step-qa" },
+    "test_writing": {
+      "agent": "step-qa",
+      "note": "Use a different agent from execution for adversarial checks"
+    },
+    "execution": { "agent": "step-developer" },
+    "review": { "agent": "step-reviewer" },
+    "deploy": {
+      "agent": "step-deployer",
+      "note": "Optional after review passes"
+    }
+  },
+  "file_routing": {
+    "frontend": {
+      "agent": "step-designer",
+      "patterns": ["src/components/**", "**/*.tsx", "**/*.css", "**/*.vue"]
+    },
+    "backend": {
+      "agent": "step-developer",
+      "patterns": ["src/api/**", "src/db/**", "src/lib/**"]
+    }
+  },
+  "gate": {
+    "lint": "pnpm lint --no-error-on-unmatched-pattern",
+    "typecheck": "pnpm tsc --noEmit",
+    "test": "pnpm vitest run",
+    "build": "pnpm build",
+    "dangerous_executables": [
+      "rm",
+      "dd",
+      "mkfs",
+      "shutdown",
+      "reboot",
+      "poweroff",
+      "halt",
+      "sudo"
+    ]
+  },
+  "worktree": {
+    "enabled": false,
+    "branch_prefix": "change/"
+  }
+}

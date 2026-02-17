@@ -29,7 +29,19 @@ assert "[S-007-02] step-archive.sh 归档已完成变更" bash -c "
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
   mkdir -p .step/changes/fix-bug/tasks .step/archive
-  printf 'id: fix-bug\nstatus: done\n' > .step/changes/fix-bug/tasks/fix-bug.yaml
+  cat > .step/changes/fix-bug/tasks/fix-bug.md <<'TASK'
+# fix-bug
+\`\`\`json task
+{
+  "id": "fix-bug",
+  "title": "fix bug",
+  "mode": "lite",
+  "status": "done",
+  "scenarios": [],
+  "done_when": []
+}
+\`\`\`
+TASK
   bash '$SCRIPT_DIR/scripts/step-archive.sh' fix-bug 2>&1 | grep -q 'fix-bug'
   ls .step/archive/*fix-bug >/dev/null
   [ ! -d .step/changes/fix-bug ]
@@ -42,8 +54,32 @@ assert "[S-007-03] step-archive.sh 跳过未完成变更" bash -c "
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
   mkdir -p .step/changes/wip/tasks .step/archive
-  printf 'id: wip-1\nstatus: done\n' > .step/changes/wip/tasks/wip-1.yaml
-  printf 'id: wip-2\nstatus: in_progress\n' > .step/changes/wip/tasks/wip-2.yaml
+  cat > .step/changes/wip/tasks/wip-1.md <<'TASK1'
+# wip-1
+\`\`\`json task
+{
+  "id": "wip-1",
+  "title": "wip 1",
+  "mode": "lite",
+  "status": "done",
+  "scenarios": [],
+  "done_when": []
+}
+\`\`\`
+TASK1
+  cat > .step/changes/wip/tasks/wip-2.md <<'TASK2'
+# wip-2
+\`\`\`json task
+{
+  "id": "wip-2",
+  "title": "wip 2",
+  "mode": "lite",
+  "status": "in_progress",
+  "scenarios": [],
+  "done_when": []
+}
+\`\`\`
+TASK2
   bash '$SCRIPT_DIR/scripts/step-archive.sh' wip 2>&1 | grep -q 'skipped'
   [ -d .step/changes/wip ]
 "
@@ -55,9 +91,24 @@ assert "[S-007-04] step-archive.sh --all 批量归档变更" bash -c "
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
   mkdir -p .step/changes/change-a/tasks .step/changes/change-b/tasks .step/changes/change-c/tasks .step/archive
-  printf 'id: a\nstatus: done\n' > .step/changes/change-a/tasks/a.yaml
-  printf 'id: b\nstatus: done\n' > .step/changes/change-b/tasks/b.yaml
-  printf 'id: c\nstatus: in_progress\n' > .step/changes/change-c/tasks/c.yaml
+  cat > .step/changes/change-a/tasks/a.md <<'TA'
+# a
+\`\`\`json task
+{\"id\":\"a\",\"title\":\"a\",\"mode\":\"lite\",\"status\":\"done\",\"scenarios\":[],\"done_when\":[]}
+\`\`\`
+TA
+  cat > .step/changes/change-b/tasks/b.md <<'TB'
+# b
+\`\`\`json task
+{\"id\":\"b\",\"title\":\"b\",\"mode\":\"lite\",\"status\":\"done\",\"scenarios\":[],\"done_when\":[]}
+\`\`\`
+TB
+  cat > .step/changes/change-c/tasks/c.md <<'TC'
+# c
+\`\`\`json task
+{\"id\":\"c\",\"title\":\"c\",\"mode\":\"lite\",\"status\":\"in_progress\",\"scenarios\":[],\"done_when\":[]}
+\`\`\`
+TC
   output=\$(bash '$SCRIPT_DIR/scripts/step-archive.sh' --all 2>&1)
   echo \"\$output\" | grep -q 'Archived: 2'
   ls .step/archive/*change-a >/dev/null
@@ -82,7 +133,19 @@ assert "[S-007-06] 归档目录名带 YYYY-MM-DD 日期前缀" bash -c "
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
   mkdir -p .step/changes/dated-change/tasks .step/archive
-  printf 'id: dated-task\nstatus: done\n' > .step/changes/dated-change/tasks/dated-task.yaml
+  cat > .step/changes/dated-change/tasks/dated-task.md <<'TASK'
+# dated-task
+\`\`\`json task
+{
+  "id": "dated-task",
+  "title": "dated task",
+  "mode": "lite",
+  "status": "done",
+  "scenarios": [],
+  "done_when": []
+}
+\`\`\`
+TASK
   bash '$SCRIPT_DIR/scripts/step-archive.sh' dated-change >/dev/null 2>&1
   today=\$(date +%F)
   [ -d \".step/archive/\${today}-dated-change\" ]
@@ -95,15 +158,20 @@ assert "[S-007-07] 归档当前变更会清空 current_change" bash -c "
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
   mkdir -p .step/changes/init/tasks .step/archive
-  printf 'id: t1\nstatus: done\n' > .step/changes/init/tasks/t1.yaml
-  cat > .step/state.yaml <<'INNER'
-current_change: "init"
-tasks:
-  current: t1
+  cat > .step/changes/init/tasks/t1.md <<'TASK'
+# t1
+\`\`\`json task
+{\"id\":\"t1\",\"title\":\"t1\",\"mode\":\"lite\",\"status\":\"done\",\"scenarios\":[],\"done_when\":[]}
+\`\`\`
+TASK
+  cat > .step/state.json <<'INNER'
+{\"project\":\"demo\",\"current_phase\":\"phase-4-execution\",\"current_change\":\"init\",\"last_updated\":\"2026-02-16\",\"last_agent\":\"tester\",\"last_session_summary\":\"\",\"established_patterns\":{},\"tasks\":{\"current\":\"t1\",\"upcoming\":[]},\"key_decisions\":[],\"known_issues\":[],\"constraints_quick_ref\":[],\"progress_log\":[]}
 INNER
   bash '$SCRIPT_DIR/scripts/step-archive.sh' init >/dev/null 2>&1
-  grep -q '^current_change: ""' .step/state.yaml
-  grep -q '^  current: null' .step/state.yaml
+  grep -q 'current_change' .step/state.json
+  grep -q '""' .step/state.json
+  grep -q 'current' .step/state.json
+  grep -q 'null' .step/state.json
 "
 
 # ── /archive 命令测试 ──

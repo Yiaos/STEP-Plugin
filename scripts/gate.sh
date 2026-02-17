@@ -68,7 +68,7 @@ if [ ! -f "$CORE_SCRIPT" ]; then
   exit 1
 fi
 
-CMD=(node "$CORE_SCRIPT" gate run --level "$LEVEL" --task "$TASK_ID" --mode "$RUN_MODE" --config .step/config.yaml)
+CMD=(node "$CORE_SCRIPT" gate run --level "$LEVEL" --task "$TASK_ID" --mode "$RUN_MODE" --config .step/config.json)
 [ -n "$QUICK_REASON" ] && CMD+=(--quick-reason "$QUICK_REASON")
 [ -n "$ESCALATED" ] && CMD+=(--escalated "$ESCALATED")
 [ -n "$ESCALATION_REASON" ] && CMD+=(--escalation-reason "$ESCALATION_REASON")

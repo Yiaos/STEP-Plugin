@@ -26,7 +26,7 @@ Review 分两轮执行。第一轮 spec compliance 不通过则阻断，不进�
 </HARD-GATE>
 
 #### Step 1: Preflight
-- 读 baseline.md、task YAML、decisions.md
+- 读 baseline.md、task Markdown(JSON 代码块)、decisions.md
 - git diff --stat + git diff 确定变更范围
 
 #### Step 2: 需求合规检查（P0 — 阻断合并）

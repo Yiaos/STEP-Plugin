@@ -18,7 +18,7 @@ model: google/antigravity-claude-opus-4-6-thinking
 
 ## Phase Rules
 - Phase 3 场景补充：为 Architect 定义的每个 happy_path 追加 edge_cases(2+)、error_handling(1+)、security(按需)
-- Phase 4 测试编写（routing.test_writing）：按任务 YAML 场景矩阵编写测试代码，确认全部 FAIL（TDD RED）
+- Phase 4 测试编写（routing.test_writing）：按任务 Markdown(JSON 代码块) 场景矩阵编写测试代码，确认全部 FAIL（TDD RED）
 - Phase 4 Gate 失败分析：产出 root_cause + category + fix_strategy + affected_files + risk，严禁猜测——必须分析实际错误输出
 
 ## Critical Actions

@@ -46,7 +46,7 @@ STEP 提供 6 阶段生命周期：
                                           ▼
                     ┌──────────────────────────────────────────────────────┐
                     │  SessionStart Hook                                   │
-                    │  ├── 检测 .step/state.yaml → 注入状态到上下文        │
+                    │  ├── 检测 .step/state.json → 注入状态到上下文        │
                     │  ├── 注入 routing 表 → LLM 知道阶段→agent 映射       │
                     │  └── 注入 SKILL.md → LLM 知道协议规则                │
                     └──────────────────────────────────────────────────────┘
@@ -77,7 +77,7 @@ STEP 提供 6 阶段生命周期：
   │                         ▼                                                        │
   │  Phase 5 Review                                                                  │
   │  @step-reviewer (codex)                                                          │
-  │  需求合规(P0) > 代码质量(P1-P3) → Commit → 更新 state.yaml                        │
+  │  需求合规(P0) > 代码质量(P1-P3) → Commit → 更新 state.json                        │
   └─────────────────────────────────────────────────────────────────────────────────┘
 
   ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -95,9 +95,9 @@ STEP 提供 6 阶段生命周期：
 
 ```
 agent .md frontmatter   →  WHO    角色人设 + 默认模型
-config.yaml routing     →  WHEN   哪个阶段用哪个 agent
-config.yaml file_routing → WHERE  哪些文件用哪个 agent
-config.yaml gate        →  HOW    项目构建命令
+config.json routing     →  WHEN   哪个阶段用哪个 agent
+config.json file_routing → WHERE  哪些文件用哪个 agent
+config.json gate        →  HOW    项目构建命令
 oh-my-opencode preset   →  WITH   用户环境的实际模型 ID
 ```
 
@@ -210,10 +210,10 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义（`agents/*.md`�
 
 ```
 .step/
-├── config.yaml          # agent 路由、文件路由、gate 命令
+├── config.json          # agent 路由、文件路由、gate 命令
 ├── baseline.md          # 需求基线（活快照）
 ├── decisions.md         # 架构决策日志
-├── state.yaml           # 项目状态机（Session 恢复核心）
+├── state.json           # 项目状态机（Session 恢复核心）
 ├── changes/             # 所有变更（初始 + 后续）统一管理
 │   ├── init/            # 初始开发
 │   │   ├── findings.md  # 探索发现（Phase 0/2，可选）
@@ -231,7 +231,7 @@ scripts/
 
 ### 命名规则
 
-变更和任务都使用语义化命名。初始开发固定 `init`，后续变更使用 `YYYY-MM-DD-{slug}`。任务 slug 使用 kebab-case，Full/Lite 通过 YAML `mode` 字段区分：
+变更和任务都使用语义化命名。初始开发固定 `init`，后续变更使用 `YYYY-MM-DD-{slug}`。任务 slug 使用 kebab-case，Full/Lite 通过 task Markdown 内 JSON 代码块的 `mode` 字段区分：
 
 | 元素 | 格式 | 示例 |
 |------|------|------|
@@ -239,47 +239,48 @@ scripts/
 | 变更 findings | `.step/changes/{change}/findings.md` | `.step/changes/init/findings.md`（可选） |
 | 变更 spec | `.step/changes/{change}/spec.md` | `.step/changes/init/spec.md` |
 | 变更 design | `.step/changes/{change}/design.md` | `.step/changes/init/design.md` |
-| 任务文件 | `.step/changes/{change}/tasks/{slug}.yaml` | `.step/changes/init/tasks/user-register-api.yaml` |
+| 任务文件 | `.step/changes/{change}/tasks/{slug}.md` | `.step/changes/init/tasks/user-register-api.md` |
 | 场景 ID | `S-{slug}-{seq}` | `S-user-register-api-01` |
 | 归档 | `.step/archive/YYYY-MM-DD-{change}/` | `.step/archive/2026-02-15-init/` |
 
 ## 7. 配置（Configuration）
 
-`.step/config.yaml` 控制 agent 路由、文件分流与 gate 命令，均可自定义：
+`.step/config.json` 控制 agent 路由、文件分流与 gate 命令，均可自定义：
 
-```yaml
-# 阶段 → Agent 路由（删除某行 = 编排器自己处理该阶段）
-routing:
-  discovery:    { agent: step-pm }
-  prd:          { agent: step-pm }
-  tech_design:  { agent: step-architect }
-  planning:     { agent: step-architect }
-  scenario:     { agent: step-qa }
-  test_writing: { agent: step-qa, note: "建议与 execution agent 不同，形成对抗性" }
-  execution:    { agent: step-developer }
-  review:       { agent: step-reviewer }
-
-# Phase 4 文件模式路由（前端文件 → designer，其余 → developer）
-file_routing:
-  frontend:
-    agent: step-designer
-    patterns: ["src/components/**", "**/*.tsx", "**/*.css", "**/*.vue"]
-  backend:
-    agent: step-developer
-    patterns: ["src/api/**", "src/db/**", "src/lib/**"]
-
-# Gate 命令（根据项目工具链修改）
-gate:
-  lint: "pnpm lint --no-error-on-unmatched-pattern"
-  typecheck: "pnpm tsc --noEmit"
-  test: "pnpm vitest run"
-  build: "pnpm build"
-  dangerous_executables: ["rm", "dd", "mkfs", "shutdown", "reboot", "poweroff", "halt", "sudo"]
-
-# Worktree 并行开发（可选）
-worktree:
-  enabled: false
-  branch_prefix: "change/"
+```json
+{
+  "routing": {
+    "discovery": { "agent": "step-pm" },
+    "prd": { "agent": "step-pm" },
+    "tech_design": { "agent": "step-architect" },
+    "planning": { "agent": "step-architect" },
+    "scenario": { "agent": "step-qa" },
+    "test_writing": { "agent": "step-qa", "note": "建议与 execution agent 不同，形成对抗性" },
+    "execution": { "agent": "step-developer" },
+    "review": { "agent": "step-reviewer" }
+  },
+  "file_routing": {
+    "frontend": {
+      "agent": "step-designer",
+      "patterns": ["src/components/**", "**/*.tsx", "**/*.css", "**/*.vue"]
+    },
+    "backend": {
+      "agent": "step-developer",
+      "patterns": ["src/api/**", "src/db/**", "src/lib/**"]
+    }
+  },
+  "gate": {
+    "lint": "pnpm lint --no-error-on-unmatched-pattern",
+    "typecheck": "pnpm tsc --noEmit",
+    "test": "pnpm vitest run",
+    "build": "pnpm build",
+    "dangerous_executables": ["rm", "dd", "mkfs", "shutdown", "reboot", "poweroff", "halt", "sudo"]
+  },
+  "worktree": {
+    "enabled": false,
+    "branch_prefix": "change/"
+  }
+}
 ```
 
 ### Worktree 模式

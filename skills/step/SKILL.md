@@ -6,16 +6,16 @@ hooks:
     - matcher: "Write|Edit|Bash"
       hooks:
         - type: command
-          command: "cat .step/state.yaml 2>/dev/null | head -25 || true"
+          command: "cat .step/state.json 2>/dev/null | head -25 || true"
   PostToolUse:
     - matcher: "Write|Edit"
       hooks:
         - type: command
-          command: "echo '[STEP] 文件已修改。如有阶段变化或重大决策，更新 .step/state.yaml 的 progress_log 和 key_decisions。'"
+          command: "echo '[STEP] 文件已修改。如有阶段变化或重大决策，更新 .step/state.json 的 progress_log 和 key_decisions。'"
   Stop:
     - hooks:
         - type: command
-          command: "bash scripts/step-stop-check.sh 2>/dev/null || echo '[STEP] 对话即将结束。必须更新 state.yaml: last_updated, progress_log（新条目插入列表最前，倒序）, next_action（精确到文件名和动作）。'"
+          command: "bash scripts/step-stop-check.sh 2>/dev/null || echo '[STEP] 对话即将结束。必须更新 state.json: last_updated, progress_log（新条目插入列表最前，倒序）, next_action（精确到文件名和动作）。'"
 ---
 
 # STEP Protocol — Core Rules
@@ -32,11 +32,11 @@ hooks:
 | 变更 findings | `.step/changes/{change}/findings.md` | `changes/init/findings.md`（可选） |
 | 变更 spec | `.step/changes/{change}/spec.md` | `changes/init/spec.md` |
 | 变更 design | `.step/changes/{change}/design.md` | `changes/init/design.md` |
-| 任务文件 | `.step/changes/{change}/tasks/{slug}.yaml` | `changes/init/tasks/user-register-api.yaml` |
+| 任务文件 | `.step/changes/{change}/tasks/{slug}.md` | `changes/init/tasks/user-register-api.md` |
 | 场景 ID | `S-{slug}-{seq}` | `S-user-register-api-01` |
 | 归档 | `.step/archive/YYYY-MM-DD-{change}/` | `archive/2026-02-15-init/` |
 
-**命名规则**: 初始开发用 `init`，后续变更用 `YYYY-MM-DD-{slug}`。任务 slug 为 kebab-case。Full/Lite 通过 YAML `mode` 字段区分。
+**命名规则**: 初始开发用 `init`，后续变更用 `YYYY-MM-DD-{slug}`。任务 slug 为 kebab-case。Full/Lite 通过 task Markdown 内 JSON 代码块的 `mode` 字段区分。
 
 ## Phase 规则
 
@@ -61,7 +61,7 @@ hooks:
 
 ### Phase 3: Plan & Tasks（结构化确认）
 - 生成任务图 + 依赖关系 + BDD 场景矩阵
-- 每个任务 YAML 含: happy_path / edge_cases / error_handling 场景
+- 每个任务 Markdown(JSON 代码块) 含: happy_path / edge_cases / error_handling 场景
 - 场景 ID 格式: `S-{slug}-{seq}` (如 `S-user-register-api-01`)
 - 每个场景通过 `test_type` 指定验证方式（unit / integration / e2e），**三种类型都是必须的**
 - 用户审核确认后写入 `.step/changes/{change}/tasks/`
@@ -77,7 +77,7 @@ Step 4: Gate 验证 → 小改动可 `gate.sh quick {slug}`，常规 `gate.sh li
 Step 5: Review + Commit（每完成一个任务都执行）
   commit 后询问是否合并回主分支并归档
   用户确认后执行 ./scripts/step-worktree.sh finalize {change}
-Step 6: 更新 state.yaml + baseline.md 对应项 [ ] → [x] → 进入下一任务
+Step 6: 更新 state.json + baseline.md 对应项 [ ] → [x] → 进入下一任务
 ```
 
 ### Phase 5: Review（独立验证）
@@ -85,7 +85,7 @@ Step 6: 更新 state.yaml + baseline.md 对应项 [ ] → [x] → 进入下一�
 
 ## Execution 硬规则
 
-1. **测试先行**: 按 `config.yaml` 的 `routing.test_writing` 派发 @step-qa 写测试 → 确认 FAIL → 再写实现（QA 写测试 + Developer 写实现 = 天然对抗性）
+1. **测试先行**: 按 `config.json` 的 `routing.test_writing` 派发 @step-qa 写测试 → 确认 FAIL → 再写实现（QA 写测试 + Developer 写实现 = 天然对抗性）
 2. **场景 ID 绑定**: 测试名必须包含 `[S-{slug}-xx]`
 3. **Gate 必须带 slug**: `./scripts/gate.sh quick|lite|full {slug}`——必须指定 task-slug，确保 evidence 自动保存到 `.step/evidence/{slug}-gate.json`
 4. **增量优先 + 全量兜底**: 日常执行默认增量 gate；Phase 5 Review 前、归档前必须执行一次 `./scripts/gate.sh full {slug} --all`
@@ -176,7 +176,7 @@ Lite mode 跳过此检查点。
 
 ## 注意力管理
 
-当 PreToolUse hook 注入 state.yaml 内容时（你会看到以 `⚡` 开头的规则行）：
+当 PreToolUse hook 注入 state.json 内容时（你会看到以 `⚡` 开头的规则行）：
 
 1. **检查 progress_log** — 如果距上次更新已完成新的有意义工作，将新条目插入列表最前（倒序，最新在前）
 2. **检查 key_decisions** — 如果做了新的技术/架构决策，将新条目插入列表最前（倒序，最新在前；含 decision + reason + phase + date）
@@ -186,19 +186,19 @@ PostToolUse 提醒不可忽略：每次 Write/Edit 后评估是否触发了状�
 ## Session 管理
 
 ### 对话结束时必须做
-1. 更新 `state.yaml`: last_updated, progress_log（新条目插入列表最前，倒序）, next_action
+1. 更新 `state.json`: last_updated, progress_log（新条目插入列表最前，倒序）, next_action
 2. `next_action` 精确到文件名和具体动作
 3. **禁止写** "继续开发" / "后续处理"
 4. 如有重大决策，插入 `key_decisions` 列表最前（倒序；含 decision, reason, phase, date）
 
 ### 恢复 Session 时
-1. 读 state.yaml → 读当前 change spec → 读当前 task → 读 baseline
+1. 读 state.json → 读当前 change spec → 读当前 task → 读 baseline
 2. 输出: `📍 Phase X | Change: {name} | Task: {slug} | Status: xxx | Next: xxx`
 3. 从 next_action 继续
 
-## Agent 路由（参考 .step/config.yaml）
+## Agent 路由（参考 .step/config.json）
 
-编排器按 `config.yaml` 的 `routing` 表选择 agent，Phase 4 按 `file_routing` 的 patterns 分流：
+编排器按 `config.json` 的 `routing` 表选择 agent，Phase 4 按 `file_routing` 的 patterns 分流：
 
 | 阶段 | Agent | 路由依据 |
 |------|-------|---------|
@@ -246,7 +246,7 @@ Post-MVP 变更**与初始开发结构统一**，每个变更都是 `.step/chang
 - **新增功能**: 新建 `.step/changes/YYYY-MM-DD-{slug}/`（含 spec.md + design.md + tasks/）→ 走 Phase 1-4 → gate + review + commit → 更新 baseline → 归档
 - **Hotfix**: 新建 `.step/changes/YYYY-MM-DD-{slug}-hotfix/`（含 spec.md + design.md + tasks/）→ TDD 修复 → gate full 回归 → review + commit → 归档
 - **约束变更**: 高影响变更 → spec.md 中注明影响分析 → 创建迁移任务 → Phase 4 执行 → gate full
-- **Baseline 整理**: 多轮变更后 baseline 臃肿时。流程：归档旧版到 archive/ → 合成干净快照 → 同时精简 state.yaml 和 decisions.md → 用户确认后写入。审计链通过归档文件保留
+- **Baseline 整理**: 多轮变更后 baseline 臃肿时。流程：归档旧版到 archive/ → 合成干净快照 → 同时精简 state.json 和 decisions.md → 用户确认后写入。审计链通过归档文件保留
 
 **命名规则**: 初始开发用 `init`，后续变更用 `YYYY-MM-DD-{slug}` 开头，便于按时间查找。
 
@@ -283,7 +283,7 @@ Quick 模式由模型语义判断是否适用，不使用文件数/关键词硬�
 若发现风险上升，必须升级到 lite/full，并记录 `escalation_reason`。
 
 ### L1: Quick Spec（派发 @step-pm，routing.lite_spec）
-- 编排器派发 @step-pm 起草 lite task spec → 用户确认 → 写入 `.step/changes/{change}/tasks/{slug}.yaml`
+- 编排器派发 @step-pm 起草 lite task spec → 用户确认 → 写入 `.step/changes/{change}/tasks/{slug}.md`
 - 批量任务: 一次展示多个 lite task → 一次确认 → 逐个执行
 - 不分段确认、不修改 baseline 需求（允许完成标记 [ ] → [x]）、不做 ADR
 
@@ -294,7 +294,7 @@ Quick 模式由模型语义判断是否适用，不使用文件数/关键词硬�
 - Gate: `gate.sh quick {slug}`（小改动）或 `gate.sh lite {slug}`（常规增量）
 - e2e 按需
 - Gate lite 通过 → 先执行 `gate.sh full {slug} --all` → **完整 Code Review**（需求合规 > 代码质量）
-- Review 通过 → Commit → 更新 state.yaml + baseline.md
+- Review 通过 → Commit → 更新 state.json + baseline.md
 - **Lite 精简的是规划阶段，不是质量保证阶段**
 
 ### 完成后：Check + 迭代
@@ -320,12 +320,15 @@ Quick 模式由模型语义判断是否适用，不使用文件数/关键词硬�
 
 ## Worktree 模式（可选）
 
-在 `.step/config.yaml` 里设置：
+在 `.step/config.json` 里设置：
 
-```yaml
-worktree:
-  enabled: true
-  branch_prefix: "change/"
+```json
+{
+  "worktree": {
+    "enabled": true,
+    "branch_prefix": "change/"
+  }
+}
 ```
 
 启用后流程：

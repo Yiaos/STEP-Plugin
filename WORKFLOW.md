@@ -13,7 +13,7 @@ Discovery   →   PRD        →   Tech Design →  Plan & Tasks →  Execution 
 (开放式讨论)     (选择题确认)    (开放式讨论)    (选择题确认)     (TDD+Gate)        (独立验证)
                                                                   ↑
                                                    中断恢复 ──────┘
-                                                   读 state.yaml
+                                                   读 state.json
 
 Post-MVP:
   新增功能/Hotfix/约束变更 → 回到 Phase 1-4（按变更类型）
@@ -45,7 +45,7 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义文件（`STEP/ag
 | Designer（UX 设计师） | `agents/designer.md`  | gemini      | Phase 2 UI 设计, Phase 4 Execution（前端）          | 配色、布局、交互设计、UI 代码                       |
 
 **角色切换原则：**
-- 每个 Phase 有默认角色，通过 `.step/config.yaml` 的 `routing` 表配置
+- 每个 Phase 有默认角色，通过 `.step/config.json` 的 `routing` 表配置
 - Phase 4 执行时，按 `file_routing` 表的 patterns 匹配决定用 Designer 还是 Developer
 - 角色之间形成制衡：PM 定义"做什么"、Architect 定义"怎么做"、QA 定义"怎么破坏它"、Developer/Designer 只做被定义的事
 - Agent 默认模型在 `agents/*.md` frontmatter 中定义，用户可通过 oh-my-opencode preset 按 agent name 覆盖
@@ -54,23 +54,23 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义文件（`STEP/ag
 
 ```
 .step/
-├── config.yaml               # 项目配置（agent 路由、文件路由、gate 命令）
+├── config.json               # 项目配置（agent 路由、文件路由、gate 命令）
 ├── baseline.md                # 需求基线（活快照）
 ├── decisions.md               # Phase 2 输出：架构决策日志
-├── state.yaml                 # Phase 3+ 持续更新：项目状态机
+├── state.json                 # Phase 3+ 持续更新：项目状态机
 ├── changes/                   # 所有变更（初始 + 后续）统一管理
 │   ├── init/                  # 初始开发
 │   │   ├── findings.md        # 探索发现（Phase 0/2，可选）
 │   │   ├── spec.md            # 需求说明（Phase 1 产出）
 │   │   ├── design.md          # 技术方案（Phase 2 产出）
 │   │   └── tasks/             # 任务 + BDD 场景（Phase 3 产出）
-│   │       ├── user-register-api.yaml
+│   │       ├── user-register-api.md
 │   │       └── ...
 │   └── 2026-02-20-add-dark-mode/  # 后续变更
 │       ├── spec.md
 │       ├── design.md
 │       └── tasks/
-│           └── dark-mode-toggle.yaml
+│           └── dark-mode-toggle.md
 ├── archive/                   # 已完成变更归档
 │   └── 2026-02-15-init/
 └── evidence/
@@ -277,75 +277,83 @@ BDD 场景 (Given/When/Then) — 行为规格
 - 三种测试类型都是必须的，不是可选的
 - 每个场景的 `test_type` 在 Phase 3 规划时确定
 
-### 任务 YAML 格式
+### 任务 Markdown(JSON 代码块) 格式
 
-```yaml
-# 文件名: .step/changes/{change}/tasks/user-register-api.yaml
-id: user-register-api          # 语义化 slug = 文件名（不含 .yaml）
-title: "用户注册 API"
-mode: full                     # full | lite
-status: planned                # planned | ready | in_progress | blocked | done
-depends_on: [user-model-setup]
-goal: "实现 POST /api/register"
-non_goal:
-  - "不做 OAuth"
+````markdown
+<!-- 文件名: .step/changes/{change}/tasks/user-register-api.md -->
 
-# 完成条件（命令级）
-done_when:
-  - "pnpm lint"
-  - "pnpm tsc --noEmit"
-  - "pnpm vitest run test/auth/register.test.ts"
-
-# BDD 场景矩阵（4 类必须覆盖）
-scenarios:
-  happy_path:
-    - id: S-user-register-api-01
-      given: "email=test@x.com, password=Valid123!"
-      when: "POST /api/register"
-      then: "返回 201 + { data: { id, email } }"
-      test_file: "test/auth/register.test.ts"
-      test_name: "[S-user-register-api-01] 正常注册成功"
-      test_type: unit  # unit | integration | e2e
-      status: not_run
-
-  edge_cases:
-    - id: S-user-register-api-02
-      given: "email 已被注册"
-      when: "POST /api/register"
-      then: "返回 409"
-      test_file: "test/auth/register.test.ts"
-      test_name: "[S-user-register-api-02] 重复邮箱注册"
-      test_type: unit
-      status: not_run
-
-    - id: S-user-register-api-03
-      given: "password 少于 8 位"
-      when: "POST /api/register"
-      then: "返回 400"
-      test_file: "test/auth/register.test.ts"
-      test_name: "[S-user-register-api-03] 密码太短"
-      test_type: unit
-      status: not_run
-
-  error_handling:
-    - id: S-user-register-api-04
-      given: "数据库连接失败"
-      when: "POST /api/register"
-      then: "返回 503"
-      test_file: "test/auth/register.test.ts"
-      test_name: "[S-user-register-api-04] 数据库不可用"
-      test_type: integration
-      status: not_run
-
-# 场景覆盖要求
-coverage_requirements:
-  happy_path: 1+
-  edge_cases: 2+
-  error_handling: 1+
-  security: "按需"
-
-rollback: "git revert --no-commit HEAD~3"
+```json
+{
+  "id": "user-register-api",
+  "title": "用户注册 API",
+  "mode": "full",
+  "status": "planned",
+  "depends_on": ["user-model-setup"],
+  "goal": "实现 POST /api/register",
+  "non_goal": ["不做 OAuth"],
+  "done_when": [
+    "pnpm lint",
+    "pnpm tsc --noEmit",
+    "pnpm vitest run test/auth/register.test.ts"
+  ],
+  "scenarios": {
+    "happy_path": [
+      {
+        "id": "S-user-register-api-01",
+        "given": "email=test@x.com, password=Valid123!",
+        "when": "POST /api/register",
+        "then": "返回 201 + { data: { id, email } }",
+        "test_file": "test/auth/register.test.ts",
+        "test_name": "[S-user-register-api-01] 正常注册成功",
+        "test_type": "unit",
+        "status": "not_run"
+      }
+    ],
+    "edge_cases": [
+      {
+        "id": "S-user-register-api-02",
+        "given": "email 已被注册",
+        "when": "POST /api/register",
+        "then": "返回 409",
+        "test_file": "test/auth/register.test.ts",
+        "test_name": "[S-user-register-api-02] 重复邮箱注册",
+        "test_type": "unit",
+        "status": "not_run"
+      },
+      {
+        "id": "S-user-register-api-03",
+        "given": "password 少于 8 位",
+        "when": "POST /api/register",
+        "then": "返回 400",
+        "test_file": "test/auth/register.test.ts",
+        "test_name": "[S-user-register-api-03] 密码太短",
+        "test_type": "unit",
+        "status": "not_run"
+      }
+    ],
+    "error_handling": [
+      {
+        "id": "S-user-register-api-04",
+        "given": "数据库连接失败",
+        "when": "POST /api/register",
+        "then": "返回 503",
+        "test_file": "test/auth/register.test.ts",
+        "test_name": "[S-user-register-api-04] 数据库不可用",
+        "test_type": "integration",
+        "status": "not_run"
+      }
+    ]
+  },
+  "coverage_requirements": {
+    "happy_path": "1+",
+    "edge_cases": "2+",
+    "error_handling": "1+",
+    "security": "按需"
+  },
+  "rollback": "git revert --no-commit HEAD~3"
+}
 ```
+````
 
 ### 命名规则
 
@@ -354,7 +362,7 @@ rollback: "git revert --no-commit HEAD~3"
 | 变更目录   | `.step/changes/{change}/`                 | `changes/init/`, `changes/2026-02-20-add-oauth/`  |
 | 变更 spec  | `.step/changes/{change}/spec.md`          | `changes/init/spec.md`                             |
 | 变更 design| `.step/changes/{change}/design.md`        | `changes/init/design.md`                            |
-| 任务文件   | `.step/changes/{change}/tasks/{slug}.yaml`| `changes/init/tasks/user-register-api.yaml`        |
+| 任务文件   | `.step/changes/{change}/tasks/{slug}.md`| `changes/init/tasks/user-register-api.md`        |
 | 任务 ID    | `{slug}`                                  | `user-register-api`                                |
 | 场景 ID    | `S-{slug}-{seq}`                          | `S-user-register-api-01`                           |
 | 归档       | `.step/archive/YYYY-MM-DD-{change}/`      | `archive/2026-02-15-init/`                         |
@@ -375,55 +383,54 @@ rollback: "git revert --no-commit HEAD~3"
 
 ### Agent 路由
 
-Phase 4 执行时，编排器按 `.step/config.yaml` 的路由表选择 agent：
+Phase 4 执行时，编排器按 `.step/config.json` 的路由表选择 agent：
 
-```yaml
-# .step/config.yaml
-
-# 阶段 → Agent 路由（编排器参考此表派发子 agent）
-routing:
-  discovery:    { agent: step-pm }
-  prd:          { agent: step-pm }
-  lite_spec:    { agent: step-pm, note: "Lite L1 Quick Spec，轻量需求确认" }
-  tech_design:  { agent: step-architect }
-  planning:     { agent: step-architect }
-  scenario:     { agent: step-qa }
-  test_writing: { agent: step-qa, note: "建议与 execution agent 不同，形成对抗性" }
-  execution:    { agent: step-developer }
-  review:       { agent: step-reviewer }
-
-# Phase 4 文件模式路由（前端文件 → designer，其余 → developer）
-file_routing:
-  frontend:
-    agent: step-designer
-    patterns: ["src/components/**", "**/*.tsx", "**/*.css", "**/*.vue"]
-  backend:
-    agent: step-developer
-    patterns: ["src/api/**", "src/db/**", "src/lib/**"]
-
-# Gate 命令（根据项目包管理器和工具链修改）
-gate:
-  lint: "pnpm lint --no-error-on-unmatched-pattern"
-  typecheck: "pnpm tsc --noEmit"
-  test: "pnpm vitest run"
-  build: "pnpm build"
-
-# Worktree 并行开发（可选）
-worktree:
-  enabled: false
-  branch_prefix: "change/"
+```json
+{
+  "routing": {
+    "discovery": { "agent": "step-pm" },
+    "prd": { "agent": "step-pm" },
+    "lite_spec": { "agent": "step-pm", "note": "Lite L1 Quick Spec，轻量需求确认" },
+    "tech_design": { "agent": "step-architect" },
+    "planning": { "agent": "step-architect" },
+    "scenario": { "agent": "step-qa" },
+    "test_writing": { "agent": "step-qa", "note": "建议与 execution agent 不同，形成对抗性" },
+    "execution": { "agent": "step-developer" },
+    "review": { "agent": "step-reviewer" }
+  },
+  "file_routing": {
+    "frontend": {
+      "agent": "step-designer",
+      "patterns": ["src/components/**", "**/*.tsx", "**/*.css", "**/*.vue"]
+    },
+    "backend": {
+      "agent": "step-developer",
+      "patterns": ["src/api/**", "src/db/**", "src/lib/**"]
+    }
+  },
+  "gate": {
+    "lint": "pnpm lint --no-error-on-unmatched-pattern",
+    "typecheck": "pnpm tsc --noEmit",
+    "test": "pnpm vitest run",
+    "build": "pnpm build"
+  },
+  "worktree": {
+    "enabled": false,
+    "branch_prefix": "change/"
+  }
+}
 ```
 
 ### 执行循环
 
 ```
 Step 1: 加载上下文
-  读 state.yaml → 读 task YAML → 读 baseline.md
+  读 state.json → 读 task Markdown(JSON 代码块) → 读 baseline.md
   输出: "📍 user-register-api 用户注册 | 4 场景待实现"
 
 Step 2: 写测试（按 routing.test_writing 派发 @step-qa）
   ┌────────────────────────────────────────────────┐
-  │ 读取 .step/changes/{change}/tasks/user-register-api.yaml 的场景矩阵│
+  │ 读取 .step/changes/{change}/tasks/user-register-api.md 的场景矩阵│
   │ 为每个场景写测试，名称包含 [S-{slug}-xx]          │
   │ 不写任何实现代码                                  │
   │ 跑测试确认全部 FAIL                               │
@@ -431,7 +438,7 @@ Step 2: 写测试（按 routing.test_writing 派发 @step-qa）
   └────────────────────────────────────────────────┘
   → 确认全部 FAIL（TDD RED）
 
-Step 3: 写实现（按 config.yaml file_routing 选 agent）
+Step 3: 写实现（按 config.json file_routing 选 agent）
   若 `config.worktree.enabled=true`:
     → 自动执行 `./scripts/step-worktree.sh create {change-name}`
     → 在该变更的独立 worktree 中继续执行 Phase 4
@@ -552,13 +559,13 @@ Gate 分级修复
 
 ```
   1. 任务状态保持 in_progress（不允许标 done）
-  2. state.yaml 记录:
+  2. state.json 记录:
      - gate_results: { lint: pass, test: fail, ... }
      - failure_analysis: "root_cause + fix_strategy（来自分析 agent）"
      - blocking_issues: ["test/auth/register.test.ts:42 - 预期 201 实际 500"]
      - next_action: "修复 src/auth/register.ts:42 的错误处理逻辑（根因: 缺少 isLocked 判断）"
   3. 3 轮后仍失败:
-     state.yaml:
+     state.json:
        current.status: blocked
        current.blocking_issues: ["3 次自动修复失败，需要人工排查"]
        current.failure_history: ["轮次1: ...", "轮次2: ...", "轮次3: ..."]
@@ -596,7 +603,7 @@ Review 分两轮执行。第一轮不通过则阻断，**不进入第二轮**。
    □ Acceptance Contract 中的条件是否全部满足？
 
 3. BDD 场景覆盖
-   □ task YAML 中的每个场景是否都有通过的测试？
+   □ task Markdown(JSON 代码块) 中的每个场景是否都有通过的测试？
    □ happy_path / edge_cases / error_handling 是否都覆盖？
    □ scenario-check.sh 是否 100% pass？
 
@@ -738,8 +745,8 @@ Post-MVP 的每一次变更都必须：
   │     确认 → 继续; 撤回 → 删除变更文件夹
   │
   ├── 3. 创建任务
-  │     写入 tasks/{slug}.yaml（含完整 BDD 场景矩阵）
-  │     更新 state.yaml: current_change → 2026-02-14-add-oauth-login
+  │     写入 tasks/{slug}.md（含完整 BDD 场景矩阵）
+  │     更新 state.json: current_change → 2026-02-14-add-oauth-login
   │
   ├── 4. Phase 4 执行（TDD + Gate + Review + Commit）
   │
@@ -755,15 +762,15 @@ Post-MVP 的每一次变更都必须：
 用户: "注册时空密码没报错"
   │
   ├── 1. 定位问题
-  │     → 读 state.yaml 找到对应任务（user-register-api）
-  │     → 读 task YAML 找到对应场景（S-user-register-api-03 密码太短）
+  │     → 读 state.json 找到对应任务（user-register-api）
+  │     → 读 task Markdown(JSON 代码块) 找到对应场景（S-user-register-api-03 密码太短）
   │     → 检查场景 status（如果是 pass → 测试没覆盖到这个 case）
   │
   ├── 2. 创建 Hotfix 变更
   │     mkdir .step/changes/2026-02-14-register-hotfix/tasks/
   │     写入 spec.md（bug 描述 + 根因 + 影响）
   │     写入 design.md（修复方案 + 风险）
-  │     写入 tasks/register-empty-password.yaml:
+  │     写入 tasks/register-empty-password.md:
   │       id: register-empty-password
   │       mode: lite
   │       scenarios:
@@ -798,7 +805,7 @@ Post-MVP 的每一次变更都必须：
   │     分析受影响文件和测试 → 写入 design.md
   │
   ├── 3. 用户确认 spec → 创建迁移任务
-  │     写入 tasks/migrate-cookie-to-jwt.yaml（含场景矩阵）
+  │     写入 tasks/migrate-cookie-to-jwt.md（含场景矩阵）
   │
   ├── 4. 执行迁移（完整 Phase 4 流程）
   │     → TDD + gate full + Review + Commit
@@ -827,7 +834,7 @@ Post-MVP 的每一次变更都必须：
   ├── 3. 用户确认
   │     展示新版 baseline → 用户确认
   │
-   ├── 4. 同时精简 state.yaml
+   ├── 4. 同时精简 state.json
    │     - 合并冗余 progress_log 条目为一条总结
    │     - 清理已解决的 known_issues
    │     - 只保留仍有参考价值的 key_decisions
@@ -841,10 +848,10 @@ Post-MVP 的每一次变更都必须：
   │       - 保留解释"当前为什么是这样"的决策
   │
   ├── 6. 用户确认
-  │     展示新版 baseline + state.yaml + decisions.md 变更 → 用户确认
+  │     展示新版 baseline + state.json + decisions.md 变更 → 用户确认
   │
   └── 7. 写入
-        写入 .step/baseline.md + .step/state.yaml + .step/decisions.md
+        写入 .step/baseline.md + .step/state.json + .step/decisions.md
         审计链通过归档文件保留，当前文件只负责"现在是什么、为什么"
 ```
 
@@ -857,7 +864,7 @@ Post-MVP 的每一次变更都必须：
 ### scenario-check.sh 工作原理
 
 ```
-任务 YAML 定义:  id: S-user-register-api-01
+任务 Markdown(JSON 代码块) 定义:  id: S-user-register-api-01
         ↓ 约定
 测试文件中写:   it('[S-user-register-api-01] 正常注册', ...)
         ↓ grep 匹配
@@ -874,19 +881,19 @@ gate.sh 在 lite/full 级别自动调用 scenario-check.sh。
 
 ```
 Layer 1: 场景定义    ← Phase 3 Architect（happy_path）+ QA（edge/error/security）
-Layer 2: 测试代码    ← Phase 4 @step-qa（按 config.yaml test_writing 路由，形成对抗性）
+Layer 2: 测试代码    ← Phase 4 @step-qa（按 config.json test_writing 路由，形成对抗性）
 Layer 3: 实现代码    ← Phase 4 Developer/Designer（按 file_routing 选 agent）
 Layer 4: 独立审查    ← Phase 5 QA（需求合规 + 代码质量）
 ```
 
 ### 测试编写 Agent
 
-测试通过 `config.yaml` 的 `routing.test_writing` 配置，默认使用 `@step-qa`。建议与实现 agent 不同以形成"对抗性"（避免同一 agent 写测试又写实现）。
+测试通过 `config.json` 的 `routing.test_writing` 配置，默认使用 `@step-qa`。建议与实现 agent 不同以形成"对抗性"（避免同一 agent 写测试又写实现）。
 
 ### 测试生成提示词模板
 
 ```
-读取 .step/changes/{change}/tasks/{slug}.yaml 中的 scenarios 字段。
+读取 .step/changes/{change}/tasks/{slug}.md 中的 scenarios 字段。
 
 为每个场景写一个测试用例，规则：
 1. 测试名称必须包含场景 ID，格式: [S-{slug}-xx]
@@ -917,13 +924,13 @@ description: "初始化 STEP 协议并开始全生命周期开发流程。自动
 检查当前项目是否已初始化 STEP 协议（.step/ 目录是否存在）。
 
 如果 .step/ 不存在：
-  1. 创建 .step/ 目录结构（config.yaml, baseline.md, decisions.md, state.yaml）
+  1. 创建 .step/ 目录结构（config.json, baseline.md, decisions.md, state.json）
   2. 创建 scripts/gate.sh 和 scripts/scenario-check.sh
-  3. 将 state.yaml 的 current_phase 设为 "phase-0-discovery"
+  3. 将 state.json 的 current_phase 设为 "phase-0-discovery"
   4. 告诉用户："STEP 已初始化。当前阶段: Phase 0 Discovery。请描述你的想法，我们开始讨论。"
 
 如果 .step/ 已存在：
-  1. 读取 .step/state.yaml
+  1. 读取 .step/state.json
   2. 根据 current_phase 进入对应阶段
   3. 如果有 current task，显示状态行：
      "📍 Phase X | Change: {name} | Task: {slug} | Status: xxx | Next: xxx"
@@ -935,10 +942,10 @@ Phase 0 (Discovery): 开放式讨论，用户主导方向，LLM 提供分析。�
 Phase 1 (PRD): 分段展示 baseline.md 草稿，选择题确认细节。
 Phase 2 (Tech Design): 开放式讨论技术方案，LLM 提供对比分析，用户讨论后确定。
 Phase 3 (Planning): 生成任务图和场景矩阵，用户审核确认。
-Phase 4 (Execution): TDD 循环（测试模型按 config.yaml 配置），gate 验证。
+Phase 4 (Execution): TDD 循环（测试模型按 config.json 配置），gate 验证。
 Phase 5 (Review): 独立审查（需求合规 > 代码质量）。
 
-每次对话结束时必须更新 .step/state.yaml。
+每次对话结束时必须更新 .step/state.json。
 next_action 必须精确到文件名和具体动作。
 不允许违反 baseline.md 约束，冲突时必须新建变更并更新 spec/design。
 ```
@@ -971,12 +978,12 @@ next_action 必须精确到文件名和具体动作。
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 查找 .step/state.yaml
+# 查找 .step/state.json
 STATE_FILE=""
-if [ -f ".step/state.yaml" ]; then
-  STATE_FILE=".step/state.yaml"
-elif [ -f "${OPENCODE_PROJECT_DIR:-.}/.step/state.yaml" ]; then
-  STATE_FILE="${OPENCODE_PROJECT_DIR}/.step/state.yaml"
+if [ -f ".step/state.json" ]; then
+  STATE_FILE=".step/state.json"
+elif [ -f "${OPENCODE_PROJECT_DIR:-.}/.step/state.json" ]; then
+  STATE_FILE="${OPENCODE_PROJECT_DIR}/.step/state.json"
 fi
 
 if [ -z "$STATE_FILE" ]; then
@@ -992,15 +999,15 @@ EOF
   exit 0
 fi
 
-# 读取 state.yaml 内容
-STATE_CONTENT=$(cat "$STATE_FILE" 2>&1 || echo "Error reading state.yaml")
+# 读取 state.json 内容
+STATE_CONTENT=$(cat "$STATE_FILE" 2>&1 || echo "Error reading state.json")
 
 # 读取当前变更和任务（如果有）
 TASK_CONTENT=""
 CURRENT_CHANGE=$(grep 'current_change:' "$STATE_FILE" 2>/dev/null | head -1 | sed 's/.*current_change: *//' | tr -d ' "'"'" || true)
 CURRENT_TASK=$(grep -E "^\s+current:" "$STATE_FILE" 2>/dev/null | head -1 | sed 's/.*current: *//' | tr -d ' "'"'" || true)
 if [ -n "$CURRENT_CHANGE" ] && [ -n "$CURRENT_TASK" ]; then
-  TASK_PATH=".step/changes/${CURRENT_CHANGE}/tasks/${CURRENT_TASK}.yaml"
+  TASK_PATH=".step/changes/${CURRENT_CHANGE}/tasks/${CURRENT_TASK}.md"
   if [ -f "$TASK_PATH" ]; then
     TASK_CONTENT=$(cat "$TASK_PATH" 2>&1 || echo "")
   fi
@@ -1039,7 +1046,7 @@ cat <<EOF
 {
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
-    "additionalContext": "<STEP_PROTOCOL>\\nSTEP 协议已激活。以下是项目当前状态：\\n\\n## state.yaml\\n${STATE_ESC}\\n\\n## 当前任务\\n${TASK_ESC}\\n\\n## Baseline\\n${BASELINE_ESC}\\n\\n## 规则\\n1. 根据 current_phase 进入对应阶段\\n2. Phase 0/2: 开放式讨论，用户主导\\n3. Phase 1/3: 选择题确认细节\\n4. Phase 4: TDD(测试用codex)+Gate\\n5. 对话结束必须更新 state.yaml\\n6. 不违反 baseline 约束\\n7. Gate 失败: 自动修复最多3轮，仍失败标 blocked\\n</STEP_PROTOCOL>"
+    "additionalContext": "<STEP_PROTOCOL>\\nSTEP 协议已激活。以下是项目当前状态：\\n\\n## state.json\\n${STATE_ESC}\\n\\n## 当前任务\\n${TASK_ESC}\\n\\n## Baseline\\n${BASELINE_ESC}\\n\\n## 规则\\n1. 根据 current_phase 进入对应阶段\\n2. Phase 0/2: 开放式讨论，用户主导\\n3. Phase 1/3: 选择题确认细节\\n4. Phase 4: TDD(测试用codex)+Gate\\n5. 对话结束必须更新 state.json\\n6. 不违反 baseline 约束\\n7. Gate 失败: 自动修复最多3轮，仍失败标 blocked\\n</STEP_PROTOCOL>"
   }
 }
 EOF
@@ -1052,7 +1059,7 @@ exit 0
 ```
 Session 开始
   │
-  ├── Hook 检测 .step/state.yaml 是否存在
+  ├── Hook 检测 .step/state.json 是否存在
   │     │
   │     ├── 存在 → 注入状态到上下文 → LLM 自动恢复到对应阶段
   │     │
@@ -1075,8 +1082,8 @@ Session 开始
 ## STEP Protocol（如果 .step/ 目录存在则必须遵守）
 
 ### Session 启动
-1. 读取 `.step/state.yaml`
-2. 读取当前 change 的 spec + 当前 task YAML（如果 Phase 4+）
+1. 读取 `.step/state.json`
+2. 读取当前 change 的 spec + 当前 task Markdown(JSON 代码块)（如果 Phase 4+）
 3. 读取 `.step/baseline.md`
 4. 输出状态行: "📍 Phase X | Change: {name} | Task: {slug} | Status: xxx"
 
@@ -1101,7 +1108,7 @@ Session 开始
 - 3 轮后仍失败 → 标 blocked + 请求人工介入
 
 ### Session 结束
-1. 更新 state.yaml（last_updated, progress, next_action）
+1. 更新 state.json（last_updated, progress, next_action）
 2. next_action 精确到文件名和具体动作
 3. 不允许写"继续开发"
 
@@ -1126,7 +1133,7 @@ Session 开始
 1. **项目检测** — `detect_project()` 扫描 16 种包管理器/清单文件 + 6 种工具目录，判断是已有项目还是绿地项目
 2. **创建目录** — `.step/changes/init/tasks/`, `.step/archive/`, `.step/evidence/`, `scripts/`
 3. **创建初始变更文档** — `.step/changes/init/findings.md` + `.step/changes/init/spec.md` + `.step/changes/init/design.md`
-4. **复制模板** — 从 `templates/` 复制 `config.yaml`, `state.yaml`, `baseline.md`, `decisions.md`, `findings.md`
+4. **复制模板** — 从 `templates/` 复制 `config.json`, `state.json`, `baseline.md`, `decisions.md`, `findings.md`
 5. **复制脚本** — 复制 `gate.sh`, `scenario-check.sh`, `step-worktree.sh` 到项目 `scripts/` 目录
 6. **已有项目提示** — 检测到已有代码时，提示 LLM 先分析现有代码结构再讨论新需求
 
@@ -1154,7 +1161,7 @@ Session 开始
 | TDD 先测试后实现 | LLM 可能先写实现 | Developer agent 约束 + gate 验证测试存在   |
 | 每次跑 gate      | LLM 可能跳过     | SKILL.md 硬规则 + Review 阶段检查 evidence |
 | baseline 确认    | LLM 可能直接改   | 文档标记确认 + changes/ 流程约束           |
-| next_action 恢复 | LLM 可能不遵守   | Hook 注入 state.yaml，包含 next_action     |
+| next_action 恢复 | LLM 可能不遵守   | Hook 注入 state.json，包含 next_action     |
 
 ### 不能保证（需要外部机制）
 
@@ -1238,7 +1245,7 @@ LLM 输出（一次性，不分段）:
 
 用户: "可以" / 修改后确认
 
-→ 写入 .step/changes/{change}/tasks/fix-empty-password.yaml
+→ 写入 .step/changes/{change}/tasks/fix-empty-password.md
 → 进入 L2
 
 批量任务处理（用户一次提交多个小任务时）:
@@ -1255,7 +1262,7 @@ LLM 输出（批量展示，一次确认）:
 
 用户: "可以"
 
-→ 写入 3 个 YAML 到 .step/changes/{change}/tasks/
+→ 写入 3 个 Markdown task 文件（JSON 代码块）到 .step/changes/{change}/tasks/
 → L2 逐个执行（每个任务独立 TDD + gate + commit）
 → 其中某个发现复杂度超预期 → 仅该任务升级 Full Mode，其他继续 Lite
 ```
@@ -1308,7 +1315,7 @@ Gate lite 通过后执行:
      提交信息含 task slug
      例: "fix(auth): fix-empty-password 修复空密码验证 [3/3 S]"
   3. Review 不通过 → 修复 → 重新 Gate → 重新 Review
-  4. 更新 state.yaml + baseline.md 对应项标记 [x]
+  4. 更新 state.json + baseline.md 对应项标记 [x]
 ```
 
 **Lite 精简的是规划阶段（L1 一次确认），不是质量保证阶段。**
@@ -1338,7 +1345,7 @@ LLM: "✅ 已完成并提交。请 check 以下变更：
 
 ### Worktree 自动流程（可选）
 
-当 `.step/config.yaml` 中 `worktree.enabled=true` 时：
+当 `.step/config.json` 中 `worktree.enabled=true` 时：
 
 1. 变更开始阶段自动创建 worktree：`./scripts/step-worktree.sh create {change-name}`
 2. Commit 后询问用户是否“合并回主分支并归档”
@@ -1350,47 +1357,48 @@ LLM: "✅ 已完成并提交。请 check 以下变更：
    - 合并完成后清理 feature worktree
 4. 若用户拒绝合并，保留当前分支和 worktree，稍后可手动触发 finalize
 
-### Lite Task YAML 格式
+### Lite Task Markdown(JSON 代码块) 格式
 
-```yaml
-# .step/changes/{change}/tasks/fix-empty-password.yaml
-id: fix-empty-password
-title: "修复空密码未报错"
-mode: lite
-status: planned  # planned | in_progress | done
-created: "2026-02-15"
-parent_baseline: ".step/baseline.md"  # 关联已有 baseline
+````markdown
+<!-- 文件名: .step/changes/{change}/tasks/fix-empty-password.md -->
 
-goal: "POST /api/register 空密码返回 400"
-non_goal:
-  - "不修改其他验证逻辑"
-
-affected_files:
-  - "src/auth/register.ts"
-  - "test/auth/register.test.ts"
-
-scenarios:
-  - id: S-fix-empty-password-01
-    given: "password 为空字符串"
-    when: "POST /api/register"
-    then: "返回 400 + { error: 'password required' }"
-    test_file: "test/auth/register.test.ts"
-    test_name: "[S-fix-empty-password-01] 空密码返回 400"
-    test_type: unit
-    status: not_run
-
-  - id: S-fix-empty-password-02
-    given: "password 为 null"
-    when: "POST /api/register"
-    then: "返回 400"
-    test_file: "test/auth/register.test.ts"
-    test_name: "[S-fix-empty-password-02] null 密码返回 400"
-    test_type: unit
-    status: not_run
-
-done_when:
-  - "gate.sh lite fix-empty-password"
+```json
+{
+  "id": "fix-empty-password",
+  "title": "修复空密码未报错",
+  "mode": "lite",
+  "status": "planned",
+  "created": "2026-02-15",
+  "parent_baseline": ".step/baseline.md",
+  "goal": "POST /api/register 空密码返回 400",
+  "non_goal": ["不修改其他验证逻辑"],
+  "affected_files": ["src/auth/register.ts", "test/auth/register.test.ts"],
+  "scenarios": [
+    {
+      "id": "S-fix-empty-password-01",
+      "given": "password 为空字符串",
+      "when": "POST /api/register",
+      "then": "返回 400 + { error: 'password required' }",
+      "test_file": "test/auth/register.test.ts",
+      "test_name": "[S-fix-empty-password-01] 空密码返回 400",
+      "test_type": "unit",
+      "status": "not_run"
+    },
+    {
+      "id": "S-fix-empty-password-02",
+      "given": "password 为 null",
+      "when": "POST /api/register",
+      "then": "返回 400",
+      "test_file": "test/auth/register.test.ts",
+      "test_name": "[S-fix-empty-password-02] null 密码返回 400",
+      "test_type": "unit",
+      "status": "not_run"
+    }
+  ],
+  "done_when": ["gate.sh lite fix-empty-password"]
+}
 ```
+````
 
 ### 变更归档
 
@@ -1411,7 +1419,7 @@ mv .step/changes/init/ .step/archive/2026-02-15-init/
 
 # 归档后更新
 → baseline.md 反映最新状态
-→ state.yaml current_change 清空（如果归档的是当前变更）
+→ state.json current_change 清空（如果归档的是当前变更）
 ```
 
 **归档规则：**
@@ -1444,7 +1452,7 @@ mv .step/changes/init/ .step/archive/2026-02-15-init/
 - 发现关联 bug 需要修复
 
 → **必须升级到 Full Mode**：
-1. 将 lite task YAML 的 `mode` 字段改为 `full`，补充完整场景矩阵
+1. 将 lite task Markdown(JSON 代码块) 的 `mode` 字段改为 `full`，补充完整场景矩阵
 2. 补充 baseline 更新（如需要）
 3. 从 Phase 3 开始补完场景矩阵
 4. 后续按 Full Mode 执行
@@ -1458,8 +1466,8 @@ mv .step/changes/init/ .step/archive/2026-02-15-init/
 | 1   | Phase 0/2 应该是开放式讨论                   | Phase 0/2 改为"用户主导的开放式讨论"，Phase 1/3 才用选择题确认细节                          |
 | 2   | Post-MVP 变更和 bug 修复                     | 新增"Post-MVP"章节：统一变更目录（spec + design + tasks）覆盖新增功能、Hotfix、约束变更      |
 | 3   | 场景规则是 BDD                               | 场景 = BDD Given/When/Then = 行为规格。测试类型由 test_type 字段指定                        |
-| 4   | 用 hook 保证规则生效                         | 新增 SessionStart hook（自动注入 state.yaml 到上下文）+ `/step` 命令                        |
-| 5   | 统一使用 opencode，删除 tool                 | config.yaml 改为 routing（agent 路由）+ file_routing（文件分流）+ gate（命令）              |
+| 4   | 用 hook 保证规则生效                         | 新增 SessionStart hook（自动注入 state.json 到上下文）+ `/step` 命令                        |
+| 5   | 统一使用 opencode，删除 tool                 | config.json 改为 routing（agent 路由）+ file_routing（文件分流）+ gate（命令）              |
 | 6   | review 模型可选，规则参考 code-review-expert | 创建 step-reviewer agent，参考 code-review-expert 实现。需求合规为第一优先级                |
 | 7   | gate 失败如何处理                            | 新增"Gate 失败处理流程"：Opus/Codex xhigh 先分析根因 → 分类修复最多 3 轮 → 仍失败标 blocked |
 | 8   | 初始化做成 /step 命令                        | 创建 `commands/step/step.md`，检测 .step/ 是否存在：不存在则初始化，存在则恢复              |

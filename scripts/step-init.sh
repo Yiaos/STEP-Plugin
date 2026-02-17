@@ -88,8 +88,8 @@ PROJECT_DETAILS=$(echo "$PROJECT_DETECT" | tail -n +2)
 mkdir -p .step/changes/init/tasks .step/evidence .step/archive scripts
 
 # 复制模板文件
-cp "${TEMPLATES_DIR}/config.yaml" .step/config.yaml
-cp "${TEMPLATES_DIR}/state.yaml" .step/state.yaml
+cp "${TEMPLATES_DIR}/config.json" .step/config.json
+cp "${TEMPLATES_DIR}/state.json" .step/state.json
 cp "${TEMPLATES_DIR}/baseline.md" .step/baseline.md
 cp "${TEMPLATES_DIR}/decisions.md" .step/decisions.md
 cp "${TEMPLATES_DIR}/findings.md" .step/changes/init/findings.md
@@ -114,22 +114,23 @@ fi
 
 # 设置初始时间戳 + 项目类型
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-if command -v sed &>/dev/null; then
-  sed -i.bak "s/last_updated: \"\"/last_updated: \"${TIMESTAMP}\"/" .step/state.yaml
-  # 在 project 行后插入 project_type
-  sed -i.bak "/^project:/a\\
-project_type: \"${PROJECT_TYPE}\"" .step/state.yaml
-  rm -f .step/state.yaml.bak
-fi
+node -e '
+const fs = require("fs")
+const file = ".step/state.json"
+const data = JSON.parse(fs.readFileSync(file, "utf-8"))
+data.last_updated = process.argv[1]
+data.project_type = process.argv[2]
+fs.writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`, "utf-8")
+' "$TIMESTAMP" "$PROJECT_TYPE"
 
 echo ""
 echo "✅ STEP initialized!"
 echo ""
 echo "   .step/"
-echo "   ├── config.yaml          # 模型路由 & gate 命令"
+echo "   ├── config.json          # 模型路由 & gate 命令"
 echo "   ├── baseline.md          # 需求基线（活快照）"
 echo "   ├── decisions.md         # 架构决策日志"
-echo "   ├── state.yaml           # 项目状态机"
+echo "   ├── state.json           # 项目状态机"
 echo "   ├── changes/"
 echo "   │   └── init/            # 初始开发"
 echo "   │       ├── findings.md  # 探索发现（Phase 0/2，可选）"
@@ -158,7 +159,7 @@ if [ "$PROJECT_TYPE" = "existing" ]; then
   echo "   3. Review existing tests — what coverage exists, what's missing"
   echo "   4. Populate .step/baseline.md with existing project context BEFORE"
   echo "      discussing new requirements on top of it"
-  echo "   5. Set established_patterns in state.yaml based on findings"
+  echo "   5. Set established_patterns in state.json based on findings"
   echo ""
   echo "   当前阶段: Phase 0 Discovery（已有项目模式）"
   echo "   请先分析现有代码，再描述新需求。"

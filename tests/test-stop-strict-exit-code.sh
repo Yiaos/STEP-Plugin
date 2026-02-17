@@ -22,10 +22,24 @@ assert "[S-013-01] strict=true 时 FAIL 返回非0" bash -c "
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
   mkdir -p .step
-  cat > .step/state.yaml <<'EOF'
-project: demo
-last_updated: "2000-01-01"
-progress_log: []
+  cat > .step/state.json <<'EOF'
+{
+  "project": "demo",
+  "current_phase": "phase-4-execution",
+  "current_change": "init",
+  "last_updated": "2000-01-01",
+  "last_agent": "tester",
+  "last_session_summary": "",
+  "established_patterns": {},
+  "tasks": {
+    "current": null,
+    "upcoming": []
+  },
+  "key_decisions": [],
+  "known_issues": [],
+  "constraints_quick_ref": [],
+  "progress_log": []
+}
 EOF
   set +e
   STEP_STOP_STRICT=true bash '$SCRIPT_DIR/scripts/step-stop-check.sh' >/dev/null 2>&1
@@ -41,10 +55,24 @@ assert "[S-013-02] strict=false 时 FAIL 返回0" bash -c "
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
   mkdir -p .step
-  cat > .step/state.yaml <<'EOF'
-project: demo
-last_updated: "2000-01-01"
-progress_log: []
+  cat > .step/state.json <<'EOF'
+{
+  "project": "demo",
+  "current_phase": "phase-4-execution",
+  "current_change": "init",
+  "last_updated": "2000-01-01",
+  "last_agent": "tester",
+  "last_session_summary": "",
+  "established_patterns": {},
+  "tasks": {
+    "current": null,
+    "upcoming": []
+  },
+  "key_decisions": [],
+  "known_issues": [],
+  "constraints_quick_ref": [],
+  "progress_log": []
+}
 EOF
   STEP_STOP_STRICT=false bash '$SCRIPT_DIR/scripts/step-stop-check.sh' >/dev/null 2>&1
 "

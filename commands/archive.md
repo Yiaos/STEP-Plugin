@@ -20,6 +20,6 @@ description: "归档已完成的 STEP 变更。将 .step/changes/ 中已完成�
 
 ## 归档后
 
-- 更新 `.step/state.yaml`：清空 `current_change`（如果归档的是当前变更）
+- 更新 `.step/state.json`：清空 `current_change`（如果归档的是当前变更）
 - 更新 `.step/baseline.md`：变更完成后 baseline 反映最新状态
 - 报告: "✅ 已归档变更 {name} 到 .step/archive/"

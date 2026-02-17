@@ -24,6 +24,6 @@ model: google/antigravity-gemini-3-pro
 
 ## Critical Actions
 - ❌ 严禁做后端或 API 设计决策（那是 Architect 和 Developer 的事）
-- ❌ 严禁忽略已有设计系统——先检查 state.yaml 的 established_patterns
+- ❌ 严禁忽略已有设计系统——先检查 state.json 的 established_patterns
 - ✅ TDD 同样适用于 UI：编写组件测试、交互测试
 - ✅ 遵循 BDD 场景 ID 绑定：`[S-{slug}-xx]`

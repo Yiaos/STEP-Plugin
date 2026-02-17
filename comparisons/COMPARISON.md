@@ -57,7 +57,7 @@ STEP 以"少角色 + 硬绑定 + 对抗性"换取可靠性；BMAD 以"多角色 
 | Hook 自动注入 | ✅ SessionStart + PreToolUse + PostToolUse + Stop | ❌ | ❌ | ⚠️ pre/post 钩子 | ⚠️ 1% 触发 |
 | Agent 模型绑定 | ✅ 不同角色→不同模型 | ❌ 同模型 persona | ❌ | ❌ | ❌ |
 | BDD 场景 ID 硬匹配 | ✅ [S-xxx-xx] | ❌ | ❌ | ❌ | ❌ |
-| 状态机 | ✅ state.yaml（Phase + Task + next_action） | ❌ | ❌ | ⚠️ task_plan.md 手动 | ❌ |
+| 状态机 | ✅ state.json（Phase + Task + next_action） | ❌ | ❌ | ⚠️ task_plan.md 手动 | ❌ |
 | Gate 失败分级 | ✅ 根因分析 → 3 轮上限 → blocked | ❌ | ❌ | ❌ | ⚠️ 铁律语言约束 |
 | 需求基线确认 | ✅ baseline.md + 变更审计链 | ❌ | ❌ | ❌ | ❌ |
 | 防遗忘 | ✅ 2-Action Rule + Pre-decision Read | ❌ | ❌ | ✅ 原创 2-Action Rule | ❌ |
@@ -92,7 +92,7 @@ STEP 以"少角色 + 硬绑定 + 对抗性"换取可靠性；BMAD 以"多角色 
 5. Agent 模型路由（7 角色绑定不同模型）
 6. 三层注意力管理 Hook（PreToolUse / PostToolUse / Stop）
 7. Gate 失败分级处理（根因分析 → 3 轮 → blocked）
-8. 倒序 state.yaml（最新决策/进度在前，Session 恢复时首先看到）
+8. 倒序 state.json（最新决策/进度在前，Session 恢复时首先看到）
 
 ### STEP 相对劣势
 1. 平台绑定 opencode（BMAD 支持多平台，OpenSpec 支持 20+ 工具）

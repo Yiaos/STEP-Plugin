@@ -2,7 +2,9 @@
 # STEP Protocol — Worktree workflow helper
 set -euo pipefail
 
-CONFIG_FILE=".step/config.yaml"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+CORE_SCRIPT="${SCRIPT_DIR}/step-core.js"
+CONFIG_FILE=".step/config.json"
 WT_ROOT_DEFAULT=".worktrees"
 
 usage() {
@@ -38,20 +40,19 @@ read_worktree_config() {
   fi
 
   local value
-  value=$(awk -v k="$key" '
-    BEGIN { in_wt=0 }
-    /^worktree:[[:space:]]*$/ { in_wt=1; next }
-    in_wt && /^[^[:space:]]/ { in_wt=0 }
-    in_wt {
-      if ($0 ~ "^[[:space:]]*" k ":[[:space:]]*") {
-        line=$0
-        sub("^[[:space:]]*" k ":[[:space:]]*", "", line)
-        gsub(/"/, "", line)
-        print line
-        exit
-      }
-    }
-  ' "$CONFIG_FILE")
+  value=$(node -e '
+const fs = require("fs")
+const file = process.argv[1]
+const key = process.argv[2]
+try {
+  const cfg = JSON.parse(fs.readFileSync(file, "utf-8"))
+  const wt = cfg && typeof cfg === "object" ? cfg.worktree : undefined
+  const val = wt && typeof wt === "object" ? wt[key] : undefined
+  if (val !== undefined && val !== null) process.stdout.write(String(val))
+} catch (_) {
+  process.exit(0)
+}
+' "$CONFIG_FILE" "$key" 2>/dev/null || true)
 
   if [ -z "$value" ]; then
     printf "%s" "$default_value"
@@ -141,7 +142,7 @@ choose_conflict_strategy() {
   local file_path="$1"
   local change_name="$2"
 
-  if [ "$file_path" = ".step/state.yaml" ]; then
+  if [ "$file_path" = ".step/state.json" ]; then
     printf "ours"
     return
   fi
@@ -378,16 +379,16 @@ archive_change_on_base_worktree() {
 current_task_for_change() {
   local merge_wt="$1"
   local change_name="$2"
-  local state_file="$merge_wt/.step/state.yaml"
+  local state_file="$merge_wt/.step/state.json"
   local tasks_dir="$merge_wt/.step/changes/${change_name}/tasks"
 
-  # 1) 优先使用 state.yaml 中当前任务（且当前变更一致）
+  # 1) 优先使用 state.json 中当前任务（且当前变更一致）
   if [ -f "$state_file" ]; then
     local current_change
-    current_change=$(grep '^current_change:' "$state_file" 2>/dev/null | head -1 | sed 's/^current_change:[[:space:]]*//' | tr -d ' "' || true)
+    current_change=$(node "$CORE_SCRIPT" state get --file "$state_file" --path current_change 2>/dev/null || true)
     if [ "$current_change" = "$change_name" ]; then
       local current_task
-      current_task=$(grep -E '^\s+current:' "$state_file" 2>/dev/null | head -1 | sed 's/.*current:[[:space:]]*//' | tr -d ' "' || true)
+      current_task=$(node "$CORE_SCRIPT" state get --file "$state_file" --path tasks.current 2>/dev/null || true)
       if [ -n "$current_task" ] && [ "$current_task" != "null" ]; then
         printf "%s" "$current_task"
         return
@@ -397,21 +398,41 @@ current_task_for_change() {
 
   [ -d "$tasks_dir" ] || { printf ""; return; }
 
+  task_status_is() {
+    local task_file="$1"
+    local expected="$2"
+    node -e '
+const fs = require("fs")
+const file = process.argv[1]
+const expected = process.argv[2]
+const raw = fs.readFileSync(file, "utf-8").replace(/\r\n/g, "\n")
+let data
+if (file.endsWith(".md")) {
+  const m = raw.match(/```json(?:\s+task)?\n([\s\S]*?)\n```/)
+  if (!m) process.exit(2)
+  data = JSON.parse(m[1])
+} else {
+  data = JSON.parse(raw)
+}
+process.exit(data && data.status === expected ? 0 : 1)
+' "$task_file" "$expected" >/dev/null 2>&1
+  }
+
   # 2) 回退：寻找 in_progress 任务
   local tf=""
-  for tf in "$tasks_dir"/*.yaml; do
+  for tf in "$tasks_dir"/*.md; do
     [ -f "$tf" ] || continue
-    if grep -q '^status:[[:space:]]*in_progress' "$tf" 2>/dev/null; then
-      basename "$tf" .yaml
+    if task_status_is "$tf" "in_progress"; then
+      basename "$tf" .md
       return
     fi
   done
 
   # 3) 再回退：选择最近修改的任务
   local latest=""
-  latest=$(ls -t "$tasks_dir"/*.yaml 2>/dev/null | head -1 || true)
+  latest=$(ls -t "$tasks_dir"/*.md 2>/dev/null | head -1 || true)
   if [ -n "$latest" ] && [ -f "$latest" ]; then
-    basename "$latest" .yaml
+    basename "$latest" .md
     return
   fi
 
@@ -423,10 +444,21 @@ set_task_status() {
   local change_name="$2"
   local task_slug="$3"
   local status="$4"
-  local task_file="$merge_wt/.step/changes/${change_name}/tasks/${task_slug}.yaml"
+  local task_file="$merge_wt/.step/changes/${change_name}/tasks/${task_slug}.md"
   [ -f "$task_file" ] || return 1
-  sed -i.bak "s/^status:.*/status: ${status}/" "$task_file"
-  rm -f "$task_file.bak"
+  node -e '
+const fs = require("fs")
+const file = process.argv[1]
+const status = process.argv[2]
+const raw = fs.readFileSync(file, "utf-8").replace(/\r\n/g, "\n")
+const m = raw.match(/```json(?:\s+task)?\n([\s\S]*?)\n```/)
+if (!m) process.exit(2)
+const task = JSON.parse(m[1])
+task.status = status
+const nextJson = JSON.stringify(task, null, 2)
+const next = raw.replace(m[0], `\`\`\`json task\n${nextJson}\n\`\`\``)
+fs.writeFileSync(file, next, "utf-8")
+' "$task_file" "$status" >/dev/null 2>&1
 }
 
 run_post_conflict_gate() {

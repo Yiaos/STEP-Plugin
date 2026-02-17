@@ -25,25 +25,36 @@ assert "[S-020-01] quick 仅执行轻量检查并跳过 scenario" bash -c "
   cp '$SCRIPT_DIR/scripts/step-core.js' scripts/step-core.js
   chmod +x scripts/gate.sh scripts/step-core.js
 
-  cat > .step/config.yaml <<'CFG'
-routing: {}
-file_routing: {}
-gate:
-  lint: "echo lint"
-  typecheck: "bash -c 'exit 1'"
-  test: "bash -c 'exit 1'"
-  build: "bash -c 'exit 1'"
+  cat > .step/config.json <<'CFG'
+{
+  "routing": {},
+  "file_routing": {},
+  "gate": {
+    "lint": "echo lint",
+    "typecheck": "bash -c 'exit 1'",
+    "test": "bash -c 'exit 1'",
+    "build": "bash -c 'exit 1'"
+  }
+}
 CFG
 
-  cat > .step/changes/init/tasks/demo.yaml <<'TASK'
-id: demo
-title: demo
-mode: quick
-status: planned
-done_when: []
-scenarios:
-  - id: S-demo-01
-    test_file: test/a.test.ts
+  cat > .step/changes/init/tasks/demo.md <<'TASK'
+# demo
+\`\`\`json task
+{
+  "id": "demo",
+  "title": "demo",
+  "mode": "lite",
+  "status": "planned",
+  "done_when": [],
+  "scenarios": [
+    {
+      "id": "S-demo-01",
+      "test_file": "test/a.test.ts"
+    }
+  ]
+}
+\`\`\`
 TASK
 
   out=\$(bash scripts/gate.sh quick demo --quick-reason "doc typo" 2>&1)

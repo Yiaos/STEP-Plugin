@@ -19,227 +19,64 @@ function ensureFile(filePath) {
   }
 }
 
-function countIndent(line) {
-  let n = 0
-  while (n < line.length && line[n] === " ") n += 1
-  return n
+function normalizeNewlines(raw) {
+  return raw.replace(/\r\n/g, "\n")
 }
 
-function normalizeYamlLines(raw) {
-  return raw.replace(/\r\n/g, "\n").split("\n")
-}
-
-function stripInlineComment(s) {
-  let quote = null
-  for (let i = 0; i < s.length; i += 1) {
-    const ch = s[i]
-    if (quote) {
-      if (ch === quote) quote = null
-      continue
-    }
-    if (ch === '"' || ch === "'") {
-      quote = ch
-      continue
-    }
-    if (ch === "#" && (i === 0 || /\s/.test(s[i - 1]))) {
-      return s.slice(0, i).trimEnd()
-    }
-  }
-  return s
-}
-
-function parseScalar(raw) {
-  const s = stripInlineComment(raw).trim()
-  if (s === "") return ""
-  if (s === "null") return null
-  if (s === "true") return true
-  if (s === "false") return false
-  if (s === "[]") return []
-  if (s === "{}") return {}
-  if (/^-?\d+$/.test(s)) return Number(s)
-  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
-    return s.slice(1, -1)
-  }
-  return s
-}
-
-function splitKeyValue(content) {
-  const idx = content.indexOf(":")
-  if (idx < 0) return null
-  const key = content.slice(0, idx).trim()
-  const value = content.slice(idx + 1)
-  return { key, value }
-}
-
-function parseBlock(lines, startIndex, indent) {
-  let i = startIndex
-  while (i < lines.length) {
-    const line = lines[i]
-    const trimmed = line.trim()
-    if (trimmed === "" || trimmed.startsWith("#")) {
-      i += 1
-      continue
-    }
-    const ind = countIndent(line)
-    if (ind < indent) return { value: null, next: i }
-    if (ind > indent) {
-      fail(`YAML 缩进错误，第 ${i + 1} 行`) 
-    }
-    const content = line.slice(indent)
-    if (content.startsWith("- ")) {
-      return parseList(lines, i, indent)
-    }
-    return parseMap(lines, i, indent)
-  }
-  return { value: null, next: i }
-}
-
-function parseMap(lines, startIndex, indent) {
-  const out = {}
-  let i = startIndex
-  while (i < lines.length) {
-    const line = lines[i]
-    const trimmed = line.trim()
-    if (trimmed === "" || trimmed.startsWith("#")) {
-      i += 1
-      continue
-    }
-    const ind = countIndent(line)
-    if (ind < indent) break
-    if (ind > indent) {
-      fail(`YAML map 缩进错误，第 ${i + 1} 行`)
-    }
-    const content = line.slice(indent)
-    if (content.startsWith("- ")) break
-    const kv = splitKeyValue(content)
-    if (!kv) {
-      fail(`YAML 键值格式错误，第 ${i + 1} 行`) 
-    }
-    const { key, value } = kv
-    if (value.trim() === "") {
-      const nested = parseBlock(lines, i + 1, indent + 2)
-      out[key] = nested.value === null ? {} : nested.value
-      i = nested.next
-    } else {
-      out[key] = parseScalar(value)
-      i += 1
-    }
-  }
-  return { value: out, next: i }
-}
-
-function parseList(lines, startIndex, indent) {
-  const out = []
-  let i = startIndex
-  while (i < lines.length) {
-    const line = lines[i]
-    const trimmed = line.trim()
-    if (trimmed === "" || trimmed.startsWith("#")) {
-      i += 1
-      continue
-    }
-    const ind = countIndent(line)
-    if (ind < indent) break
-    if (ind > indent) {
-      fail(`YAML list 缩进错误，第 ${i + 1} 行`)
-    }
-    const content = line.slice(indent)
-    if (!content.startsWith("- ")) break
-    const itemRest = content.slice(2)
-    if (itemRest.trim() === "") {
-      const nested = parseBlock(lines, i + 1, indent + 2)
-      out.push(nested.value)
-      i = nested.next
-      continue
-    }
-
-    const kv = splitKeyValue(itemRest)
-    if (!kv) {
-      out.push(parseScalar(itemRest))
-      i += 1
-      continue
-    }
-
-    const item = {}
-    if (kv.value.trim() === "") {
-      const nestedVal = parseBlock(lines, i + 1, indent + 4)
-      item[kv.key] = nestedVal.value
-      i = nestedVal.next
-    } else {
-      item[kv.key] = parseScalar(kv.value)
-      i += 1
-    }
-
-    if (i < lines.length) {
-      const tail = parseMap(lines, i, indent + 2)
-      if (tail.next > i && tail.value && Object.keys(tail.value).length > 0) {
-        Object.assign(item, tail.value)
-        i = tail.next
-      }
-    }
-    out.push(item)
-  }
-  return { value: out, next: i }
-}
-
-function parseYaml(raw) {
-  const lines = normalizeYamlLines(raw)
-  const parsed = parseBlock(lines, 0, 0)
-  return parsed.value
-}
-
-function dumpScalar(value) {
-  if (value === null) return "null"
-  if (typeof value === "boolean") return value ? "true" : "false"
-  if (typeof value === "number") return String(value)
-  const s = String(value)
-  if (s === "" || /^[-?:\[\]{}#,!]|\s|:$/.test(s) || s.includes(": ")) {
-    return JSON.stringify(s)
-  }
-  return s
-}
-
-function dumpYaml(value, indent = 0) {
-  const pad = " ".repeat(indent)
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => {
-        if (isObject(item) || Array.isArray(item)) {
-          const nested = dumpYaml(item, indent + 2)
-          return `${pad}-\n${nested}`
-        }
-        return `${pad}- ${dumpScalar(item)}`
-      })
-      .join("\n")
-  }
-  if (isObject(value)) {
-    return Object.keys(value)
-      .map((key) => {
-        const v = value[key]
-        if (isObject(v) || Array.isArray(v)) {
-          const nested = dumpYaml(v, indent + 2)
-          return `${pad}${key}:\n${nested}`
-        }
-        return `${pad}${key}: ${dumpScalar(v)}`
-      })
-      .join("\n")
-  }
-  return `${pad}${dumpScalar(value)}`
-}
-
-function readYaml(filePath) {
+function readJson(filePath) {
   ensureFile(filePath)
   const raw = fs.readFileSync(filePath, "utf-8")
   try {
-    return parseYaml(raw)
+    return JSON.parse(raw)
   } catch (err) {
-    fail(`YAML 解析失败: ${filePath} (${String(err)})`)
+    fail(`JSON 解析失败: ${filePath} (${String(err)})`)
   }
 }
 
-function writeYamlAtomic(filePath, data) {
+function writeJsonAtomic(filePath, data) {
   const tmpPath = `${filePath}.tmp-${process.pid}`
-  const content = `${dumpYaml(data)}\n`
+  const content = `${JSON.stringify(data, null, 2)}\n`
+  fs.writeFileSync(tmpPath, content, "utf-8")
+  fs.renameSync(tmpPath, filePath)
+}
+
+function extractTaskJsonFromMarkdown(raw, filePath) {
+  const text = normalizeNewlines(raw)
+  const match = text.match(/```json(?:\s+task)?\n([\s\S]*?)\n```/)
+  if (!match) {
+    fail(`任务 Markdown 缺少 JSON 代码块: ${filePath}`)
+  }
+  try {
+    return JSON.parse(match[1])
+  } catch (err) {
+    fail(`任务 JSON 解析失败: ${filePath} (${String(err)})`)
+  }
+}
+
+function readTask(filePath) {
+  ensureFile(filePath)
+  const raw = fs.readFileSync(filePath, "utf-8")
+  if (filePath.endsWith(".md")) {
+    return extractTaskJsonFromMarkdown(raw, filePath)
+  }
+  return readJson(filePath)
+}
+
+function renderTaskMarkdown(task) {
+  const title = typeof task.title === "string" && task.title.trim() ? task.title.trim() : task.id || "Task"
+  return [
+    `# ${title}`,
+    "",
+    "```json task",
+    JSON.stringify(task, null, 2),
+    "```",
+    "",
+  ].join("\n")
+}
+
+function writeTaskAtomic(filePath, task) {
+  const tmpPath = `${filePath}.tmp-${process.pid}`
+  const content = filePath.endsWith(".md") ? renderTaskMarkdown(task) : `${JSON.stringify(task, null, 2)}\n`
   fs.writeFileSync(tmpPath, content, "utf-8")
   fs.renameSync(tmpPath, filePath)
 }
@@ -365,8 +202,21 @@ function parseArgs(argv) {
   return args
 }
 
+function getPathValue(obj, dotPath) {
+  const parts = String(dotPath).split(".")
+  let cur = obj
+  for (const p of parts) {
+    if (!isObject(cur) && !Array.isArray(cur)) {
+      return undefined
+    }
+    cur = cur[p]
+    if (cur === undefined) return undefined
+  }
+  return cur
+}
+
 function resolveTaskFile(taskSlug, changeName) {
-  const byChange = (change) => path.join(".step", "changes", change, "tasks", `${taskSlug}.yaml`)
+  const byChange = (change) => path.join(".step", "changes", change, "tasks", `${taskSlug}.md`)
 
   if (changeName) {
     const p = byChange(changeName)
@@ -376,8 +226,8 @@ function resolveTaskFile(taskSlug, changeName) {
     return { taskFile: p, change: changeName }
   }
 
-  if (fs.existsSync(".step/state.yaml")) {
-    const state = readYaml(".step/state.yaml")
+  if (fs.existsSync(".step/state.json")) {
+    const state = readJson(".step/state.json")
     const cur = state && typeof state.current_change === "string" ? state.current_change.trim() : ""
     if (cur) {
       const p = byChange(cur)
@@ -464,7 +314,7 @@ function writeScenarioEvidence(taskSlug, change, taskFile, total, covered) {
 
 function checkScenarioCoverage(taskSlug, changeName) {
   const { taskFile, change } = resolveTaskFile(taskSlug, changeName)
-  const task = readYaml(taskFile)
+  const task = readTask(taskFile)
   const scenarios = flattenScenarios(task)
 
   let total = 0
@@ -639,7 +489,7 @@ function getGateCommands(configPath) {
   if (!fs.existsSync(configPath)) {
     return defaults
   }
-  const cfg = readYaml(configPath)
+  const cfg = readJson(configPath)
   const errs = validateConfig(cfg)
   if (errs.length > 0) {
     fail(`config 校验失败: ${errs.join("; ")}`)
@@ -676,7 +526,7 @@ function todayUTC() {
 
 function patchProgressEntry(filePath, taskSlug, fields) {
   if (!fs.existsSync(filePath)) return
-  const state = readYaml(filePath)
+  const state = readJson(filePath)
   if (!isObject(state)) return
   if (!Array.isArray(state.progress_log)) {
     state.progress_log = []
@@ -692,23 +542,23 @@ function patchProgressEntry(filePath, taskSlug, fields) {
   }
   const entry = state.progress_log[idx]
   Object.assign(entry, fields)
-  writeYamlAtomic(filePath, state)
+  writeJsonAtomic(filePath, state)
 }
 
 function trimProgressForPrint(filePath, limit) {
-  const state = readYaml(filePath)
+  const state = readJson(filePath)
   if (isObject(state) && Array.isArray(state.progress_log)) {
     state.progress_log = state.progress_log.slice(0, limit)
   }
-  return dumpYaml(state)
+  return `${JSON.stringify(state, null, 2)}\n`
 }
 
 function renderStatusReport(root = ".step") {
-  const statePath = path.join(root, "state.yaml")
+  const statePath = path.join(root, "state.json")
   if (!fs.existsSync(statePath)) {
-    return "STEP 未初始化（缺少 .step/state.yaml）"
+    return "STEP 未初始化（缺少 .step/state.json）"
   }
-  const state = readYaml(statePath)
+  const state = readJson(statePath)
   const phase = state.current_phase || "unknown"
   const change = state.current_change || ""
   const currentTask = state.tasks && state.tasks.current ? state.tasks.current : "null"
@@ -721,9 +571,9 @@ function renderStatusReport(root = ".step") {
       const taskDir = path.join(changesDir, ch, "tasks")
       if (!fs.existsSync(taskDir)) continue
       for (const tf of fs.readdirSync(taskDir)) {
-        if (!tf.endsWith(".yaml")) continue
+        if (!tf.endsWith(".md")) continue
         total += 1
-        const t = readYaml(path.join(taskDir, tf))
+        const t = readTask(path.join(taskDir, tf))
         if (t && t.status === "done") done += 1
       }
     }
@@ -757,7 +607,7 @@ function renderStatusReport(root = ".step") {
 
 function getTaskTestFiles(taskSlug, changeName) {
   const { taskFile } = resolveTaskFile(taskSlug, changeName || null)
-  const task = readYaml(taskFile)
+  const task = readTask(taskFile)
   const scenarios = flattenScenarios(task)
   return unique(scenarios.map((s) => s.test_file)).sort()
 }
@@ -863,7 +713,7 @@ function runGate(level, taskSlug, configPath, mode, metadata) {
 
   info("")
   writeGateEvidence(taskSlug, `${level}:${mode}:${testScope}`, pass, results, metadata)
-  patchProgressEntry(path.join(".step", "state.yaml"), taskSlug, {
+  patchProgressEntry(path.join(".step", "state.json"), taskSlug, {
     gate_status: pass ? "pass" : "fail",
     gate_level: level,
     gate_mode: mode,
@@ -911,7 +761,8 @@ function usage() {
   info("  step-core.js state patch-progress --file <path> --task <slug> --set k=v[,k=v]")
   info("  step-core.js scenario check --task <slug> [--change <name>]")
   info("  step-core.js gate test-files --task <slug> [--change <name>] [--json]")
-  info("  step-core.js gate run --level quick|lite|full --task <slug> [--mode incremental|all] [--quick-reason <text>] [--escalated true|false] [--escalation-reason <text>] [--config .step/config.yaml]")
+  info("  step-core.js state get --file <path> --path a.b [--json]")
+  info("  step-core.js gate run --level quick|lite|full --task <slug> [--mode incremental|all] [--quick-reason <text>] [--escalated true|false] [--escalation-reason <text>] [--config .step/config.json]")
   info("  step-core.js status report [--root .step]")
 }
 
@@ -933,7 +784,7 @@ function main() {
       usage()
       process.exit(1)
     }
-    const data = readYaml(file)
+    const data = kind === "task" ? readTask(file) : readJson(file)
     let errors = []
     if (kind === "state") errors = validateState(data)
     else if (kind === "task") errors = validateTask(data)
@@ -951,7 +802,7 @@ function main() {
     const taskSlug = args.task
     if (!taskSlug) fail("缺少 --task")
     const { taskFile } = resolveTaskFile(taskSlug, args.change || null)
-    const task = readYaml(taskFile)
+    const task = readTask(taskFile)
     const scenarios = flattenScenarios(task)
 
     if (sub === "scenarios") {
@@ -990,7 +841,7 @@ function main() {
     if (!file || !dotPath || rawVal === undefined) {
       fail("state set 需要 --file --path --value")
     }
-    const state = readYaml(file)
+    const state = readJson(file)
     const errors = validateState(state)
     if (errors.length > 0) {
       fail(`写入前 state 校验失败: ${errors.join("; ")}`)
@@ -1001,8 +852,28 @@ function main() {
     if (afterErrors.length > 0) {
       fail(`写入后 state 校验失败: ${afterErrors.join("; ")}`)
     }
-    writeYamlAtomic(file, state)
+    writeJsonAtomic(file, state)
     info(`✅ 已更新 ${file}: ${dotPath}=${String(rawVal)}`)
+    process.exit(0)
+  }
+
+  if (cmd === "state" && sub === "get") {
+    const file = args.file
+    const dotPath = args.path
+    if (!file || !dotPath) {
+      fail("state get 需要 --file --path")
+    }
+    const state = readJson(file)
+    const value = getPathValue(state, dotPath)
+    if (args.json) {
+      info(JSON.stringify(value))
+    } else if (value === undefined) {
+      info("")
+    } else if (typeof value === "object") {
+      info(JSON.stringify(value))
+    } else {
+      info(String(value))
+    }
     process.exit(0)
   }
 
@@ -1039,7 +910,7 @@ function main() {
   if (cmd === "gate" && sub === "run") {
     const level = args.level
     const task = args.task
-    const config = args.config || ".step/config.yaml"
+    const config = args.config || ".step/config.json"
     const mode = args.mode || "incremental"
     const metadata = {}
     if (args["quick-reason"]) metadata.quick_reason = String(args["quick-reason"])

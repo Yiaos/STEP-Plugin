@@ -25,25 +25,36 @@ assert "[S-018-01] 命中黑名单命令时 gate 失败" bash -c "
   cp '$SCRIPT_DIR/scripts/step-core.js' scripts/step-core.js
   chmod +x scripts/gate.sh scripts/step-core.js
 
-  cat > .step/config.yaml <<'CFG'
-routing: {}
-file_routing: {}
-gate:
-  lint: "echo lint"
-  typecheck: "echo typecheck"
-  test: "rm -rf /tmp/should-not-run"
-  build: "echo build"
+  cat > .step/config.json <<'CFG'
+{
+  "routing": {},
+  "file_routing": {},
+  "gate": {
+    "lint": "echo lint",
+    "typecheck": "echo typecheck",
+    "test": "rm -rf /tmp/should-not-run",
+    "build": "echo build"
+  }
+}
 CFG
 
-  cat > .step/changes/init/tasks/demo.yaml <<'TASK'
-id: demo
-title: demo
-mode: lite
-status: planned
-done_when: []
-scenarios:
-  - id: S-demo-01
-    test_file: test/a.test.ts
+  cat > .step/changes/init/tasks/demo.md <<'TASK'
+# demo
+\`\`\`json task
+{
+  "id": "demo",
+  "title": "demo",
+  "mode": "lite",
+  "status": "planned",
+  "done_when": [],
+  "scenarios": [
+    {
+      "id": "S-demo-01",
+      "test_file": "test/a.test.ts"
+    }
+  ]
+}
+\`\`\`
 TASK
   cat > test/a.test.ts <<'A'
 it('[S-demo-01] a', () => {})

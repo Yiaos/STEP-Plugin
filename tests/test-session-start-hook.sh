@@ -22,20 +22,29 @@ assert "[S-009-01] phase-4 注入任务并裁剪 progress_log" bash -c "
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
   mkdir -p .step/changes/init/tasks
-  cat > .step/state.yaml <<'STATE'
-current_phase: "phase-4-execution"
-current_change: "init"
-tasks:
-  current: "sample-task"
-progress_log:
-  - date: "2026-02-16"
-    summary: s1
-  - date: "2026-02-15"
-    summary: s2
-  - date: "2026-02-14"
-    summary: s3
-  - date: "2026-02-13"
-    summary: s4
+  cat > .step/state.json <<'STATE'
+{
+  "project": "demo",
+  "current_phase": "phase-4-execution",
+  "current_change": "init",
+  "last_updated": "2026-02-16",
+  "last_agent": "tester",
+  "last_session_summary": "",
+  "established_patterns": {},
+  "tasks": {
+    "current": "sample-task",
+    "upcoming": []
+  },
+  "key_decisions": [],
+  "known_issues": [],
+  "constraints_quick_ref": [],
+  "progress_log": [
+    {"date": "2026-02-16", "summary": "s1"},
+    {"date": "2026-02-15", "summary": "s2"},
+    {"date": "2026-02-14", "summary": "s3"},
+    {"date": "2026-02-13", "summary": "s4"}
+  ]
+}
 STATE
   cat > .step/changes/init/spec.md <<'SPEC'
 # Spec
@@ -44,15 +53,27 @@ SPEC
 # Findings
 - pool_size: 5
 FINDINGS
-  cat > .step/changes/init/tasks/sample-task.yaml <<'TASK'
-id: sample-task
+  cat > .step/changes/init/tasks/sample-task.md <<'TASK'
+# sample-task
+\`\`\`json task
+{
+  "id": "sample-task",
+  "title": "sample task",
+  "mode": "lite",
+  "status": "planned",
+  "done_when": [],
+  "scenarios": []
+}
+\`\`\`
 TASK
   cat > .step/baseline.md <<'BASE'
 # Baseline
 full baseline content
 BASE
-  cat > .step/config.yaml <<'CFG'
-routing: {}
+  cat > .step/config.json <<'CFG'
+{
+  "routing": {}
+}
 CFG
   output=\$(bash '$SCRIPT_DIR/hooks/session-start.sh')
   echo \"\$output\" | grep -q '当前变更 findings'
@@ -68,24 +89,48 @@ assert "[S-009-02] phase-2 不注入任务且 findings 缺失时不注入段落"
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
   mkdir -p .step/changes/init/tasks
-  cat > .step/state.yaml <<'STATE'
-current_phase: "phase-2-design"
-current_change: "init"
-tasks:
-  current: "sample-task"
-progress_log: []
+  cat > .step/state.json <<'STATE'
+{
+  "project": "demo",
+  "current_phase": "phase-2-design",
+  "current_change": "init",
+  "last_updated": "2026-02-16",
+  "last_agent": "tester",
+  "last_session_summary": "",
+  "established_patterns": {},
+  "tasks": {
+    "current": "sample-task",
+    "upcoming": []
+  },
+  "key_decisions": [],
+  "known_issues": [],
+  "constraints_quick_ref": [],
+  "progress_log": []
+}
 STATE
   cat > .step/changes/init/spec.md <<'SPEC'
 # Spec
 SPEC
-  cat > .step/changes/init/tasks/sample-task.yaml <<'TASK'
-id: sample-task
+  cat > .step/changes/init/tasks/sample-task.md <<'TASK'
+# sample-task
+\`\`\`json task
+{
+  "id": "sample-task",
+  "title": "sample task",
+  "mode": "lite",
+  "status": "planned",
+  "done_when": [],
+  "scenarios": []
+}
+\`\`\`
 TASK
   cat > .step/baseline.md <<'BASE'
 # Baseline
 BASE
-  cat > .step/config.yaml <<'CFG'
-routing: {}
+  cat > .step/config.json <<'CFG'
+{
+  "routing": {}
+}
 CFG
   output=\$(bash '$SCRIPT_DIR/hooks/session-start.sh')
   ! echo \"\$output\" | grep -q '当前变更 findings'

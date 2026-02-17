@@ -25,27 +25,40 @@ assert "[S-015-01] gate lite 默认只传 task 声明的测试文件" bash -c "
   cp '$SCRIPT_DIR/scripts/step-core.js' scripts/step-core.js
   chmod +x scripts/gate.sh scripts/step-core.js
 
-  cat > .step/config.yaml <<'CFG'
-routing: {}
-file_routing: {}
-gate:
-  lint: "echo lint"
-  typecheck: "echo typecheck"
-  test: "bash tests/fake-runner.sh"
-  build: "echo build"
+  cat > .step/config.json <<'CFG'
+{
+  "routing": {},
+  "file_routing": {},
+  "gate": {
+    "lint": "echo lint",
+    "typecheck": "echo typecheck",
+    "test": "bash tests/fake-runner.sh",
+    "build": "echo build"
+  }
+}
 CFG
 
-  cat > .step/changes/init/tasks/demo.yaml <<'TASK'
-id: demo
-title: demo
-mode: lite
-status: planned
-done_when: []
-scenarios:
-  - id: S-demo-01
-    test_file: test/a.test.ts
-  - id: S-demo-02
-    test_file: test/b.test.ts
+  cat > .step/changes/init/tasks/demo.md <<'TASK'
+# demo
+\`\`\`json task
+{
+  "id": "demo",
+  "title": "demo",
+  "mode": "lite",
+  "status": "planned",
+  "done_when": [],
+  "scenarios": [
+    {
+      "id": "S-demo-01",
+      "test_file": "test/a.test.ts"
+    },
+    {
+      "id": "S-demo-02",
+      "test_file": "test/b.test.ts"
+    }
+  ]
+}
+\`\`\`
 TASK
 
   cat > test/a.test.ts <<'A'

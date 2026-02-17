@@ -57,25 +57,28 @@ assert "[S-006-05] step-init.sh 创建 archive 但不创建 lite 目录" bash -c
   [ ! -d .step/lite ]
 "
 
-# [S-006-06] lite-task.yaml 模板存在且包含 mode: lite
-assert "[S-006-06] lite-task.yaml 模板包含 mode: lite" bash -c "
-  [ -f '$SCRIPT_DIR/templates/lite-task.yaml' ]
-  grep -q 'mode: lite' '$SCRIPT_DIR/templates/lite-task.yaml'
+# [S-006-06] lite-task.md 模板存在且包含 mode=lite
+assert "[S-006-06] lite-task.md 模板包含 mode=lite" bash -c "
+  [ -f '$SCRIPT_DIR/templates/lite-task.md' ]
+  grep -q '\`\`\`json task' '$SCRIPT_DIR/templates/lite-task.md'
+  grep -q 'mode' '$SCRIPT_DIR/templates/lite-task.md'
+  grep -q 'lite' '$SCRIPT_DIR/templates/lite-task.md'
 "
 
-# [S-006-07] lite-task.yaml 模板使用语义化 slug
-assert "[S-006-07] lite-task.yaml 使用语义化 slug (task-slug)" bash -c "
-  grep -q 'task-slug' '$SCRIPT_DIR/templates/lite-task.yaml'
+# [S-006-07] lite-task.md 模板使用语义化 slug
+assert "[S-006-07] lite-task.md 使用语义化 slug (task-slug)" bash -c "
+  grep -q 'task-slug' '$SCRIPT_DIR/templates/lite-task.md'
 "
 
-# [S-006-08] lite-task.yaml 使用 gate lite
-assert "[S-006-08] lite-task.yaml 使用 gate lite" bash -c "
-  grep -q 'gate.sh lite' '$SCRIPT_DIR/templates/lite-task.yaml'
+# [S-006-08] lite-task.md 使用 gate lite
+assert "[S-006-08] lite-task.md 使用 gate lite" bash -c "
+  grep -q 'gate.sh lite' '$SCRIPT_DIR/templates/lite-task.md'
 "
 
-# [S-006-09] lite-task.yaml 存放路径为 tasks/（非 lite/）
-assert "[S-006-09] lite-task.yaml 注释指向 tasks/" bash -c "
-  grep -q 'tasks/' '$SCRIPT_DIR/templates/lite-task.yaml'
+# [S-006-09] lite-task.md 存放路径为 tasks/（非 lite/）
+assert "[S-006-09] lite-task.md 注释指向 tasks/" bash -c "
+  grep -q 'parent_baseline' '$SCRIPT_DIR/templates/lite-task.md'
+  ! grep -q '/lite/' '$SCRIPT_DIR/templates/lite-task.md'
 "
 
 # [S-006-10] WORKFLOW.md 包含 Lite Mode 完整规范
@@ -133,11 +136,13 @@ assert "[S-006-18] SKILL.md 硬规则包含 Baseline 完成跟踪" bash -c "
 
 # ── 语义化命名 ──
 
-# [S-006-19] task.yaml 模板使用语义化 slug
-assert "[S-006-19] task.yaml 模板使用语义化 slug" bash -c "
-  grep -q 'id: task-slug' '$SCRIPT_DIR/templates/task.yaml'
-  grep -q 'S-task-slug-01' '$SCRIPT_DIR/templates/task.yaml'
-  grep -q 'mode: full' '$SCRIPT_DIR/templates/task.yaml'
+# [S-006-19] task.md 模板使用语义化 slug
+assert "[S-006-19] task.md 模板使用语义化 slug" bash -c "
+  grep -q '\`\`\`json task' '$SCRIPT_DIR/templates/task.md'
+  grep -q 'task-slug' '$SCRIPT_DIR/templates/task.md'
+  grep -q 'S-task-slug-01' '$SCRIPT_DIR/templates/task.md'
+  grep -q 'mode' '$SCRIPT_DIR/templates/task.md'
+  grep -q 'full' '$SCRIPT_DIR/templates/task.md'
 "
 
 # [S-006-20] WORKFLOW.md 任务示例使用语义化 slug

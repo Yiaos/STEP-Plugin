@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # SessionStart hook for STEP protocol plugin
-# 自动检测 .step/state.yaml 并注入项目状态到 LLM 上下文
+# 自动检测 .step/state.json 并注入项目状态到 LLM 上下文
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-# 查找 .step/state.yaml
+# 查找 .step/state.json
 STATE_FILE=""
-if [ -f ".step/state.yaml" ]; then
-  STATE_FILE=".step/state.yaml"
-elif [ -n "${OPENCODE_PROJECT_DIR:-}" ] && [ -f "${OPENCODE_PROJECT_DIR}/.step/state.yaml" ]; then
-  STATE_FILE="${OPENCODE_PROJECT_DIR}/.step/state.yaml"
+if [ -f ".step/state.json" ]; then
+  STATE_FILE=".step/state.json"
+elif [ -n "${OPENCODE_PROJECT_DIR:-}" ] && [ -f "${OPENCODE_PROJECT_DIR}/.step/state.json" ]; then
+  STATE_FILE="${OPENCODE_PROJECT_DIR}/.step/state.json"
 fi
 
 # 没有 STEP 项目，不注入上下文
@@ -50,24 +50,33 @@ escape_for_json() {
 # 读取核心文件（progress_log 仅注入最近 3 条）
 CORE_SCRIPT="${PLUGIN_ROOT}/scripts/step-core.js"
 if [ -f "$CORE_SCRIPT" ]; then
-  STATE_CONTENT=$(node "$CORE_SCRIPT" state trim-progress --file "$STATE_FILE" --limit 3 2>/dev/null || cat "$STATE_FILE" 2>&1 || echo "Error reading state.yaml")
+  STATE_CONTENT=$(node "$CORE_SCRIPT" state trim-progress --file "$STATE_FILE" --limit 3 2>/dev/null || cat "$STATE_FILE" 2>&1 || echo "Error reading state.json")
 else
-  STATE_CONTENT=$(cat "$STATE_FILE" 2>&1 || echo "Error reading state.yaml")
+  STATE_CONTENT=$(cat "$STATE_FILE" 2>&1 || echo "Error reading state.json")
 fi
 
-CURRENT_PHASE=$(grep '^current_phase:' "$STATE_FILE" 2>/dev/null | head -1 | sed 's/^current_phase:[[:space:]]*//' | tr -d ' "' || true)
+state_get() {
+  local dot_path="$1"
+  if [ -f "$CORE_SCRIPT" ]; then
+    node "$CORE_SCRIPT" state get --file "$STATE_FILE" --path "$dot_path" 2>/dev/null || true
+  else
+    printf ''
+  fi
+}
+
+CURRENT_PHASE=$(state_get "current_phase")
 
 # 读取当前变更和任务
 TASK_CONTENT=""
-CURRENT_CHANGE=$(grep 'current_change:' "$STATE_FILE" 2>/dev/null | head -1 | sed 's/.*current_change: *//' | tr -d ' "'"'" || true)
-CURRENT_TASK=$(grep -E "^\s+current:" "$STATE_FILE" 2>/dev/null | head -1 | sed 's/.*current: *//' | tr -d ' "'"'" || true)
+CURRENT_CHANGE=$(state_get "current_change")
+CURRENT_TASK=$(state_get "tasks.current")
 INJECT_TASK="false"
 case "$CURRENT_PHASE" in
   phase-4*|phase-5*|lite-l2*|lite-l3*) INJECT_TASK="true" ;;
 esac
 
 if [ "$INJECT_TASK" = "true" ] && [ -n "$CURRENT_CHANGE" ] && [ -n "$CURRENT_TASK" ]; then
-  TASK_PATH=".step/changes/${CURRENT_CHANGE}/tasks/${CURRENT_TASK}.yaml"
+  TASK_PATH=".step/changes/${CURRENT_CHANGE}/tasks/${CURRENT_TASK}.md"
   if [ -f "$TASK_PATH" ]; then
     TASK_CONTENT=$(cat "$TASK_PATH" 2>&1 || echo "")
   fi
@@ -91,10 +100,10 @@ if [ -f ".step/baseline.md" ]; then
   BASELINE_CONTENT=$(cat ".step/baseline.md" 2>&1 || echo "")
 fi
 
-# 读取完整 config.yaml（routing + file_routing + gate，32 行左右，完整注入避免截断风险）
+# 读取完整 config.json（routing + file_routing + gate，完整注入避免截断风险）
 ROUTING_CONTENT=""
-if [ -f ".step/config.yaml" ]; then
-  ROUTING_CONTENT=$(cat ".step/config.yaml" 2>&1 || echo "")
+if [ -f ".step/config.json" ]; then
+  ROUTING_CONTENT=$(cat ".step/config.json" 2>&1 || echo "")
 fi
 
 # 读取 SKILL.md 核心规则
@@ -125,7 +134,7 @@ cat <<EOF
 {
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
-    "additionalContext": "<STEP_PROTOCOL>\nSTEP 协议已激活。\n\n## 核心规则\n${SKILL_ESC}\n\n## state.yaml\n${STATE_ESC}\n\n## 当前变更 spec\n${SPEC_ESC}${FINDINGS_SECTION_ESC}${TASK_SECTION_ESC}\n\n## Baseline\n${BASELINE_ESC}\n\n## Agent 路由表\n${ROUTING_ESC}\n\n## 恢复指令\n1. 根据 current_phase 和 routing 表选择对应 agent\n2. 输出状态行: 📍 Phase X | Change: {name} | Task | Status | Next\n3. 从 next_action 继续工作\n4. Phase 4 按 file_routing 的 patterns 决定用 @step-developer 或 @step-designer\n5. 对话结束必须更新 state.yaml\n</STEP_PROTOCOL>"
+    "additionalContext": "<STEP_PROTOCOL>\nSTEP 协议已激活。\n\n## 核心规则\n${SKILL_ESC}\n\n## state.json\n${STATE_ESC}\n\n## 当前变更 spec\n${SPEC_ESC}${FINDINGS_SECTION_ESC}${TASK_SECTION_ESC}\n\n## Baseline\n${BASELINE_ESC}\n\n## Agent 路由表\n${ROUTING_ESC}\n\n## 恢复指令\n1. 根据 current_phase 和 routing 表选择对应 agent\n2. 输出状态行: 📍 Phase X | Change: {name} | Task | Status | Next\n3. 从 next_action 继续工作\n4. Phase 4 按 file_routing 的 patterns 决定用 @step-developer 或 @step-designer\n5. 对话结束必须更新 state.json\n</STEP_PROTOCOL>"
   }
 }
 EOF
