@@ -287,18 +287,35 @@ function unique(arr) {
   return [...new Set(arr)]
 }
 
-function ensureEvidenceDir() {
-  fs.mkdirSync(path.join(".step", "evidence"), { recursive: true })
+function ensureEvidenceDir(change) {
+  fs.mkdirSync(path.join(".step", "changes", change, "evidence"), { recursive: true })
 }
 
-function readEvidenceObject(evidencePath) {
-  if (!fs.existsSync(evidencePath)) return {}
-  try {
-    const obj = JSON.parse(fs.readFileSync(evidencePath, "utf-8"))
-    return isObject(obj) ? obj : {}
-  } catch {
-    return {}
+function resolveEvidencePath(taskSlug, changeName) {
+  let change = changeName
+  if (!change) {
+    const resolved = resolveTaskFile(taskSlug, null)
+    change = resolved.change
   }
+  ensureEvidenceDir(change)
+  return {
+    path: path.join(".step", "changes", change, "evidence", `${taskSlug}-gate.json`),
+    change,
+  }
+}
+
+function readEvidenceObject(paths) {
+  const candidates = Array.isArray(paths) ? paths : [paths]
+  for (const evidencePath of candidates) {
+    if (!fs.existsSync(evidencePath)) continue
+    try {
+      const obj = JSON.parse(fs.readFileSync(evidencePath, "utf-8"))
+      return isObject(obj) ? obj : {}
+    } catch {
+      continue
+    }
+  }
+  return {}
 }
 
 function isoNow() {
@@ -306,8 +323,8 @@ function isoNow() {
 }
 
 function writeScenarioEvidence(taskSlug, change, taskFile, total, covered) {
-  ensureEvidenceDir()
-  const evidencePath = path.join(".step", "evidence", `${taskSlug}-gate.json`)
+  const resolved = resolveEvidencePath(taskSlug, change)
+  const evidencePath = resolved.path
   const cov = total > 0 ? Math.floor((covered * 100) / total) : 0
   const scenario = {
     task_id: taskSlug,
@@ -522,8 +539,8 @@ function getGateCommands(configPath) {
 }
 
 function writeGateEvidence(taskSlug, level, pass, results, metadata) {
-  ensureEvidenceDir()
-  const evidencePath = path.join(".step", "evidence", `${taskSlug}-gate.json`)
+  const resolved = resolveEvidencePath(taskSlug, null)
+  const evidencePath = resolved.path
   const existing = readEvidenceObject(evidencePath)
   const payload = {
     ...existing,
@@ -597,10 +614,17 @@ function renderStatusReport(root = ".step") {
     }
   }
 
-  const evidenceDir = path.join(root, "evidence")
+  const evidenceDirs = []
+  const changesForEvidence = path.join(root, "changes")
+  if (fs.existsSync(changesForEvidence)) {
+    for (const ch of fs.readdirSync(changesForEvidence)) {
+      evidenceDirs.push(path.join(changesForEvidence, ch, "evidence"))
+    }
+  }
   let gatePass = 0
   let gateFail = 0
-  if (fs.existsSync(evidenceDir)) {
+  for (const evidenceDir of evidenceDirs) {
+    if (!fs.existsSync(evidenceDir)) continue
     for (const f of fs.readdirSync(evidenceDir)) {
       if (!f.endsWith("-gate.json")) continue
       const payload = JSON.parse(fs.readFileSync(path.join(evidenceDir, f), "utf-8"))
@@ -698,6 +722,7 @@ function runGate(level, taskSlug, configPath, mode, metadata) {
 
   const results = []
   let pass = true
+  const failedChecks = []
 
   for (const [name, cmd] of checks) {
     info(`--- ${name} ---`)
@@ -708,6 +733,7 @@ function runGate(level, taskSlug, configPath, mode, metadata) {
     } else {
       info(`  ❌ ${name}: FAIL`)
       results.push({ name, status: "fail" })
+      failedChecks.push(name)
       pass = false
     }
   }
@@ -725,6 +751,7 @@ function runGate(level, taskSlug, configPath, mode, metadata) {
     } else {
       info("  ❌ scenario-coverage: FAIL")
       results.push({ name: "scenario-coverage", status: "fail" })
+      failedChecks.push("scenario-coverage")
       pass = false
     }
   }
@@ -737,6 +764,13 @@ function runGate(level, taskSlug, configPath, mode, metadata) {
     gate_mode: mode,
     gate_scope: testScope,
     gate_at: isoNow(),
+    ...(pass
+      ? { failed_action: "" }
+      : {
+          failed_action: failedChecks.join("|"),
+          summary: `Gate failed at ${failedChecks.join(",")}`,
+          next_action: `analyze-${failedChecks[0] || "gate"}-failure`,
+        }),
     ...(metadata || {}),
   })
 

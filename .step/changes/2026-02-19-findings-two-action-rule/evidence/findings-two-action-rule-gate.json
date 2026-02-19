@@ -1,17 +1,17 @@
 {
-  "task_id": "stabilize-step-trigger-enforcement",
+  "task_id": "findings-two-action-rule",
   "scenario": {
-    "task_id": "stabilize-step-trigger-enforcement",
-    "change": "2026-02-17-stabilize-step-reliability",
-    "task_file": ".step/changes/2026-02-17-stabilize-step-reliability/tasks/stabilize-step-trigger-enforcement.md",
-    "timestamp": "2026-02-19T12:51:30Z",
-    "total": 4,
-    "covered": 4,
+    "task_id": "findings-two-action-rule",
+    "change": "2026-02-19-findings-two-action-rule",
+    "task_file": ".step/changes/2026-02-19-findings-two-action-rule/tasks/findings-two-action-rule.md",
+    "timestamp": "2026-02-19T14:54:51Z",
+    "total": 3,
+    "covered": 3,
     "coverage_pct": 100,
     "passed": true
   },
   "level": "lite:incremental:all",
-  "timestamp": "2026-02-19T12:51:30Z",
+  "timestamp": "2026-02-19T14:54:51Z",
   "passed": true,
   "results": [
     {

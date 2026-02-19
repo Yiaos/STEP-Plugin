@@ -20,7 +20,7 @@ assert "[S-015-01] gate lite 默认只传 task 声明的测试文件" bash -c "
   tmpdir=\$(mktemp -d)
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
-  mkdir -p .step/changes/init/tasks .step/evidence scripts tests test
+  mkdir -p .step/changes/init/tasks .step/changes/init/evidence scripts tests test
   cp '$SCRIPT_DIR/scripts/gate.sh' scripts/gate.sh
   cp '$SCRIPT_DIR/scripts/step-core.js' scripts/step-core.js
   chmod +x scripts/gate.sh scripts/step-core.js
@@ -69,13 +69,13 @@ it('[S-demo-02] b', () => {})
 B
   cat > tests/fake-runner.sh <<'RUN'
 #!/bin/bash
-printf '%s\n' "$@" > .step/evidence/test-args.txt
+printf '%s\n' "$@" > .step/changes/init/evidence/test-args.txt
 RUN
   chmod +x tests/fake-runner.sh
 
   bash scripts/gate.sh lite demo >/dev/null 2>&1
-  grep -q 'test/a.test.ts' .step/evidence/test-args.txt
-  grep -q 'test/b.test.ts' .step/evidence/test-args.txt
+  grep -q 'test/a.test.ts' .step/changes/init/evidence/test-args.txt
+  grep -q 'test/b.test.ts' .step/changes/init/evidence/test-args.txt
 "
 
 echo ""

@@ -73,6 +73,34 @@ else
   echo "[STEP STOP CHECK] WARN: progress_log 无今日 ($TODAY) 条目"
 fi
 
+# 失败记录约束：gate 失败时必须立即记录可执行 next_action，且 next_action 不能等于 failed_action
+if node -e '
+const fs = require("fs")
+const file = process.argv[1]
+const today = process.argv[2]
+const state = JSON.parse(fs.readFileSync(file, "utf-8"))
+const log = Array.isArray(state.progress_log) ? state.progress_log : []
+const hit = log.find((entry) => entry && entry.date && String(entry.date).includes(today) && entry.gate_status === "fail")
+if (!hit) process.exit(0)
+const nextAction = typeof hit.next_action === "string" ? hit.next_action.trim() : ""
+const failedAction = typeof hit.failed_action === "string" ? hit.failed_action.trim() : ""
+if (!nextAction) process.exit(2)
+if (failedAction && nextAction === failedAction) process.exit(3)
+process.exit(0)
+' "$STATE_FILE" "$TODAY" >/dev/null 2>&1; then
+  :
+else
+  rc=$?
+  ISSUES=$((ISSUES + 1))
+  if [ "$rc" -eq 2 ]; then
+    echo "[STEP STOP CHECK] WARN: gate 失败后缺少 next_action"
+  elif [ "$rc" -eq 3 ]; then
+    echo "[STEP STOP CHECK] WARN: next_action 不得与 failed_action 相同"
+  else
+    echo "[STEP STOP CHECK] WARN: 失败记录检查异常"
+  fi
+fi
+
 # 检查是否有可归档的变更（变更下所有任务都 done）
 ARCHIVE_COUNT=0
 for change_dir in .step/changes/*; do

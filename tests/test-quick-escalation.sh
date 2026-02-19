@@ -20,7 +20,7 @@ assert "[S-021-01] gate evidence 记录 escalated 信息" bash -c "
   tmpdir=\$(mktemp -d)
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
-  mkdir -p .step/changes/init/tasks .step/evidence scripts
+  mkdir -p .step/changes/init/tasks .step/changes/init/evidence scripts
   cp '$SCRIPT_DIR/scripts/gate.sh' scripts/gate.sh
   cp '$SCRIPT_DIR/scripts/step-core.js' scripts/step-core.js
   chmod +x scripts/gate.sh scripts/step-core.js
@@ -53,10 +53,10 @@ CFG
 TASK
 
   bash scripts/gate.sh quick demo --quick-reason "small refactor" --escalated true --escalation-reason "touch behavior" >/dev/null 2>&1
-  grep -q 'escalated' .step/evidence/demo-gate.json
-  grep -q 'true' .step/evidence/demo-gate.json
-  grep -q 'escalation_reason' .step/evidence/demo-gate.json
-  grep -q 'touch behavior' .step/evidence/demo-gate.json
+  grep -q 'escalated' .step/changes/init/evidence/demo-gate.json
+  grep -q 'true' .step/changes/init/evidence/demo-gate.json
+  grep -q 'escalation_reason' .step/changes/init/evidence/demo-gate.json
+  grep -q 'touch behavior' .step/changes/init/evidence/demo-gate.json
 "
 
 echo ""

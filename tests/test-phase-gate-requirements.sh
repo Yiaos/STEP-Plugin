@@ -94,7 +94,7 @@ TOTAL=$((TOTAL + 1))
 {
   box=$(new_sandbox)
   trap 'rm -rf "$box"' EXIT
-  mkdir -p "$box/.step/evidence"
+  mkdir -p "$box/.step/changes/c1/evidence"
   set_state "$box/.step/state.json" "phase-4-execution" "" "demo"
   out=$(cd "$box" && bash ./scripts/step-manager.sh transition --to phase-5-review 2>&1)
   code=$?
@@ -112,8 +112,8 @@ TOTAL=$((TOTAL + 1))
 {
   box=$(new_sandbox)
   trap 'rm -rf "$box"' EXIT
-  mkdir -p "$box/.step/evidence"
-  cat > "$box/.step/evidence/demo-gate.json" <<'EOF'
+  mkdir -p "$box/.step/changes/c1/evidence"
+  cat > "$box/.step/changes/c1/evidence/demo-gate.json" <<'EOF'
 {
   "task_id": "demo",
   "passed": true,
@@ -122,7 +122,7 @@ TOTAL=$((TOTAL + 1))
   }
 }
 EOF
-  set_state "$box/.step/state.json" "phase-4-execution" "" "demo"
+  set_state "$box/.step/state.json" "phase-4-execution" "c1" "demo"
   (cd "$box" && bash ./scripts/step-manager.sh transition --to phase-5-review >/dev/null 2>&1)
   code=$?
   rm -rf "$box"
@@ -139,7 +139,7 @@ TOTAL=$((TOTAL + 1))
 {
   box=$(new_sandbox)
   trap 'rm -rf "$box"' EXIT
-  mkdir -p "$box/.step/changes/c1/reviews"
+  mkdir -p "$box/.step/changes/c1/evidence"
   set_state "$box/.step/state.json" "phase-5-review" "c1" "demo"
   out=$(cd "$box" && bash ./scripts/step-manager.sh transition --to done 2>&1)
   code=$?
@@ -157,8 +157,8 @@ TOTAL=$((TOTAL + 1))
 {
   box=$(new_sandbox)
   trap 'rm -rf "$box"' EXIT
-  mkdir -p "$box/.step/changes/c1/reviews"
-  touch "$box/.step/changes/c1/reviews/demo.md"
+  mkdir -p "$box/.step/changes/c1/evidence"
+  touch "$box/.step/changes/c1/evidence/demo-review.md"
   set_state "$box/.step/state.json" "phase-5-review" "c1" "demo"
   (cd "$box" && bash ./scripts/step-manager.sh transition --to done >/dev/null 2>&1)
   code=$?

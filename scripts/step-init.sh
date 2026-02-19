@@ -80,7 +80,7 @@ ensure_agents_step_guidance() {
 
 - `.step/baseline.md`: 需求与约束唯一事实源（SSOT）
 - `.step/state.json`: 流程状态机唯一事实源（phase/change/task/next_action）
-- `.step/evidence/`: gate 证据
+- `.step/changes/{change}/evidence/`: gate/review 证据
 - `scripts/`: 执行入口与硬约束脚本
 - `AGENTS.md`: 仅导航，不复制 baseline 细则
 
@@ -140,7 +140,7 @@ PROJECT_TYPE=$(echo "$PROJECT_DETECT" | head -1)
 PROJECT_DETAILS=$(echo "$PROJECT_DETECT" | tail -n +2)
 
 # 创建目录结构
-mkdir -p .step/changes/init/tasks .step/changes/init/reviews .step/evidence .step/archive scripts
+mkdir -p .step/changes/init/tasks .step/changes/init/evidence .step/archive scripts
 
 # 复制模板文件
 cp "${TEMPLATES_DIR}/config.json" .step/config.json
@@ -194,9 +194,9 @@ echo "   │       ├── findings.md  # 探索发现（Phase 0/2，可选）
 echo "   │       ├── spec.md      # 需求说明（Phase 1）"
 echo "   │       ├── design.md    # 技术方案（Phase 2）"
 echo "   │       ├── tasks/       # 任务 + BDD 场景（Phase 3）"
-echo "   │       └── reviews/     # Review 记录（Phase 5）"
+echo "   │       └── evidence/    # Gate/Review 证据（Phase 4/5）"
 echo "   ├── archive/             # 已完成变更归档"
-echo "   └── evidence/            # gate 运行证据"
+echo "   └── (无全局 evidence，证据按 change 存放)"
 echo ""
 echo "   scripts/"
 echo "   ├── gate.sh              # 质量门禁"

@@ -225,7 +225,7 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义（`agents/*.md`�
 │   │   └── tasks/       # 任务 + BDD 场景（Phase 3）
 │   └── YYYY-MM-DD-xxx/  # 后续变更（结构相同）
 ├── archive/             # 已完成变更归档
-└── evidence/            # gate 运行证据（review 在 changes/{change}/reviews/）
+└── （无全局 evidence，证据在 changes/{change}/evidence/）
 scripts/
 ├── gate.sh              # 质量门禁
 ├── scenario-check.sh    # 场景覆盖检查

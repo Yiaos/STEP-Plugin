@@ -73,8 +73,7 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义文件（`STEP/ag
 │           └── dark-mode-toggle.md
 ├── archive/                   # 已完成变更归档
 │   └── 2026-02-15-init/
-└── evidence/
-    └── user-register-api-gate.json      # gate+scenario 合并证据（自动生成）
+└── （无全局 evidence，证据按 change 存放）
 scripts/
 ├── gate.sh                    # 质量门禁
 ├── scenario-check.sh          # 场景覆盖检查
@@ -129,6 +128,13 @@ Phase 0 **不需要** 完美的需求文档。它的输出是"双方对方向达
 ### findings.md（可选）
 
 如果探索过程中产生了关键发现（现有代码结构、技术约束、性能数据等），写入 `.step/changes/{change}/findings.md`。这些事实性信息会在 Session 恢复时自动注入上下文，避免重复调研。
+
+**2-Action Rule（对齐 planning-with-files）**
+- 在 Phase 0 / Phase 2 中，每完成 2 个有效探索动作（读文件、检索、调研、分析命令），必须更新一次 findings。
+- 更新内容可以是：
+  - 新增事实/约束/数据；或
+  - 明确记录“本轮无新增发现（2-action checkpoint）”。
+- 目的：保证探索链路可追溯，避免多轮对话中间结论丢失。
 
 - **什么写 findings**：事实性发现（"数据库连接池上限 5"、"这个库不支持 SSR"）
 - **什么写 decisions**：重大发现应提炼为 ADR 写入 `decisions.md`（"选了 A 不选 B，因为 findings 发现 B 不支持 X"）
@@ -201,6 +207,7 @@ LLM 基于 Phase 0 讨论起草 baseline.md
 3. 用户可以追问细节："X 方案在高并发下表现如何？""Y 和 Z 能不能混用？"
 4. LLM 应该给出推荐和理由，但不替用户做决定。
 5. 整体架构确认后，细节选择可以用选择题快速确认。
+6. 在开放式调研阶段执行 findings 2-action rule，确保调研证据连续记录。
 
 ### 流程
 
@@ -361,7 +368,8 @@ BDD 场景 (Given/When/Then) — 行为规格
 | 变更 spec  | `.step/changes/{change}/spec.md`          | `changes/init/spec.md`                             |
 | 变更 design| `.step/changes/{change}/design.md`        | `changes/init/design.md`                            |
 | 任务文件   | `.step/changes/{change}/tasks/{slug}.md`| `changes/init/tasks/user-register-api.md`        |
-| Review 记录| `.step/changes/{change}/reviews/{slug}.md`| `changes/init/reviews/user-register-api.md`       |
+| Review 记录| `.step/changes/{change}/evidence/{slug}-review.md`| `changes/init/evidence/user-register-api-review.md`       |
+| Gate 证据  | `.step/changes/{change}/evidence/{slug}-gate.json`| `changes/init/evidence/user-register-api-gate.json`       |
 | 任务 ID    | `{slug}`                                  | `user-register-api`                                |
 | 场景 ID    | `S-{slug}-{seq}`                          | `S-user-register-api-01`                           |
 | 归档       | `.step/archive/YYYY-MM-DD-{change}/`      | `archive/2026-02-15-init/`                         |
@@ -549,8 +557,10 @@ Gate 分级修复
 
 修复循环规则:
   1. 每轮修复前都先跑一次失败分析（不盲修）
-  2. 最多自动修复 3 轮
-  3. 3 轮后仍失败 → 标记 blocked + 请求人工介入
+  2. 每次失败后立即写入 `progress_log.failed_action` 与 `progress_log.next_action`
+     且 `next_action` 必须与 `failed_action` 不同
+  3. 最多自动修复 3 轮
+  4. 3 轮后仍失败 → 标记 blocked + 请求人工介入
 ```
 
 ### Gate 失败后的状态更新规则
@@ -1129,7 +1139,7 @@ Session 开始
 初始化逻辑在 `scripts/step-init.sh` 中实现，由 `/step` 命令调用。主要功能：
 
 1. **项目检测** — `detect_project()` 扫描 16 种包管理器/清单文件 + 6 种工具目录，判断是已有项目还是绿地项目
-2. **创建目录** — `.step/changes/init/tasks/`, `.step/archive/`, `.step/evidence/`, `scripts/`
+2. **创建目录** — `.step/changes/init/tasks/`, `.step/changes/init/evidence/`, `.step/archive/`, `scripts/`
 3. **创建初始变更文档** — `.step/changes/init/findings.md` + `.step/changes/init/spec.md` + `.step/changes/init/design.md`
 4. **复制模板** — 从 `templates/` 复制 `config.json`, `state.json`, `baseline.md`, `decisions.md`, `findings.md`
 5. **复制脚本** — 复制 `gate.sh`, `scenario-check.sh`, `step-worktree.sh` 到项目 `scripts/` 目录

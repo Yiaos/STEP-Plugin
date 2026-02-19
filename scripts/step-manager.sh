@@ -190,7 +190,8 @@ require_file() {
 
 require_gate_pass() {
   local task="$1"
-  local evidence_file="${ROOT_DIR}/.step/evidence/${task}-gate.json"
+  local change="$2"
+  local evidence_file="${ROOT_DIR}/.step/changes/${change}/evidence/${task}-gate.json"
   if [ ! -f "$evidence_file" ]; then
     echo "❌ 缺少 gate 证据: $evidence_file"
     return 1
@@ -225,7 +226,7 @@ require_review_record() {
     echo "❌ current_change 为空，无法定位 review 记录"
     return 1
   fi
-  local review_file="${ROOT_DIR}/.step/changes/${change}/reviews/${task}.md"
+  local review_file="${ROOT_DIR}/.step/changes/${change}/evidence/${task}-review.md"
   require_file "$review_file" "review 记录" || return 1
 }
 
@@ -267,7 +268,7 @@ phase_gate() {
         echo "❌ tasks.current 为空，无法进入 phase-5"
         return 1
       }
-      require_gate_pass "$task" || return 1
+      require_gate_pass "$task" "$change" || return 1
       ;;
     "phase-5-review->done")
       [ -z "$task" ] && {
@@ -292,7 +293,7 @@ phase_gate() {
         echo "❌ tasks.current 为空，无法进入 lite-l3"
         return 1
       }
-      require_gate_pass "$task" || return 1
+      require_gate_pass "$task" "$change" || return 1
       ;;
     "lite-l3-review->done")
       [ -z "$task" ] && {

@@ -113,6 +113,48 @@ EOF
   [ \"\$code\" -ne 0 ]
 "
 
+# [S-013-04] strict=true 时 gate 失败且 next_action=failed_action 返回非0
+assert "[S-013-04] strict=true 时 next_action 不得等于 failed_action" bash -c "
+  set -e
+  tmpdir=\$(mktemp -d)
+  trap 'rm -rf "\$tmpdir"' EXIT
+  cd "\$tmpdir"
+  mkdir -p .step
+  today=\$(date -u +%Y-%m-%d)
+  cat > .step/state.json <<EOF
+{
+  \"project\": \"demo\",
+  \"current_phase\": \"phase-4-execution\",
+  \"current_change\": \"init\",
+  \"last_updated\": \"\${today}T10:00:00Z\",
+  \"last_agent\": \"tester\",
+  \"last_session_summary\": \"\",
+  \"established_patterns\": {},
+  \"tasks\": {
+    \"current\": null,
+    \"upcoming\": []
+  },
+  \"key_decisions\": [],
+  \"known_issues\": [],
+  \"constraints_quick_ref\": [],
+  \"progress_log\": [
+    {
+      \"date\": \"\$today\",
+      \"task\": \"demo\",
+      \"gate_status\": \"fail\",
+      \"failed_action\": \"test\",
+      \"next_action\": \"test\"
+    }
+  ]
+}
+EOF
+  set +e
+  STEP_STOP_STRICT=true bash '$SCRIPT_DIR/scripts/step-stop-check.sh' >/dev/null 2>&1
+  code=\$?
+  set -e
+  [ \"\$code\" -ne 0 ]
+"
+
 echo ""
 echo "=== 结果: $PASS/$TOTAL passed, $FAIL failed ==="
 [ "$FAIL" -eq 0 ]

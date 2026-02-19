@@ -20,7 +20,7 @@ assert "[S-016-01] gate --all 不追加 task 测试文件参数" bash -c "
   tmpdir=\$(mktemp -d)
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
-  mkdir -p .step/changes/init/tasks .step/evidence scripts tests test
+  mkdir -p .step/changes/init/tasks .step/changes/init/evidence scripts tests test
   cp '$SCRIPT_DIR/scripts/gate.sh' scripts/gate.sh
   cp '$SCRIPT_DIR/scripts/step-core.js' scripts/step-core.js
   chmod +x scripts/gate.sh scripts/step-core.js
@@ -62,12 +62,12 @@ it('[S-demo-01] a', () => {})
 A
   cat > tests/fake-runner.sh <<'RUN'
 #!/bin/bash
-printf '%s\n' "$@" > .step/evidence/test-args.txt
+printf '%s\n' "$@" > .step/changes/init/evidence/test-args.txt
 RUN
   chmod +x tests/fake-runner.sh
 
   bash scripts/gate.sh lite demo --all >/dev/null 2>&1
-  [ ! -s .step/evidence/test-args.txt ]
+  [ ! -s .step/changes/init/evidence/test-args.txt ]
 "
 
 echo ""

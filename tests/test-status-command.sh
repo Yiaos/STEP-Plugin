@@ -20,7 +20,7 @@ assert "[S-019-01] step-core status report 输出核心字段" bash -c "
   tmpdir=\$(mktemp -d)
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
-  mkdir -p .step/changes/init/tasks .step/evidence
+  mkdir -p .step/changes/init/tasks .step/changes/init/evidence
   cat > .step/state.json <<'STATE'
 {\"project\":\"demo\",\"current_phase\":\"phase-4-execution\",\"current_change\":\"init\",\"last_updated\":\"2026-02-16\",\"last_agent\":\"orchestrator\",\"last_session_summary\":\"x\",\"established_patterns\":{},\"tasks\":{\"current\":\"demo\",\"upcoming\":[]},\"key_decisions\":[],\"known_issues\":[],\"constraints_quick_ref\":[],\"progress_log\":[]}
 STATE
@@ -30,7 +30,7 @@ STATE
 {\"id\":\"demo\",\"title\":\"demo\",\"mode\":\"lite\",\"status\":\"done\",\"done_when\":[],\"scenarios\":[]}
 \`\`\`
 TASK
-  cat > .step/evidence/demo-gate.json <<'E'
+  cat > .step/changes/init/evidence/demo-gate.json <<'E'
 {\"passed\": true}
 E
   out=\$(node '$SCRIPT_DIR/scripts/step-core.js' status report --root .step)
