@@ -85,7 +85,7 @@ assert "[S-002-02] last_updated 过期时输出 WARN" bash -c "
 }
 INNER
   cd "\$tmpdir"
-  output=\$(bash '$SCRIPT_DIR/scripts/step-stop-check.sh' 2>&1)
+  output=\$(STEP_STOP_STRICT=false bash '$SCRIPT_DIR/scripts/step-stop-check.sh' 2>&1)
   echo "\$output" | grep -q 'WARN'
 "
 
@@ -122,7 +122,7 @@ assert "[S-002-03] progress_log 缺失时输出 WARN" bash -c "
 }
 INNER
   cd "\$tmpdir"
-  output=\$(bash '$SCRIPT_DIR/scripts/step-stop-check.sh' 2>&1)
+  output=\$(STEP_STOP_STRICT=false bash '$SCRIPT_DIR/scripts/step-stop-check.sh' 2>&1)
   echo "\$output" | grep -q 'WARN'
 "
 

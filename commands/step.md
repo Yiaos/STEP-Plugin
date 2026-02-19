@@ -50,6 +50,20 @@ description: "初始化或恢复 STEP 协议（Stateful Task Execution Protocol�
 - 在该 worktree 内执行 Phase 4（TDD + gate + review + commit）
 - commit 后询问是否“合并回创建时所在分支并归档”
 
+## 可用性前置检查
+
+进入 STEP 流程前，先执行：
+
+`bash ~/.config/opencode/tools/step/scripts/step-manager.sh doctor`
+
+然后必须进入状态机执行态（示例）：
+
+`bash ~/.config/opencode/tools/step/scripts/step-manager.sh enter --mode full --change init`
+
+- 若检查结果为 PASS：继续进入对应阶段
+- 若检查结果为 FAIL：立即停止进入流程，先按脚本输出的修复命令完成修复（例如 `bash ~/.config/opencode/tools/step/install.sh --force`）
+- 若未 enter：PreToolUse 会阻断 Write/Edit/Bash，防止在 `idle` 误执行
+
 ## 全阶段规则
 
 加载 `step` skill 并严格遵守规则。

@@ -77,6 +77,42 @@ EOF
   STEP_STOP_STRICT=false bash '$SCRIPT_DIR/scripts/step-stop-check.sh' >/dev/null 2>&1
 "
 
+# [S-013-03] 严格模式下单项 WARN 也返回非0
+assert "[S-013-03] strict=true 时单项 WARN 返回非0" bash -c "
+  set -e
+  tmpdir=\$(mktemp -d)
+  trap 'rm -rf "\$tmpdir"' EXIT
+  cd "\$tmpdir"
+  mkdir -p .step
+  today=\$(date -u +%Y-%m-%d)
+  cat > .step/state.json <<EOF
+{
+  \"project\": \"demo\",
+  \"current_phase\": \"phase-4-execution\",
+  \"current_change\": \"init\",
+  \"last_updated\": \"2000-01-01\",
+  \"last_agent\": \"tester\",
+  \"last_session_summary\": \"\",
+  \"established_patterns\": {},
+  \"tasks\": {
+    \"current\": null,
+    \"upcoming\": []
+  },
+  \"key_decisions\": [],
+  \"known_issues\": [],
+  \"constraints_quick_ref\": [],
+  \"progress_log\": [
+    {\"date\": \"\$today\", \"summary\": \"ok\", \"next_action\": \"ok\"}
+  ]
+}
+EOF
+  set +e
+  STEP_STOP_STRICT=true bash '$SCRIPT_DIR/scripts/step-stop-check.sh' >/dev/null 2>&1
+  code=\$?
+  set -e
+  [ \"\$code\" -ne 0 ]
+"
+
 echo ""
 echo "=== 结果: $PASS/$TOTAL passed, $FAIL failed ==="
 [ "$FAIL" -eq 0 ]

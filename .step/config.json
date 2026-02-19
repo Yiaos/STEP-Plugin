@@ -33,7 +33,7 @@
   "gate": {
     "lint": "echo 'no lint configured'",
     "typecheck": "echo 'no typecheck configured'",
-    "test": "bash tests/test-attention-management.sh && bash tests/test-stop-hook.sh && bash tests/test-init-detection.sh && bash tests/test-execution-rules.sh && bash tests/test-docs-correction.sh && bash tests/test-lite-mode-and-naming.sh && bash tests/test-archive-feature.sh && bash tests/test-change-structure-scripts.sh && bash tests/test-session-start-hook.sh && bash tests/test-worktree-mode.sh",
+    "test": "bash tests/test-attention-management.sh && bash tests/test-stop-hook.sh && bash tests/test-stop-strict-exit-code.sh && bash tests/test-init-detection.sh && bash tests/test-execution-rules.sh && bash tests/test-docs-correction.sh && bash tests/test-lite-mode-and-naming.sh && bash tests/test-archive-feature.sh && bash tests/test-change-structure-scripts.sh && bash tests/test-session-start-hook.sh && bash tests/test-worktree-mode.sh && bash tests/test-step-manager-check-action.sh && bash tests/test-step-phase-enforcement.sh && bash tests/test-phase-gate-requirements.sh",
     "build": "echo 'no build configured'"
   },
   "worktree": {

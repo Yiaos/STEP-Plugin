@@ -7,6 +7,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TEMPLATES_DIR="${PLUGIN_ROOT}/templates"
+STEP_AGENTS_BEGIN="<!-- STEP:BEGIN DOC-ROLES -->"
+STEP_AGENTS_END="<!-- STEP:END DOC-ROLES -->"
 
 # ── 已有项目检测 ──────────────────────────────────────────────
 
@@ -69,6 +71,59 @@ detect_project() {
   fi
 }
 
+ensure_agents_step_guidance() {
+  local agents_file="AGENTS.md"
+  local guidance_content
+
+  guidance_content=$(cat <<'EOF'
+## STEP 文档职责（自动注入）
+
+- `.step/baseline.md`: 需求与约束唯一事实源（SSOT）
+- `.step/state.json`: 流程状态机唯一事实源（phase/change/task/next_action）
+- `.step/evidence/`: gate 证据
+- `scripts/`: 执行入口与硬约束脚本
+- `AGENTS.md`: 仅导航，不复制 baseline 细则
+
+### 冲突优先级
+- 需求与范围冲突: 以 `.step/baseline.md` 为准
+- 流程状态冲突: 以 `.step/state.json` 为准
+- 执行与校验冲突: 以脚本运行结果为准
+EOF
+)
+
+  node -e '
+const fs = require("fs")
+const file = process.argv[1]
+const begin = process.argv[2]
+const end = process.argv[3]
+const block = process.argv[4]
+const section = `${begin}\n${block}\n${end}`
+
+let current = ""
+if (fs.existsSync(file)) {
+  current = fs.readFileSync(file, "utf-8")
+}
+
+if (!current) {
+  fs.writeFileSync(file, `# AGENTS\n\n${section}\n`, "utf-8")
+  process.exit(0)
+}
+
+const beginIdx = current.indexOf(begin)
+const endIdx = current.indexOf(end)
+let next
+if (beginIdx >= 0 && endIdx > beginIdx) {
+  const head = current.slice(0, beginIdx)
+  const tail = current.slice(endIdx + end.length)
+  next = `${head}${section}${tail}`
+} else {
+  const normalized = current.endsWith("\n") ? current : `${current}\n`
+  next = `${normalized}\n${section}\n`
+}
+fs.writeFileSync(file, next, "utf-8")
+' "$agents_file" "$STEP_AGENTS_BEGIN" "$STEP_AGENTS_END" "$guidance_content"
+}
+
 # ── 主流程 ────────────────────────────────────────────────────
 
 echo "📦 Initializing STEP protocol..."
@@ -85,7 +140,7 @@ PROJECT_TYPE=$(echo "$PROJECT_DETECT" | head -1)
 PROJECT_DETAILS=$(echo "$PROJECT_DETECT" | tail -n +2)
 
 # 创建目录结构
-mkdir -p .step/changes/init/tasks .step/evidence .step/archive scripts
+mkdir -p .step/changes/init/tasks .step/changes/init/reviews .step/evidence .step/archive scripts
 
 # 复制模板文件
 cp "${TEMPLATES_DIR}/config.json" .step/config.json
@@ -123,6 +178,8 @@ data.project_type = process.argv[2]
 fs.writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`, "utf-8")
 ' "$TIMESTAMP" "$PROJECT_TYPE"
 
+ensure_agents_step_guidance
+
 echo ""
 echo "✅ STEP initialized!"
 echo ""
@@ -136,7 +193,8 @@ echo "   │   └── init/            # 初始开发"
 echo "   │       ├── findings.md  # 探索发现（Phase 0/2，可选）"
 echo "   │       ├── spec.md      # 需求说明（Phase 1）"
 echo "   │       ├── design.md    # 技术方案（Phase 2）"
-echo "   │       └── tasks/       # 任务 + BDD 场景（Phase 3）"
+echo "   │       ├── tasks/       # 任务 + BDD 场景（Phase 3）"
+echo "   │       └── reviews/     # Review 记录（Phase 5）"
 echo "   ├── archive/             # 已完成变更归档"
 echo "   └── evidence/            # gate 运行证据"
 echo ""
@@ -144,6 +202,8 @@ echo "   scripts/"
 echo "   ├── gate.sh              # 质量门禁"
 echo "   ├── scenario-check.sh    # 场景覆盖检查"
 echo "   └── step-worktree.sh     # worktree 创建/归档合并清理"
+echo ""
+echo "   AGENTS.md 已写入 STEP 文档职责导航"
 echo ""
 
 # ── 已有项目提示 ──────────────────────────────────────────────

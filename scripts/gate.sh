@@ -9,6 +9,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 CORE_SCRIPT="${SCRIPT_DIR}/step-core.js"
+DOCTOR_SCRIPT="${SCRIPT_DIR}/step-manager.sh"
 
 LEVEL_RAW=${1:-lite}
 TASK_ID=${2:-""}
@@ -61,6 +62,21 @@ esac
 if [ -z "$TASK_ID" ]; then
   echo "❌ gate 必须指定 task slug（例如: ./scripts/gate.sh lite user-register-api）"
   exit 2
+fi
+
+if [ -f "$DOCTOR_SCRIPT" ]; then
+  set +e
+  DOCTOR_OUTPUT=$(bash "$DOCTOR_SCRIPT" doctor 2>&1)
+  DOCTOR_STATUS=$?
+  set -e
+
+  if [ "$DOCTOR_STATUS" -ne 0 ]; then
+    printf '\033[31m❌ STEP 环境不完整，拒绝执行 Gate\033[0m\n' >&2
+    if [ -n "$DOCTOR_OUTPUT" ]; then
+      printf '%s\n' "$DOCTOR_OUTPUT" >&2
+    fi
+    exit 1
+  fi
 fi
 
 if [ ! -f "$CORE_SCRIPT" ]; then

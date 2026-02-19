@@ -74,9 +74,7 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义文件（`STEP/ag
 ├── archive/                   # 已完成变更归档
 │   └── 2026-02-15-init/
 └── evidence/
-    ├── user-register-api-gate.json      # gate 运行结果（gate.sh 自动生成）
-    ├── user-register-api-scenario.json  # 场景覆盖结果（scenario-check.sh 自动生成）
-    └── user-register-api-review.md      # Review 报告（@step-reviewer 手动写入）
+    └── user-register-api-gate.json      # gate+scenario 合并证据（自动生成）
 scripts/
 ├── gate.sh                    # 质量门禁
 ├── scenario-check.sh          # 场景覆盖检查
@@ -363,11 +361,11 @@ BDD 场景 (Given/When/Then) — 行为规格
 | 变更 spec  | `.step/changes/{change}/spec.md`          | `changes/init/spec.md`                             |
 | 变更 design| `.step/changes/{change}/design.md`        | `changes/init/design.md`                            |
 | 任务文件   | `.step/changes/{change}/tasks/{slug}.md`| `changes/init/tasks/user-register-api.md`        |
+| Review 记录| `.step/changes/{change}/reviews/{slug}.md`| `changes/init/reviews/user-register-api.md`       |
 | 任务 ID    | `{slug}`                                  | `user-register-api`                                |
 | 场景 ID    | `S-{slug}-{seq}`                          | `S-user-register-api-01`                           |
 | 归档       | `.step/archive/YYYY-MM-DD-{change}/`      | `archive/2026-02-15-init/`                         |
 | Evidence   | `{slug}-gate.json`                        | `user-register-api-gate.json`                      |
-| Evidence   | `{slug}-scenario.json`                    | `user-register-api-scenario.json`                  |
 
 **Slug 命名原则（参考 OpenSpec）：**
 - 使用小写英文 + 连字符（kebab-case）

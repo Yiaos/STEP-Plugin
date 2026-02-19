@@ -6,7 +6,7 @@ hooks:
     - matcher: "Write|Edit|Bash"
       hooks:
         - type: command
-          command: "cat .step/state.json 2>/dev/null | head -25 || true"
+          command: "bash scripts/step-pretool-guard.sh && (cat .step/state.json 2>/dev/null | head -25 || true)"
   PostToolUse:
     - matcher: "Write|Edit"
       hooks:
@@ -15,7 +15,7 @@ hooks:
   Stop:
     - hooks:
         - type: command
-          command: "bash scripts/step-stop-check.sh 2>/dev/null || echo '[STEP] 对话即将结束。必须更新 state.json: last_updated, progress_log（新条目插入列表最前，倒序）, next_action（精确到文件名和动作）。'"
+          command: "bash scripts/step-stop-check.sh 2>/dev/null"
 ---
 
 # STEP Protocol — Core Rules
@@ -85,6 +85,7 @@ Step 6: 更新 state.json + baseline.md 对应项 [ ] → [x] → 进入下一�
 
 ## Execution 硬规则
 
+0. **环境自检**: 若收到 `step-doctor` 的失败警告，**必须**优先修复环境（运行提示的修复命令），在环境恢复 PASS 前不进行业务开发。
 1. **测试先行**: 按 `config.json` 的 `routing.test_writing` 派发 @step-qa 写测试 → 确认 FAIL → 再写实现（QA 写测试 + Developer 写实现 = 天然对抗性）
 2. **场景 ID 绑定**: 测试名必须包含 `[S-{slug}-xx]`
 3. **Gate 必须带 slug**: `./scripts/gate.sh quick|lite|full {slug}`——必须指定 task-slug，确保 evidence 自动保存到 `.step/evidence/{slug}-gate.json`
@@ -93,7 +94,7 @@ Step 6: 更新 state.json + baseline.md 对应项 [ ] → [x] → 进入下一�
 6. **所有测试类型必须**: unit / integration / e2e 都是必须的，不可跳过
 7. **修改前必须 Read**: 修改任何文件前必须先用 Read 工具查看当前内容，不得凭记忆编辑
 8. **Baseline 完成跟踪**: 任务标记 done 时，同步更新 baseline.md 对应功能项 `[ ]` → `[x]`
-9. **Evidence 必须保存**: gate 和 review 的证据必须保存到 `.step/evidence/`（gate 自动保存，review 需手动写入 `{slug}-review.md`）
+9. **Evidence 必须保存**: gate 证据保存到 `.step/evidence/{slug}-gate.json`；review 记录保存到 `.step/changes/{change}/reviews/{slug}.md`
 10. **验证铁律**: <HARD-GATE>声称"测试通过"/"gate 通过"/"Review 通过"前，必须在本条消息中展示实际运行输出。没有新鲜证据的通过声明等于撒谎。</HARD-GATE>
 11. **Gate 安全约束**: gate 命令执行前必须通过危险命令黑名单校验（`gate.dangerous_executables`）
 

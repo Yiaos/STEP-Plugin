@@ -142,6 +142,9 @@ bash uninstall.sh
 
 # 清理当前项目的 .step/ 文件
 bash uninstall.sh --project
+
+# 验证安装健康度
+bash ~/.config/opencode/tools/step/scripts/step-manager.sh doctor
 ```
 
 安装后的目录结构：
@@ -222,7 +225,7 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义（`agents/*.md`�
 │   │   └── tasks/       # 任务 + BDD 场景（Phase 3）
 │   └── YYYY-MM-DD-xxx/  # 后续变更（结构相同）
 ├── archive/             # 已完成变更归档
-└── evidence/            # gate 运行证据
+└── evidence/            # gate 运行证据（review 在 changes/{change}/reviews/）
 scripts/
 ├── gate.sh              # 质量门禁
 ├── scenario-check.sh    # 场景覆盖检查

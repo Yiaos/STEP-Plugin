@@ -90,4 +90,4 @@ Review 分两轮执行。第一轮 spec compliance 不通过则阻断，不进�
 - ❌ 严禁空洞 APPROVE——必须给出可验证依据（问题清单或 clean review 覆盖说明）
 - ❌ 严禁自行修复代码——Review-only，除非用户明确要求
 - ✅ P0 问题立即阻断，不等其他检查完成
-- ✅ Review 完成后将结果保存到 `.step/evidence/{slug}-review.md`（含 assessment、findings、v2 建议）
+- ✅ Review 完成后将结果保存到 `.step/changes/{change}/reviews/{slug}.md`（含 assessment、findings、v2 建议）

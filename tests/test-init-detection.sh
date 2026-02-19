@@ -108,6 +108,52 @@ assert "[S-003-08] 初始化复制 step-worktree.sh" bash -c "
   [ -x scripts/step-worktree.sh ]
 "
 
+# [S-003-09] 初始化会生成 AGENTS.md 并注入 STEP 文档职责区块
+assert "[S-003-09] 初始化注入 AGENTS.md STEP 区块" bash -c "
+  set -e
+  tmpdir=\$(mktemp -d)
+  trap 'rm -rf "\$tmpdir"' EXIT
+  cd "\$tmpdir"
+  bash '$SCRIPT_DIR/scripts/step-init.sh' >/dev/null 2>&1
+  [ -f AGENTS.md ]
+  grep -q '<!-- STEP:BEGIN DOC-ROLES -->' AGENTS.md
+  grep -q '\.step/baseline.md' AGENTS.md
+"
+
+# [S-003-10] 已有 AGENTS.md 且含 STEP 区块时，初始化不重复追加
+assert "[S-003-10] AGENTS.md STEP 区块幂等更新" bash -c "
+  set -e
+  tmpdir=\$(mktemp -d)
+  trap 'rm -rf "\$tmpdir"' EXIT
+  cd "\$tmpdir"
+  cat > AGENTS.md <<'EOF'
+# AGENTS
+
+<!-- STEP:BEGIN DOC-ROLES -->
+old content
+<!-- STEP:END DOC-ROLES -->
+EOF
+  bash '$SCRIPT_DIR/scripts/step-init.sh' >/dev/null 2>&1
+  [ \"\$(grep -c '<!-- STEP:BEGIN DOC-ROLES -->' AGENTS.md)\" -eq 1 ]
+  ! grep -q 'old content' AGENTS.md
+"
+
+# [S-003-11] 已有 AGENTS.md 无 STEP 区块时，初始化会追加区块
+assert "[S-003-11] AGENTS.md 无区块时追加 STEP 区块" bash -c "
+  set -e
+  tmpdir=\$(mktemp -d)
+  trap 'rm -rf "\$tmpdir"' EXIT
+  cd "\$tmpdir"
+  cat > AGENTS.md <<'EOF'
+# AGENTS
+
+custom rules
+EOF
+  bash '$SCRIPT_DIR/scripts/step-init.sh' >/dev/null 2>&1
+  grep -q 'custom rules' AGENTS.md
+  [ \"\$(grep -c '<!-- STEP:BEGIN DOC-ROLES -->' AGENTS.md)\" -eq 1 ]
+"
+
 echo ""
 echo "=== 结果: $PASS/$TOTAL passed, $FAIL failed ==="
 [ "$FAIL" -eq 0 ]

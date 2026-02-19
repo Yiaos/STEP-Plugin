@@ -7,6 +7,36 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
+DOCTOR_SCRIPT="${PLUGIN_ROOT}/scripts/step-manager.sh"
+DOCTOR_OUTPUT=""
+DOCTOR_EXIT_CODE=0
+DOCTOR_FIX_CMD=""
+WARNING_MSG=""
+
+if [ -f "$DOCTOR_SCRIPT" ]; then
+  set +e
+  DOCTOR_OUTPUT=$(bash "$DOCTOR_SCRIPT" doctor 2>&1)
+  DOCTOR_EXIT_CODE=$?
+  set -e
+
+  if [ "$DOCTOR_EXIT_CODE" -ne 0 ]; then
+    while IFS= read -r line; do
+      case "$line" in
+        修复建议:*)
+          DOCTOR_FIX_CMD="${line#修复建议: }"
+          break
+          ;;
+      esac
+    done <<< "$DOCTOR_OUTPUT"
+
+    if [ -z "$DOCTOR_FIX_CMD" ]; then
+      DOCTOR_FIX_CMD="bash \"${PLUGIN_ROOT}/install.sh\" --force"
+    fi
+
+    WARNING_MSG="⚠️ STEP 环境异常，可能导致流程漂移。请优先执行修复命令：${DOCTOR_FIX_CMD}\n\n[step-doctor 输出]\n${DOCTOR_OUTPUT}\n\n"
+  fi
+fi
+
 # 查找 .step/state.json
 STATE_FILE=""
 if [ -f ".step/state.json" ]; then
@@ -119,6 +149,7 @@ FINDINGS_ESC=$(escape_for_json "$FINDINGS_CONTENT")
 BASELINE_ESC=$(escape_for_json "$BASELINE_CONTENT")
 ROUTING_ESC=$(escape_for_json "$ROUTING_CONTENT")
 SKILL_ESC=$(escape_for_json "$SKILL_CONTENT")
+WARNING_ESC=$(escape_for_json "$WARNING_MSG")
 
 FINDINGS_SECTION_ESC=""
 if [ -n "$FINDINGS_CONTENT" ]; then
@@ -134,7 +165,7 @@ cat <<EOF
 {
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
-    "additionalContext": "<STEP_PROTOCOL>\nSTEP 协议已激活。\n\n## 核心规则\n${SKILL_ESC}\n\n## state.json\n${STATE_ESC}\n\n## 当前变更 spec\n${SPEC_ESC}${FINDINGS_SECTION_ESC}${TASK_SECTION_ESC}\n\n## Baseline\n${BASELINE_ESC}\n\n## Agent 路由表\n${ROUTING_ESC}\n\n## 恢复指令\n1. 根据 current_phase 和 routing 表选择对应 agent\n2. 输出状态行: 📍 Phase X | Change: {name} | Task | Status | Next\n3. 从 next_action 继续工作\n4. Phase 4 按 file_routing 的 patterns 决定用 @step-developer 或 @step-designer\n5. 对话结束必须更新 state.json\n</STEP_PROTOCOL>"
+    "additionalContext": "<STEP_PROTOCOL>\n${WARNING_ESC}STEP 协议已激活。\n\n## 核心规则\n${SKILL_ESC}\n\n## state.json\n${STATE_ESC}\n\n## 当前变更 spec\n${SPEC_ESC}${FINDINGS_SECTION_ESC}${TASK_SECTION_ESC}\n\n## Baseline\n${BASELINE_ESC}\n\n## Agent 路由表\n${ROUTING_ESC}\n\n## 恢复指令\n1. 根据 current_phase 和 routing 表选择对应 agent\n2. 输出状态行: 📍 Phase X | Change: {name} | Task | Status | Next\n3. 从 next_action 继续工作\n4. Phase 4 按 file_routing 的 patterns 决定用 @step-developer 或 @step-designer\n5. 对话结束必须更新 state.json\n</STEP_PROTOCOL>"
   }
 }
 EOF

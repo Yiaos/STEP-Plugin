@@ -291,15 +291,25 @@ function ensureEvidenceDir() {
   fs.mkdirSync(path.join(".step", "evidence"), { recursive: true })
 }
 
+function readEvidenceObject(evidencePath) {
+  if (!fs.existsSync(evidencePath)) return {}
+  try {
+    const obj = JSON.parse(fs.readFileSync(evidencePath, "utf-8"))
+    return isObject(obj) ? obj : {}
+  } catch {
+    return {}
+  }
+}
+
 function isoNow() {
   return new Date().toISOString().replace(/\.\d{3}Z$/, "Z")
 }
 
 function writeScenarioEvidence(taskSlug, change, taskFile, total, covered) {
   ensureEvidenceDir()
-  const evidencePath = path.join(".step", "evidence", `${taskSlug}-scenario.json`)
+  const evidencePath = path.join(".step", "evidence", `${taskSlug}-gate.json`)
   const cov = total > 0 ? Math.floor((covered * 100) / total) : 0
-  const payload = {
+  const scenario = {
     task_id: taskSlug,
     change,
     task_file: taskFile,
@@ -309,7 +319,13 @@ function writeScenarioEvidence(taskSlug, change, taskFile, total, covered) {
     coverage_pct: cov,
     passed: cov === 100,
   }
-  fs.writeFileSync(evidencePath, `${JSON.stringify(payload, null, 2)}\n`, "utf-8")
+  const existing = readEvidenceObject(evidencePath)
+  const merged = {
+    ...existing,
+    task_id: taskSlug,
+    scenario,
+  }
+  fs.writeFileSync(evidencePath, `${JSON.stringify(merged, null, 2)}\n`, "utf-8")
 }
 
 function checkScenarioCoverage(taskSlug, changeName) {
@@ -507,7 +523,10 @@ function getGateCommands(configPath) {
 
 function writeGateEvidence(taskSlug, level, pass, results, metadata) {
   ensureEvidenceDir()
+  const evidencePath = path.join(".step", "evidence", `${taskSlug}-gate.json`)
+  const existing = readEvidenceObject(evidencePath)
   const payload = {
+    ...existing,
     task_id: taskSlug,
     level,
     timestamp: isoNow(),
@@ -515,7 +534,6 @@ function writeGateEvidence(taskSlug, level, pass, results, metadata) {
     results,
     ...(metadata || {}),
   }
-  const evidencePath = path.join(".step", "evidence", `${taskSlug}-gate.json`)
   fs.writeFileSync(evidencePath, `${JSON.stringify(payload, null, 2)}\n`, "utf-8")
   info(`📄 Evidence saved: ${evidencePath}`)
 }
@@ -840,6 +858,9 @@ function main() {
     const rawVal = args.value
     if (!file || !dotPath || rawVal === undefined) {
       fail("state set 需要 --file --path --value")
+    }
+    if (dotPath === "current_phase") {
+      fail("禁止直接写 current_phase，请使用 scripts/step-manager.sh transition --to <phase>")
     }
     const state = readJson(file)
     const errors = validateState(state)

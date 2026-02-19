@@ -5,7 +5,6 @@
 # 用法:
 #   bash install.sh          # 安装（已存在则跳过）
 #   bash install.sh --force  # 强制覆盖安装
-#   bash install.sh --uninstall  # 卸载
 
 set -e
 
@@ -14,6 +13,7 @@ TARGET_DIR="${HOME}/.config/opencode/tools/step"
 COMMANDS_LINK="${HOME}/.config/opencode/commands/step"
 SKILLS_LINK="${HOME}/.config/opencode/skills/step"
 HOOKS_LINK="${HOME}/.config/opencode/hooks/step"
+AGENTS_LINK="${HOME}/.config/opencode/agents/step"
 
 # 颜色
 RED='\033[0;31m'
@@ -27,21 +27,10 @@ usage() {
   echo "Usage:"
   echo "  bash install.sh            Install (skip if exists)"
   echo "  bash install.sh --force    Force reinstall"
-  echo "  bash install.sh --uninstall  Remove STEP plugin"
   echo ""
-}
-
-uninstall() {
-  echo -e "${YELLOW}🗑  Uninstalling STEP plugin...${NC}"
-  rm -f "$COMMANDS_LINK" && echo "  Removed commands symlink"
-  rm -f "$SKILLS_LINK" && echo "  Removed skills symlink"
-  rm -f "$HOOKS_LINK" && echo "  Removed hooks symlink"
-  rm -rf "$TARGET_DIR" && echo "  Removed $TARGET_DIR"
-  echo -e "${GREEN}✅ STEP plugin uninstalled${NC}"
+  echo "Uninstall:"
+  echo "  bash uninstall.sh          Remove STEP plugin"
   echo ""
-  echo "Note: Project-level .step/ directories are NOT removed."
-  echo "      Remove them manually if needed: rm -rf /path/to/project/.step"
-  exit 0
 }
 
 install() {
@@ -67,6 +56,7 @@ install() {
   mkdir -p "${HOME}/.config/opencode/commands"
   mkdir -p "${HOME}/.config/opencode/skills"
   mkdir -p "${HOME}/.config/opencode/hooks"
+  mkdir -p "${HOME}/.config/opencode/agents"
 
   # 清理旧安装
   if [ -d "$TARGET_DIR" ]; then
@@ -84,6 +74,7 @@ install() {
   cp -R "${SCRIPT_DIR}/templates" "$TARGET_DIR/"
   cp -R "${SCRIPT_DIR}/agents" "$TARGET_DIR/"
   [ -f "${SCRIPT_DIR}/WORKFLOW.md" ] && cp "${SCRIPT_DIR}/WORKFLOW.md" "$TARGET_DIR/"
+  [ -f "${SCRIPT_DIR}/install.sh" ] && cp "${SCRIPT_DIR}/install.sh" "$TARGET_DIR/"
   [ -f "${SCRIPT_DIR}/uninstall.sh" ] && cp "${SCRIPT_DIR}/uninstall.sh" "$TARGET_DIR/"
   echo "  Copied plugin files to $TARGET_DIR"
 
@@ -95,12 +86,18 @@ install() {
   chmod +x "$TARGET_DIR/scripts/step-init.sh"
   chmod +x "$TARGET_DIR/scripts/step-stop-check.sh"
   chmod +x "$TARGET_DIR/scripts/step-archive.sh"
+  chmod +x "$TARGET_DIR/scripts/step-doctor.sh"
+  chmod +x "$TARGET_DIR/scripts/step-manager.sh"
+  chmod +x "$TARGET_DIR/scripts/step-pretool-guard.sh"
+  [ -f "$TARGET_DIR/install.sh" ] && chmod +x "$TARGET_DIR/install.sh"
+  [ -f "$TARGET_DIR/uninstall.sh" ] && chmod +x "$TARGET_DIR/uninstall.sh"
   echo "  Set executable permissions"
 
   # 创建 symlinks
   ln -sfn "$TARGET_DIR/commands" "$COMMANDS_LINK"
   ln -sfn "$TARGET_DIR/skills" "$SKILLS_LINK"
   ln -sfn "$TARGET_DIR/hooks" "$HOOKS_LINK"
+  ln -sfn "$TARGET_DIR/agents" "$AGENTS_LINK"
   echo "  Created symlinks"
 
   echo ""
@@ -110,6 +107,7 @@ install() {
   echo "  Commands: $COMMANDS_LINK → $TARGET_DIR/commands"
   echo "  Skills:   $SKILLS_LINK → $TARGET_DIR/skills"
   echo "  Hooks:    $HOOKS_LINK → $TARGET_DIR/hooks"
+  echo "  Agents:   $AGENTS_LINK → $TARGET_DIR/agents"
   echo ""
   echo "  Usage: In any project, run /step to initialize the STEP protocol."
   echo ""
@@ -142,9 +140,6 @@ case "${1:-}" in
   --help|-h)
     usage
     exit 0
-    ;;
-  --uninstall)
-    uninstall
     ;;
   --force)
     install "true"

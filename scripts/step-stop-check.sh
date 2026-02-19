@@ -104,13 +104,15 @@ fi
 if [ "$ISSUES" -eq 0 ]; then
   echo "[STEP STOP CHECK] PASS: state.json 已更新"
   exit 0
-elif [ "$ISSUES" -ge 2 ]; then
-  echo "[STEP STOP CHECK] FAIL: last_updated 和 progress_log 都需要更新"
+else
   if [ "$STRICT_MODE" = "true" ]; then
+    if [ "$ISSUES" -ge 2 ]; then
+      echo "[STEP STOP CHECK] FAIL: last_updated 和 progress_log 都需要更新"
+    else
+      echo "[STEP STOP CHECK] FAIL(strict): 检测到 1 个未更新项"
+    fi
     exit 1
   fi
-  exit 0
-else
-  # 1 个 WARN 已经输出了
+  # 非严格模式：保留 WARN，不阻断结束
   exit 0
 fi

@@ -63,7 +63,8 @@
 - [x] Gate 失败分级处理（根因分析 → 3 轮上限 → blocked）
 
 ### 插件基础设施
-- [x] install.sh — 安装/卸载/强制重装
+- [x] install.sh — 安装/强制重装
+- [x] uninstall.sh — 卸载（插件或项目）
 - [x] step-init.sh — 项目初始化 + 16 种包管理器检测
 - [x] /step 命令 — 初始化或恢复 session
 - [x] /archive 命令 — 变更归档
