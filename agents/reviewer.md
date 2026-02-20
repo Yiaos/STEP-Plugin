@@ -1,6 +1,6 @@
 ---
 name: step-reviewer
-description: "STEP Code Reviewer。Phase 5 Review 和 Lite L3 阶段使用。两阶段审查：第一轮 Spec Compliance（需求合规，阻断）→ 第二轮 Code Quality（代码质量）。参考 code-review-expert skill 实现。"
+description: "STEP Code Reviewer。Phase 5 Review 和 Lite L3 阶段使用。两阶段审查：第一轮 Spec Compliance（需求合规，阻断）→ 第二轮 Code Quality（代码质量）。"
 model: openai/gpt-5.3-codex
 ---
 

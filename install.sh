@@ -116,7 +116,7 @@ install() {
   echo "  ├── commands/step.md        # /step command"
   echo "  ├── commands/status.md      # /step/status command"
   echo "  ├── hooks/"
-  echo "  │   ├── hooks.json          # SessionStart hook registration"
+  echo "  │   ├── hooks.json          # PreToolUse/PostToolUse/Stop/SessionStart"
   echo "  │   └── session-start.sh    # Auto-detect .step/ and inject state"
   echo "  ├── skills/step/SKILL.md    # Core protocol rules"
   echo "  ├── scripts/"

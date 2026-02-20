@@ -165,7 +165,7 @@ assert "[S-007-07] 归档当前变更会清空 current_change" bash -c "
 \`\`\`
 TASK
   cat > .step/state.json <<'INNER'
-{\"project\":\"demo\",\"current_phase\":\"phase-4-execution\",\"current_change\":\"init\",\"last_updated\":\"2026-02-16\",\"last_agent\":\"tester\",\"last_session_summary\":\"\",\"established_patterns\":{},\"tasks\":{\"current\":\"t1\",\"upcoming\":[]},\"key_decisions\":[],\"known_issues\":[],\"constraints_quick_ref\":[],\"progress_log\":[]}
+{\"project\":\"demo\",\"current_phase\":\"phase-4-execution\",\"current_change\":\"init\",\"last_updated\":\"2026-02-16\",\"last_agent\":\"tester\",\"last_session_summary\":\"\",\"session\":{\"mode\":\"full\"},\"established_patterns\":{},\"tasks\":{\"current\":\"t1\",\"upcoming\":[]},\"key_decisions\":[],\"known_issues\":[],\"constraints_quick_ref\":[],\"progress_log\":[]}
 INNER
   bash '$SCRIPT_DIR/scripts/step-archive.sh' init >/dev/null 2>&1
   grep -q 'current_change' .step/state.json

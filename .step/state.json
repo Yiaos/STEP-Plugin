@@ -6,6 +6,9 @@
   "last_updated": "2026-02-19T13:20:00Z",
   "last_agent": "orchestrator",
   "last_session_summary": "Full rebuild: baseline snapshot, decisions reduced to four core ADRs, and state synced.",
+  "session": {
+    "mode": "full"
+  },
   "established_patterns": {
     "hook_mechanism": "SKILL.md frontmatter -> PreToolUse/PostToolUse/Stop",
     "attention_injection": "cat state.json | head -25 -> inject behavior rules and state data",
@@ -40,6 +43,18 @@
     "state format backward compatibility"
   ],
   "progress_log": [
+    {
+      "date": "2026-02-20",
+      "task": "findings-two-action-rule",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "incremental",
+      "gate_scope": "all",
+      "gate_at": "2026-02-20T00:31:14Z",
+      "failed_action": ""
+    },
     {
       "date": "2026-02-19",
       "task": "findings-two-action-rule",

@@ -62,7 +62,7 @@ description: "初始化或恢复 STEP 协议（Stateful Task Execution Protocol�
 
 - 若检查结果为 PASS：继续进入对应阶段
 - 若检查结果为 FAIL：立即停止进入流程，先按脚本输出的修复命令完成修复（例如 `bash ~/.config/opencode/tools/step/install.sh --force`）
-- 若未 enter：PreToolUse 会阻断 Write/Edit/Bash，防止在 `idle` 误执行
+- 若未 enter：PreToolUse 会先自动 enter（默认 full），再按当前 phase 校验 Write/Edit/Bash/Task；不会在 `idle` 直接放行实现命令
 
 ## 全阶段规则
 

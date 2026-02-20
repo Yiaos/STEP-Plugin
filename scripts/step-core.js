@@ -98,6 +98,7 @@ function validateState(state) {
     "last_updated",
     "last_agent",
     "last_session_summary",
+    "session",
     "established_patterns",
     "tasks",
     "key_decisions",
@@ -125,6 +126,15 @@ function validateState(state) {
       if (!("upcoming" in state.tasks) || !Array.isArray(state.tasks.upcoming)) {
         errors.push("tasks.upcoming 必须是数组")
       }
+    }
+  }
+  if (!("session" in state) || !isObject(state.session)) {
+    errors.push("session 必须是对象")
+  } else {
+    if (!("mode" in state.session) || typeof state.session.mode !== "string") {
+      errors.push("session.mode 必须是字符串")
+    } else if (!["full", "lite", "quick"].includes(state.session.mode)) {
+      errors.push("session.mode 必须是 full/lite/quick")
     }
   }
   return errors
@@ -179,6 +189,44 @@ function validateConfig(config) {
     }
     if ("dangerous_executables" in config.gate && !Array.isArray(config.gate.dangerous_executables)) {
       errors.push("gate.dangerous_executables 必须是数组")
+    }
+  }
+
+  if ("worktree" in config) {
+    if (!isObject(config.worktree)) {
+      errors.push("worktree 必须是对象")
+    } else {
+      if ("enabled" in config.worktree && typeof config.worktree.enabled !== "boolean") {
+        errors.push("worktree.enabled 必须是布尔值")
+      }
+      if ("branch_prefix" in config.worktree && typeof config.worktree.branch_prefix !== "string") {
+        errors.push("worktree.branch_prefix 必须是字符串")
+      }
+    }
+  }
+
+  if ("enforcement" in config) {
+    if (!isObject(config.enforcement)) {
+      errors.push("enforcement 必须是对象")
+    } else {
+      const pairs = [
+        ["require_dispatch", "enforcement.require_dispatch"],
+        ["planning_phase_write_lock", "enforcement.planning_phase_write_lock"],
+      ]
+      for (const [key, label] of pairs) {
+        if (key in config.enforcement) {
+          const obj = config.enforcement[key]
+          if (!isObject(obj)) {
+            errors.push(`${label} 必须是对象`)
+            continue
+          }
+          for (const mode of ["full", "lite"]) {
+            if (mode in obj && typeof obj[mode] !== "boolean") {
+              errors.push(`${label}.${mode} 必须是布尔值`)
+            }
+          }
+        }
+      }
     }
   }
   return errors

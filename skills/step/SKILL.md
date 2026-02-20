@@ -3,10 +3,10 @@ name: step
 description: "STEP Protocol — Stateful Task Execution Protocol. 全生命周期开发协议，通过状态机、质量门禁和 Session 恢复保证 AI 编码代理的交付质量。"
 hooks:
   PreToolUse:
-    - matcher: "Write|Edit|Bash"
+    - matcher: "Write|Edit|Bash|Task"
       hooks:
         - type: command
-          command: "bash scripts/step-pretool-guard.sh && (cat .step/state.json 2>/dev/null | head -25 || true)"
+          command: "STEP_AUTO_ENTER=true STEP_AUTO_ENTER_MODE=full bash scripts/step-pretool-guard.sh && (cat .step/state.json 2>/dev/null | head -25 || true)"
   PostToolUse:
     - matcher: "Write|Edit"
       hooks:
@@ -99,6 +99,7 @@ Step 6: 更新 state.json + baseline.md 对应项 [ ] → [x] → 进入下一�
 9. **Evidence 必须保存**: gate 证据保存到 `.step/changes/{change}/evidence/{slug}-gate.json`；review 记录保存到 `.step/changes/{change}/evidence/{slug}-review.md`
 10. **验证铁律**: <HARD-GATE>声称"测试通过"/"gate 通过"/"Review 通过"前，必须在本条消息中展示实际运行输出。没有新鲜证据的通过声明等于撒谎。</HARD-GATE>
 11. **Gate 安全约束**: gate 命令执行前必须通过危险命令黑名单校验（`gate.dangerous_executables`）
+12. **分模式执行约束**: `full` 模式在 phase-1/2/3 启用写锁并强制 Task 委派；`lite/quick` 默认不强制 PM/Architect（由 `config.enforcement` 控制）
 
 ## Gate 失败处理
 
@@ -160,7 +161,9 @@ Lite mode 跳过此检查点。
 1. **gate.sh / scenario-check.sh** — 脚本执行结果是确定性的，跑了就准
 2. **Subagent 模型绑定** — `agents/*.md` frontmatter 默认模型 + oh-my-opencode preset 覆盖，subagent 启动时模型确定
 3. **SessionStart Hook 注入** — 有 `.step/` 目录就一定注入状态到上下文
-4. **文件模板结构** — step-init.sh 创建的文件结构是确定性的
+4. **PreToolUse Guard** — `step-pretool-guard.sh` 在调用前执行 phase/action/dispatch 校验
+5. **分模式写锁与委派** — `config.enforcement` + `step-manager assert-dispatch` 在 `full` 模式强制生效
+6. **文件模板结构** — step-init.sh 创建的文件结构是确定性的
 
 ### 软保证（prompt 层面，依赖 LLM 遵守）
 1. Phase 流转顺序 — LLM 可能跳过阶段

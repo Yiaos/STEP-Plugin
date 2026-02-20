@@ -39,7 +39,7 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义文件（`STEP/ag
 | PM（产品经理）        | `agents/pm.md`        | claude-opus | Phase 0 Discovery, Phase 1 PRD                      | 用户视角、需求优先级、验收标准                      |
 | Architect（架构师）   | `agents/architect.md` | claude-opus | Phase 2 Tech Design, Phase 3 Plan                   | 技术权衡、系统设计、任务拆分                        |
 | QA（质量工程师）      | `agents/qa.md`        | claude-opus | Phase 3 场景补充, Phase 4 Gate 分析, Phase 5 Review | 对抗性测试思维、根因分析、需求合规                  |
-| Reviewer（代码审查）  | `agents/reviewer.md`  | codex       | Phase 5 Review, Lite L3                             | 需求合规审查、代码质量评估、参考 code-review-expert |
+| Reviewer（代码审查）  | `agents/reviewer.md`  | codex       | Phase 5 Review, Lite L3                             | 需求合规审查、代码质量评估                           |
 | Deployer（部署策略）  | `agents/deployer.md`  | claude-opus | Review 后（可选）                                   | 平台选型、CI/CD、环境清单、风险评估                 |
 | Developer（开发者）   | `agents/developer.md` | codex       | Phase 4 Execution（后端）                           | TDD 实现、遵循 patterns、不越界                     |
 | Designer（UX 设计师） | `agents/designer.md`  | gemini      | Phase 2 UI 设计, Phase 4 Execution（前端）          | 配色、布局、交互设计、UI 代码                       |
@@ -423,9 +423,24 @@ Phase 4 执行时，编排器按 `.step/config.json` 的路由表选择 agent：
   "worktree": {
     "enabled": false,
     "branch_prefix": "change/"
+  },
+  "enforcement": {
+    "require_dispatch": {
+      "full": true,
+      "lite": false
+    },
+    "planning_phase_write_lock": {
+      "full": true,
+      "lite": false
+    }
   }
 }
 ```
+
+`enforcement` 说明：
+- `require_dispatch.full=true`：Full 模式在规划阶段强制 Task 委派到路由 agent。
+- `planning_phase_write_lock.full=true`：Full 模式在 phase-1/2/3 对主会话 Write/Edit 加写锁。
+- `lite/quick` 默认不强制 PM/Architect 委派，保持快速交付路径。
 
 ### 执行循环
 
@@ -659,7 +674,7 @@ Review 分两轮执行。第一轮不通过则阻断，**不进入第二轮**。
    □ 边界条件：null/undefined、空集合、数值边界、off-by-one
 ```
 
-**严重程度分级（参考 code-review-expert）：**
+**严重程度分级：**
 
 | 级别 | 名称     | 描述                                | 行动           |
 | ---- | -------- | ----------------------------------- | -------------- |
@@ -702,7 +717,7 @@ Review 分两轮执行。第一轮不通过则阻断，**不进入第二轮**。
 
 ### Review Agent
 
-Phase 5 Review 由 `@step-reviewer` 执行（参考 code-review-expert skill 实现）。
+Phase 5 Review 由 `@step-reviewer` 执行。
 审查优先级：需求合规（P0 阻断） > 代码质量（P1-P3）。
 
 ---
@@ -1157,6 +1172,8 @@ Session 开始
 | ----------------- | ---------------------------- | ----------------------------------------------------------- |
 | gate.sh           | lint/typecheck/test 结果准确 | 真实执行命令，退出码决定 pass/fail                          |
 | scenario-check.sh | 场景 ID 覆盖率准确           | grep 硬匹配，不依赖 LLM 判断                                |
+| PreToolUse Guard  | Full 模式规划阶段写锁与命令限制 | step-pretool-guard + step-manager assert-phase/check-action |
+| Dispatch Guard    | Full 模式 phase->agent 派发约束 | step-manager assert-dispatch + config.enforcement           |
 | Subagent 模型绑定 | 不同角色用不同模型           | agents/*.md frontmatter 默认值 + oh-my-opencode preset 覆盖 |
 | SessionStart Hook | 有 .step/ 就注入状态         | bash 脚本，确定性执行                                       |
 | step-init.sh      | 文件结构正确                 | 从 templates/ 复制，确定性                                  |
@@ -1476,7 +1493,7 @@ mv .step/changes/init/ .step/archive/2026-02-15-init/
 | 3   | 场景规则是 BDD                               | 场景 = BDD Given/When/Then = 行为规格。测试类型由 test_type 字段指定                        |
 | 4   | 用 hook 保证规则生效                         | 新增 SessionStart hook（自动注入 state.json 到上下文）+ `/step` 命令                        |
 | 5   | 统一使用 opencode，删除 tool                 | config.json 改为 routing（agent 路由）+ file_routing（文件分流）+ gate（命令）              |
-| 6   | review 模型可选，规则参考 code-review-expert | 创建 step-reviewer agent，参考 code-review-expert 实现。需求合规为第一优先级                |
+| 6   | review 模型可选，规则可独立演进              | 创建 step-reviewer agent，需求合规为第一优先级                                              |
 | 7   | gate 失败如何处理                            | 新增"Gate 失败处理流程"：Opus/Codex xhigh 先分析根因 → 分类修复最多 3 轮 → 仍失败标 blocked |
 | 8   | 初始化做成 /step 命令                        | 创建 `commands/step/step.md`，检测 .step/ 是否存在：不存在则初始化，存在则恢复              |
 | 9   | 测试代码模型可配置                           | routing.test_writing 配置测试编写 agent（默认 @step-qa），与实现 agent 不同形成对抗性       |

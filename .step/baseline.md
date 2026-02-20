@@ -31,17 +31,17 @@
 ### 质量门禁（可执行脚本）
 - [x] gate.sh — lint / typecheck / test / build，三级：quick / standard / full
 - [x] scenario-check.sh — BDD 场景 ID 硬匹配，100% 覆盖验证
-- [x] step-stop-check.sh — 会话结束前检查 state.yaml 更新状态
+- [x] step-stop-check.sh — 会话结束前检查 state.json 更新状态
 
 ### 注意力管理
-- [x] PreToolUse hook — state.yaml 头部嵌入行为规则，cat | head -25 同时注入规则和数据
+- [x] PreToolUse hook — state.json 头部嵌入行为规则，cat | head -25 同时注入规则和数据
 - [x] PostToolUse hook — 每次 Write/Edit 后提醒检查状态变化
 - [x] Stop hook — 脚本检查 last_updated / progress_log（pass/warn/fail）
 - [x] SKILL.md 注意力规则 — Pre-decision Read + 三层 Hook 注入 + HARD-GATE 标签 + 验证铁律
 - [x] SessionStart hook — 自动检测 .step/ 并注入完整上下文（state + task + baseline + config + SKILL）
 
 ### 会话恢复
-- [x] state.yaml 状态机 — current_phase / progress_log / next_action / key_decisions
+- [x] state.json 状态机 — current_phase / progress_log / next_action / key_decisions
 - [x] SessionStart hook 自动注入 — 有 .step/ 就注入，无需用户手动恢复
 
 ### 执行模式
@@ -68,8 +68,8 @@
 - [x] step-init.sh — 项目初始化 + 16 种包管理器检测
 - [x] /step 命令 — 初始化或恢复 session
 - [x] /archive 命令 — 变更归档
-- [x] config.yaml — Agent 路由 + 文件路由 + Gate 命令配置
-- [x] 模板体系 — state.yaml / baseline.md / decisions.md / findings.md / spec.md / design.md / task.yaml / lite-task.yaml / config.yaml
+- [x] config.json — Agent 路由 + 文件路由 + Gate 命令配置
+- [x] 模板体系 — state.json / baseline.md / decisions.md / findings.md / spec.md / design.md / task.md / lite-task.md / config.json
 - [x] 统一变更结构 — changes/{change}/（spec.md + design.md + tasks/），初始开发和后续变更结构统一
 
 ### 文档
@@ -79,14 +79,14 @@
 
 ## Constraints（不可违反约束）
 - C-1: 所有脚本兼容 macOS (bash 3.2+) 和 Linux (bash 4+)
-- C-2: state.yaml 模板向后兼容（新字段有默认值）
+- C-2: state.json 模板向后兼容（新字段有默认值）
 - C-3: install.sh 必须能正确安装所有文件
-- C-4: test_writing model 通过 config.yaml 配置，不硬编码
+- C-4: test_writing model 通过 config.json 配置，不硬编码
 - C-5: baseline 变更通过新建变更（changes/），方向性变更走 Phase 0-1
 
 ## 架构决策（ADR 索引）
 - ADR-005: Baseline 语义 — 活快照
-- ADR-001: state.yaml 头部嵌入行为规则
+- ADR-001: state.json 头部嵌入行为规则
 - ADR-002: Stop hook 改为独立脚本
 - ADR-003/004: 移除 research/ 目录和 session-catchup
 

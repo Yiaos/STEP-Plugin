@@ -282,9 +282,23 @@ scripts/
   "worktree": {
     "enabled": false,
     "branch_prefix": "change/"
+  },
+  "enforcement": {
+    "require_dispatch": {
+      "full": true,
+      "lite": false
+    },
+    "planning_phase_write_lock": {
+      "full": true,
+      "lite": false
+    }
   }
 }
 ```
+
+`enforcement` 用于模式化约束：
+- `full`：Phase 1-3 默认启用写锁，要求先通过 Task 委派到路由 agent（PM/Architect）。
+- `lite/quick`：默认不强制 PM/Architect 委派，保留快速路径，但仍受 gate/review 约束。
 
 ### Worktree 模式
 
@@ -349,6 +363,7 @@ Quick 模式用于小改动：`/step quick`，由模型判断是否适用；执�
 | BDD 覆盖 | ✅ 100% | ✅ 100% |
 | Code Review | ✅ 完整 | ✅ 完整 |
 | Gate | lite / full | lite |
+| PM/Architect 强制委派 | ✅ | ❌（按需升级） |
 | 确认轮数 | 多次 | 一次 |
 | 预计时间 | 65-110 min | 10-15 min |
 

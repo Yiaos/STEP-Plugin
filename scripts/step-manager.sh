@@ -20,6 +20,7 @@ Usage:
   scripts/step-manager.sh phase-gate --from <phase> --to <phase>
   scripts/step-manager.sh transition --to <phase>
   scripts/step-manager.sh assert-phase --tool <ToolName> [--command "..."]
+  scripts/step-manager.sh assert-dispatch --tool Task --agent <subagent-type>
   scripts/step-manager.sh status-line
   scripts/step-manager.sh check-action --tool <ToolName> [--command "..."]
 EOF
@@ -62,6 +63,86 @@ if (cur === undefined || cur === null) process.stdout.write("")
 else if (typeof cur === "object") process.stdout.write(JSON.stringify(cur))
 else process.stdout.write(String(cur))
 ' "$STATE_FILE" "$path"
+}
+
+get_config_field() {
+  local path="$1"
+  if [ ! -f "$CONFIG_FILE" ]; then
+    printf ''
+    return 0
+  fi
+  node -e '
+const fs = require("fs")
+const file = process.argv[1]
+const dotPath = process.argv[2]
+let cfg
+try {
+  cfg = JSON.parse(fs.readFileSync(file, "utf-8"))
+} catch {
+  process.stdout.write("")
+  process.exit(0)
+}
+let cur = cfg
+for (const p of dotPath.split(".")) {
+  if (cur && Object.prototype.hasOwnProperty.call(cur, p)) cur = cur[p]
+  else { cur = undefined; break }
+}
+if (cur === undefined || cur === null) process.stdout.write("")
+else if (typeof cur === "object") process.stdout.write(JSON.stringify(cur))
+else process.stdout.write(String(cur))
+' "$CONFIG_FILE" "$path"
+}
+
+get_config_bool() {
+  local path="$1"
+  local fallback="$2"
+  local raw
+  raw=$(get_config_field "$path")
+  case "$raw" in
+    true|false)
+      echo "$raw"
+      ;;
+    *)
+      echo "$fallback"
+      ;;
+  esac
+}
+
+get_mode_from_phase() {
+  local phase="$1"
+  case "$phase" in
+    lite-l1-quick-spec|lite-l2-execution|lite-l3-review)
+      echo "lite"
+      ;;
+    *)
+      echo "full"
+      ;;
+  esac
+}
+
+current_mode() {
+  local mode
+  mode=$(get_state_field "session.mode")
+  case "$mode" in
+    quick|lite|full)
+      echo "$mode"
+      ;;
+    *)
+      get_mode_from_phase "$(get_state_field "current_phase")"
+      ;;
+  esac
+}
+
+mode_family() {
+  local mode="$1"
+  case "$mode" in
+    quick|lite)
+      echo "lite"
+      ;;
+    *)
+      echo "full"
+      ;;
+  esac
 }
 
 set_state_fields() {
@@ -117,6 +198,16 @@ is_phase_allowed_for_tool() {
           ;;
       esac
       ;;
+    Task)
+      case "$phase" in
+        idle)
+          return 1
+          ;;
+        *)
+          return 0
+          ;;
+      esac
+      ;;
     *)
       return 0
       ;;
@@ -133,6 +224,104 @@ is_command_allowed_when_idle() {
     return 0
   fi
   return 1
+}
+
+is_control_command() {
+  local command="$1"
+  [ -z "$command" ] && return 0
+  if [[ "$command" == *"step-manager.sh doctor"* ]] || \
+     [[ "$command" == *"step-manager.sh enter"* ]] || \
+     [[ "$command" == *"step-manager.sh transition"* ]] || \
+     [[ "$command" == *"step-manager.sh phase-gate"* ]] || \
+     [[ "$command" == *"step-manager.sh status-line"* ]] || \
+     [[ "$command" == *"step-manager.sh assert-phase"* ]] || \
+     [[ "$command" == *"step-manager.sh check-action"* ]]; then
+    return 0
+  fi
+  return 1
+}
+
+is_readonly_bash_in_planning_phase() {
+  local command="$1"
+  [ -z "$command" ] && return 1
+  if [[ "$command" =~ ^[[:space:]]*(ls|pwd)([[:space:]].*)?$ ]]; then
+    return 0
+  fi
+  if [[ "$command" =~ ^[[:space:]]*git[[:space:]]+(status|diff|log)([[:space:]].*)?$ ]]; then
+    return 0
+  fi
+  return 1
+}
+
+is_bash_command_allowed_in_phase() {
+  local phase="$1"
+  local command="$2"
+
+  if is_control_command "$command"; then
+    return 0
+  fi
+
+  case "$phase" in
+    phase-0-discovery|phase-1-prd|phase-2-tech-design|phase-3-planning|lite-l1-quick-spec)
+      if is_readonly_bash_in_planning_phase "$command"; then
+        return 0
+      fi
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
+is_planning_phase() {
+  local phase="$1"
+  case "$phase" in
+    phase-1-prd|phase-2-tech-design|phase-3-planning)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+enforce_write_lock_for_mode() {
+  local mode="$1"
+  local family
+  family=$(mode_family "$mode")
+  get_config_bool "enforcement.planning_phase_write_lock.${family}" "$([ "$family" = "full" ] && echo true || echo false)"
+}
+
+require_dispatch_for_mode() {
+  local mode="$1"
+  local family
+  family=$(mode_family "$mode")
+  get_config_bool "enforcement.require_dispatch.${family}" "$([ "$family" = "full" ] && echo true || echo false)"
+}
+
+expected_dispatch_agent_for_phase() {
+  local phase="$1"
+  case "$phase" in
+    phase-0-discovery)
+      get_config_field "routing.discovery.agent"
+      ;;
+    phase-1-prd)
+      get_config_field "routing.prd.agent"
+      ;;
+    lite-l1-quick-spec)
+      get_config_field "routing.lite_spec.agent"
+      ;;
+    phase-2-tech-design)
+      get_config_field "routing.tech_design.agent"
+      ;;
+    phase-3-planning)
+      get_config_field "routing.planning.agent"
+      ;;
+    *)
+      printf ''
+      ;;
+  esac
 }
 
 can_transition() {
@@ -447,7 +636,7 @@ enter() {
 
   local now
   now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  local pairs=("current_phase=$phase" "last_updated=$now")
+  local pairs=("current_phase=$phase" "session.mode=$mode" "last_updated=$now")
   if [ -n "$change" ]; then
     pairs+=("current_change=$change")
   fi
@@ -575,6 +764,63 @@ assert_phase() {
     echo "❌ 当前 phase=$phase 不允许工具=$tool"
     return 1
   fi
+
+  if [ "$tool" = "Bash" ] && ! is_bash_command_allowed_in_phase "$phase" "$command"; then
+    echo "❌ 当前 phase=$phase 仅允许流程控制或只读命令，禁止直接执行实现/构建命令"
+    return 1
+  fi
+
+  local mode lock_enabled
+  mode=$(current_mode)
+  lock_enabled=$(enforce_write_lock_for_mode "$mode")
+  if [ "$lock_enabled" = "true" ] && [[ "$tool" = "Write" || "$tool" = "Edit" ]] && is_planning_phase "$phase"; then
+    echo "❌ 当前 mode=$mode phase=$phase 已启用写锁：请先通过 Task 委派给对应 agent"
+    return 1
+  fi
+
+  return 0
+}
+
+assert_dispatch() {
+  require_state_file
+  local tool=""
+  local agent=""
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --tool)
+        tool="${2:-}"
+        shift 2
+        ;;
+      --agent)
+        agent="${2:-}"
+        shift 2
+        ;;
+      *)
+        echo "❌ Unknown option: $1"
+        return 2
+        ;;
+    esac
+  done
+
+  [ "$tool" = "Task" ] || return 0
+  [ -n "$agent" ] || {
+    echo "❌ assert-dispatch 需要 --agent"
+    return 2
+  }
+
+  local mode phase required expected
+  mode=$(current_mode)
+  phase=$(get_state_field "current_phase")
+  required=$(require_dispatch_for_mode "$mode")
+  [ "$required" = "true" ] || return 0
+
+  expected=$(expected_dispatch_agent_for_phase "$phase")
+  [ -z "$expected" ] && return 0
+
+  if [ "$agent" != "$expected" ]; then
+    echo "❌ 当前 mode=$mode phase=$phase 必须委派给 $expected, 收到 $agent"
+    return 1
+  fi
   return 0
 }
 
@@ -635,6 +881,10 @@ main() {
     assert-phase)
       shift
       assert_phase "$@"
+      ;;
+    assert-dispatch)
+      shift
+      assert_dispatch "$@"
       ;;
     status-line)
       shift

@@ -1,5 +1,37 @@
 {
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|Bash|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "STEP_AUTO_ENTER=true STEP_AUTO_ENTER_MODE=full bash ${CLAUDE_PLUGIN_ROOT}/scripts/step-pretool-guard.sh && (cat .step/state.json 2>/dev/null | head -25 || true)"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[STEP] 文件已修改。如有阶段变化或重大决策，更新 .step/state.json 的 progress_log 和 key_decisions。'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/step-stop-check.sh 2>/dev/null"
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "matcher": "startup|resume|clear|compact",

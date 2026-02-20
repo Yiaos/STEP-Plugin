@@ -39,5 +39,15 @@
   "worktree": {
     "enabled": false,
     "branch_prefix": "change/"
+  },
+  "enforcement": {
+    "require_dispatch": {
+      "full": true,
+      "lite": false
+    },
+    "planning_phase_write_lock": {
+      "full": true,
+      "lite": false
+    }
   }
 }

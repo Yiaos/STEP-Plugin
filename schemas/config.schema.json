@@ -13,7 +13,37 @@
         "lint": { "type": "string" },
         "typecheck": { "type": "string" },
         "test": { "type": "string" },
-        "build": { "type": "string" }
+        "build": { "type": "string" },
+        "dangerous_executables": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "worktree": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "branch_prefix": { "type": "string" }
+      }
+    },
+    "enforcement": {
+      "type": "object",
+      "properties": {
+        "require_dispatch": {
+          "type": "object",
+          "properties": {
+            "full": { "type": "boolean" },
+            "lite": { "type": "boolean" }
+          }
+        },
+        "planning_phase_write_lock": {
+          "type": "object",
+          "properties": {
+            "full": { "type": "boolean" },
+            "lite": { "type": "boolean" }
+          }
+        }
       }
     }
   }

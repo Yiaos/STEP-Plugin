@@ -9,6 +9,7 @@
     "last_updated",
     "last_agent",
     "last_session_summary",
+    "session",
     "established_patterns",
     "tasks",
     "key_decisions",
@@ -23,6 +24,16 @@
     "last_updated": { "type": "string" },
     "last_agent": { "type": "string" },
     "last_session_summary": { "type": "string" },
+    "session": {
+      "type": "object",
+      "required": ["mode"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["full", "lite", "quick"]
+        }
+      }
+    },
     "established_patterns": { "type": "object" },
     "tasks": {
       "type": "object",

@@ -2,6 +2,7 @@
 # T-004 测试：SKILL.md 执行规则增强（Pre-decision Read + Hook 注入）
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
 SKILL="$SCRIPT_DIR/skills/step/SKILL.md"
+HOOKS="$SCRIPT_DIR/hooks/hooks.json"
 PASS=0; FAIL=0; TOTAL=0
 
 assert() {
@@ -59,6 +60,13 @@ assert "[S-004-06] 安装后 SKILL.md 内容一致" bash -c "
     diff -q '$SKILL' \"\$installed\" >/dev/null 2>&1 || echo 'WARN: not synced (expected before reinstall)'
   fi
   true
+"
+
+# [S-004-07] PreToolUse auto-enter 默认 full
+assert "[S-004-07] PreToolUse auto-enter 默认 full" bash -c "
+  set -e
+  grep -q 'STEP_AUTO_ENTER_MODE=full' '$SKILL'
+  grep -q 'STEP_AUTO_ENTER_MODE=full' '$HOOKS'
 "
 
 echo ""
