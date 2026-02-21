@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "STEP_AUTO_ENTER=true STEP_AUTO_ENTER_MODE=full bash ${CLAUDE_PLUGIN_ROOT}/scripts/step-pretool-guard.sh && (cat .step/state.json 2>/dev/null | head -25 || true)"
+            "command": "OPENCODE_PLUGIN_ROOT=${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}; STEP_AUTO_ENTER=true STEP_AUTO_ENTER_MODE=full bash ${OPENCODE_PLUGIN_ROOT}/scripts/step-pretool-guard.sh && (cat .step/state.json 2>/dev/null | head -25 || true)"
           }
         ]
       }
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/step-stop-check.sh 2>/dev/null"
+            "command": "OPENCODE_PLUGIN_ROOT=${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}; bash ${OPENCODE_PLUGIN_ROOT}/scripts/step-stop-check.sh 2>/dev/null"
           }
         ]
       }
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh"
+            "command": "OPENCODE_PLUGIN_ROOT=${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}; ${OPENCODE_PLUGIN_ROOT}/hooks/session-start.sh"
           }
         ]
       }

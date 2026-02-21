@@ -4,14 +4,16 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 CORE_SCRIPT="${SCRIPT_DIR}/step-core.js"
+GATE_SCRIPT="${SCRIPT_DIR}/gate.sh"
+ARCHIVE_SCRIPT="${SCRIPT_DIR}/step-archive.sh"
 CONFIG_FILE=".step/config.json"
 WT_ROOT_DEFAULT=".worktrees"
 
 usage() {
   cat <<'USAGE'
 Usage:
-  ./scripts/step-worktree.sh create <change-name>
-  ./scripts/step-worktree.sh finalize <change-name> [--yes]
+  step-worktree.sh create <change-name>
+  step-worktree.sh finalize <change-name> [--yes]
 
 Commands:
   create    Create or reuse worktree for change branch
@@ -359,9 +361,9 @@ archive_change_on_base_worktree() {
   local change_name="$1"
   local merge_wt="$2"
 
-  if [ -x "$merge_wt/scripts/step-archive.sh" ]; then
+  if [ -x "$ARCHIVE_SCRIPT" ]; then
     local out
-    out=$(bash "$merge_wt/scripts/step-archive.sh" "$change_name" 2>&1 || true)
+    out=$(cd "$merge_wt" && bash "$ARCHIVE_SCRIPT" "$change_name" 2>&1 || true)
     printf "%s\n" "$out"
     if ! git -C "$merge_wt" diff --quiet -- .step; then
       git -C "$merge_wt" add .step
@@ -472,13 +474,13 @@ run_post_conflict_gate() {
   fi
   echo "🔒 冲突解决后强制验证: gate lite ${task_slug}"
   set_task_status "$merge_wt" "$change_name" "$task_slug" "in_progress" || true
-  if [ -x "$merge_wt/scripts/gate.sh" ]; then
-    if ! bash "$merge_wt/scripts/gate.sh" lite "$task_slug"; then
+  if [ -x "$GATE_SCRIPT" ]; then
+    if ! (cd "$merge_wt" && bash "$GATE_SCRIPT" lite "$task_slug"); then
       echo "❌ 冲突解决后的 gate lite 失败"
       return 1
     fi
   else
-    echo "❌ 缺少 gate.sh，无法执行冲突后强制验证"
+    echo "❌ 缺少 gate.sh: $GATE_SCRIPT，无法执行冲突后强制验证"
     return 1
   fi
   return 0

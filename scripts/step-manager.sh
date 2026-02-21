@@ -3,10 +3,40 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+DOCTOR_SCRIPT="${SCRIPT_DIR}/step-doctor.sh"
+
+resolve_project_root() {
+  if [ -n "${OPENCODE_PROJECT_DIR:-}" ] && [ -d "${OPENCODE_PROJECT_DIR}/.step" ]; then
+    printf "%s" "$OPENCODE_PROJECT_DIR"
+    return
+  fi
+
+  local dir
+  dir="$(pwd)"
+  while [ "$dir" != "/" ]; do
+    if [ -d "${dir}/.step" ]; then
+      printf "%s" "$dir"
+      return
+    fi
+    dir="$(dirname "$dir")"
+  done
+
+  if [ -d "/.step" ]; then
+    printf "/"
+    return
+  fi
+
+  if [ -n "${OPENCODE_PROJECT_DIR:-}" ]; then
+    printf "%s" "$OPENCODE_PROJECT_DIR"
+    return
+  fi
+
+  printf "%s" "$(pwd)"
+}
+
+ROOT_DIR="$(resolve_project_root)"
 STATE_FILE="${ROOT_DIR}/.step/state.json"
 CONFIG_FILE="${ROOT_DIR}/.step/config.json"
-DOCTOR_SCRIPT="${SCRIPT_DIR}/step-doctor.sh"
 
 DEFAULT_DANGEROUS=(
   rm dd mkfs shutdown reboot poweroff halt sudo chown chmod passwd useradd usermod deluser killall pkill launchctl
@@ -15,14 +45,14 @@ DEFAULT_DANGEROUS=(
 usage() {
   cat <<'EOF'
 Usage:
-  scripts/step-manager.sh doctor
-  scripts/step-manager.sh enter --mode quick|lite|full [--change <name>] [--task <slug>]
-  scripts/step-manager.sh phase-gate --from <phase> --to <phase>
-  scripts/step-manager.sh transition --to <phase>
-  scripts/step-manager.sh assert-phase --tool <ToolName> [--command "..."]
-  scripts/step-manager.sh assert-dispatch --tool Task --agent <subagent-type>
-  scripts/step-manager.sh status-line
-  scripts/step-manager.sh check-action --tool <ToolName> [--command "..."]
+  step-manager.sh doctor
+  step-manager.sh enter --mode quick|lite|full [--change <name>] [--task <slug>]
+  step-manager.sh phase-gate --from <phase> --to <phase>
+  step-manager.sh transition --to <phase>
+  step-manager.sh assert-phase --tool <ToolName> [--command "..."]
+  step-manager.sh assert-dispatch --tool Task --agent <subagent-type>
+  step-manager.sh status-line
+  step-manager.sh check-action --tool <ToolName> [--command "..."]
 EOF
 }
 

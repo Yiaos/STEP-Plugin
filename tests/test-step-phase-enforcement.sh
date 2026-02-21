@@ -38,7 +38,7 @@ TOTAL=$((TOTAL + 1))
   box=$(new_box)
   trap 'rm -rf "$box"' EXIT
   node -e 'const fs=require("fs");const f=process.argv[1];const s=JSON.parse(fs.readFileSync(f,"utf-8"));s.current_phase="idle";fs.writeFileSync(f,JSON.stringify(s,null,2)+"\n","utf-8");' "$box/.step/state.json"
-  out=$(cd "$box" && bash ./scripts/step-manager.sh assert-phase --tool Write 2>&1)
+  out=$(cd "$box" && bash "$box/scripts/step-manager.sh" assert-phase --tool Write 2>&1)
   code=$?
   rm -rf "$box"
   trap - EXIT
@@ -54,9 +54,9 @@ TOTAL=$((TOTAL + 1))
 {
   box=$(new_box)
   trap 'rm -rf "$box"' EXIT
-  (cd "$box" && bash ./scripts/step-manager.sh enter --mode full --change init >/dev/null 2>&1)
-  (cd "$box" && bash ./scripts/step-manager.sh transition --to phase-1-prd >/dev/null 2>&1)
-  out=$(cd "$box" && bash ./scripts/step-manager.sh assert-phase --tool Write 2>&1)
+  (cd "$box" && bash "$box/scripts/step-manager.sh" enter --mode full --change init >/dev/null 2>&1)
+  (cd "$box" && bash "$box/scripts/step-manager.sh" transition --to phase-1-prd >/dev/null 2>&1)
+  out=$(cd "$box" && bash "$box/scripts/step-manager.sh" assert-phase --tool Write 2>&1)
   code=$?
   rm -rf "$box"
   trap - EXIT
@@ -72,8 +72,8 @@ TOTAL=$((TOTAL + 1))
 {
   box=$(new_box)
   trap 'rm -rf "$box"' EXIT
-  (cd "$box" && bash ./scripts/step-manager.sh enter --mode full --change init >/dev/null 2>&1)
-  out=$(cd "$box" && bash ./scripts/step-manager.sh transition --to phase-4-execution 2>&1)
+  (cd "$box" && bash "$box/scripts/step-manager.sh" enter --mode full --change init >/dev/null 2>&1)
+  out=$(cd "$box" && bash "$box/scripts/step-manager.sh" transition --to phase-4-execution 2>&1)
   code=$?
   rm -rf "$box"
   trap - EXIT
@@ -115,7 +115,7 @@ TOTAL=$((TOTAL + 1))
   cp "$SCRIPT_DIR/scripts/step-pretool-guard.sh" "$box/scripts/step-pretool-guard.sh"
   chmod +x "$box/scripts/step-manager.sh" "$box/scripts/step-pretool-guard.sh"
   node -e 'const fs=require("fs");const f=process.argv[1];const s=JSON.parse(fs.readFileSync(f,"utf-8"));s.current_phase="idle";fs.writeFileSync(f,JSON.stringify(s,null,2)+"\n","utf-8");' "$box/.step/state.json"
-  out=$(cd "$box" && OPENCODE_TOOL_NAME=Write bash ./scripts/step-pretool-guard.sh 2>&1)
+  out=$(cd "$box" && OPENCODE_TOOL_NAME=Write bash "$box/scripts/step-pretool-guard.sh" 2>&1)
   code=$?
   rm -rf "$box"
   trap - EXIT
@@ -133,7 +133,7 @@ TOTAL=$((TOTAL + 1))
   trap 'rm -rf "$box"' EXIT
   node -e 'const fs=require("fs");const f=process.argv[1];const s=JSON.parse(fs.readFileSync(f,"utf-8"));s.current_phase="idle";fs.writeFileSync(f,JSON.stringify(s,null,2)+"\n","utf-8");' "$box/.step/state.json"
   cmd="bash $box/scripts/step-manager.sh enter --mode full --change init"
-  out=$(cd "$box" && bash ./scripts/step-manager.sh assert-phase --tool Bash --command "$cmd" 2>&1)
+  out=$(cd "$box" && bash "$box/scripts/step-manager.sh" assert-phase --tool Bash --command "$cmd" 2>&1)
   code=$?
   rm -rf "$box"
   trap - EXIT
@@ -150,9 +150,9 @@ TOTAL=$((TOTAL + 1))
 {
   box=$(new_box)
   trap 'rm -rf "$box"' EXIT
-  (cd "$box" && bash ./scripts/step-manager.sh enter --mode full --change init >/dev/null 2>&1)
-  (cd "$box" && bash ./scripts/step-manager.sh transition --to phase-1-prd >/dev/null 2>&1)
-  out=$(cd "$box" && bash ./scripts/step-manager.sh assert-phase --tool Bash --command "npm test" 2>&1)
+  (cd "$box" && bash "$box/scripts/step-manager.sh" enter --mode full --change init >/dev/null 2>&1)
+  (cd "$box" && bash "$box/scripts/step-manager.sh" transition --to phase-1-prd >/dev/null 2>&1)
+  out=$(cd "$box" && bash "$box/scripts/step-manager.sh" assert-phase --tool Bash --command "npm test" 2>&1)
   code=$?
   rm -rf "$box"
   trap - EXIT
@@ -174,7 +174,7 @@ TOTAL=$((TOTAL + 1))
   cp "$SCRIPT_DIR/scripts/step-pretool-guard.sh" "$box/scripts/step-pretool-guard.sh"
   chmod +x "$box/scripts/step-manager.sh" "$box/scripts/step-pretool-guard.sh"
   node -e 'const fs=require("fs");const f=process.argv[1];const s=JSON.parse(fs.readFileSync(f,"utf-8"));s.current_phase="idle";fs.writeFileSync(f,JSON.stringify(s,null,2)+"\n","utf-8");' "$box/.step/state.json"
-  out=$(cd "$box" && STEP_AUTO_ENTER=true STEP_AUTO_ENTER_MODE=full OPENCODE_TOOL_NAME=Write bash ./scripts/step-pretool-guard.sh 2>&1)
+  out=$(cd "$box" && STEP_AUTO_ENTER=true STEP_AUTO_ENTER_MODE=full OPENCODE_TOOL_NAME=Write bash "$box/scripts/step-pretool-guard.sh" 2>&1)
   code=$?
   phase=$(node -e 'const fs=require("fs");const s=JSON.parse(fs.readFileSync(process.argv[1],"utf-8"));process.stdout.write(s.current_phase||"")' "$box/.step/state.json")
   rm -rf "$box"
@@ -191,8 +191,8 @@ TOTAL=$((TOTAL + 1))
 {
   box=$(new_box)
   trap 'rm -rf "$box"' EXIT
-  (cd "$box" && bash ./scripts/step-manager.sh enter --mode lite --change init >/dev/null 2>&1)
-  out=$(cd "$box" && bash ./scripts/step-manager.sh assert-phase --tool Write 2>&1)
+  (cd "$box" && bash "$box/scripts/step-manager.sh" enter --mode lite --change init >/dev/null 2>&1)
+  out=$(cd "$box" && bash "$box/scripts/step-manager.sh" assert-phase --tool Write 2>&1)
   code=$?
   rm -rf "$box"
   trap - EXIT
@@ -210,9 +210,9 @@ TOTAL=$((TOTAL + 1))
   box=$(new_box)
   trap 'rm -rf "$box"' EXIT
   cp "$SCRIPT_DIR/templates/config.json" "$box/.step/config.json"
-  (cd "$box" && bash ./scripts/step-manager.sh enter --mode full --change init >/dev/null 2>&1)
-  (cd "$box" && bash ./scripts/step-manager.sh transition --to phase-1-prd >/dev/null 2>&1)
-  out=$(cd "$box" && bash ./scripts/step-manager.sh assert-dispatch --tool Task --agent step-architect 2>&1)
+  (cd "$box" && bash "$box/scripts/step-manager.sh" enter --mode full --change init >/dev/null 2>&1)
+  (cd "$box" && bash "$box/scripts/step-manager.sh" transition --to phase-1-prd >/dev/null 2>&1)
+  out=$(cd "$box" && bash "$box/scripts/step-manager.sh" assert-dispatch --tool Task --agent step-architect 2>&1)
   code=$?
   rm -rf "$box"
   trap - EXIT
@@ -229,8 +229,8 @@ TOTAL=$((TOTAL + 1))
   box=$(new_box)
   trap 'rm -rf "$box"' EXIT
   cp "$SCRIPT_DIR/templates/config.json" "$box/.step/config.json"
-  (cd "$box" && bash ./scripts/step-manager.sh enter --mode lite --change init >/dev/null 2>&1)
-  out=$(cd "$box" && bash ./scripts/step-manager.sh assert-dispatch --tool Task --agent step-architect 2>&1)
+  (cd "$box" && bash "$box/scripts/step-manager.sh" enter --mode lite --change init >/dev/null 2>&1)
+  out=$(cd "$box" && bash "$box/scripts/step-manager.sh" assert-dispatch --tool Task --agent step-architect 2>&1)
   code=$?
   rm -rf "$box"
   trap - EXIT

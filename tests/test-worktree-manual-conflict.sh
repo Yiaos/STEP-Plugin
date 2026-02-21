@@ -38,7 +38,8 @@ CFG
   printf 'v1\n' > a.txt
   git add .
   git commit -m 'init' >/dev/null 2>&1
-  bash scripts/step-worktree.sh create x >/dev/null 2>&1
+  OPENCODE_PLUGIN_ROOT="\$PWD"
+  bash "\$OPENCODE_PLUGIN_ROOT/scripts/step-worktree.sh" create x >/dev/null 2>&1
   ! git config --get-regexp 'branch\\..*\\.step-base' >/dev/null 2>&1
 "
 

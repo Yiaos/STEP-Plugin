@@ -144,13 +144,13 @@ bash uninstall.sh
 bash uninstall.sh --project
 
 # 验证安装健康度
-bash ~/.config/opencode/tools/step/scripts/step-manager.sh doctor
+bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-manager.sh doctor
 ```
 
-安装后的目录结构：
+安装后的目录结构（默认路径，可用 OPENCODE_PLUGIN_ROOT 覆盖）：
 
 ```
-~/.config/opencode/tools/step/
+${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/
 ├── commands/
 │   ├── step.md             # /step 命令
 │   ├── status.md           # /step/status 诊断命令
@@ -226,11 +226,13 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义（`agents/*.md`�
 │   └── YYYY-MM-DD-xxx/  # 后续变更（结构相同）
 ├── archive/             # 已完成变更归档
 └── （无全局 evidence，证据在 changes/{change}/evidence/）
-scripts/
-├── gate.sh              # 质量门禁
-├── scenario-check.sh    # 场景覆盖检查
-└── step-worktree.sh     # worktree 创建/归档合并清理
 ```
+
+STEP 执行脚本位于插件安装目录：
+
+`OPENCODE_PLUGIN_ROOT=${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}`
+
+`$OPENCODE_PLUGIN_ROOT/scripts/{gate.sh,scenario-check.sh,step-worktree.sh,step-archive.sh}`
 
 ### 命名规则
 
@@ -304,7 +306,7 @@ scripts/
 
 当 `worktree.enabled: true` 时，STEP 流程会遵循以下规则：
 
-- 变更开始阶段自动创建独立 worktree（`scripts/step-worktree.sh create {change}`）
+- 变更开始阶段自动创建独立 worktree（`bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-worktree.sh create {change}`）
 - Commit 完成后询问是否“合并回主分支并归档”
 - 用户确认后执行：合并回“创建该 worktree 时所在分支” → 归档 change
 - 合并冲突时按策略自动解冲突，并输出冲突文件与采用的解决策略

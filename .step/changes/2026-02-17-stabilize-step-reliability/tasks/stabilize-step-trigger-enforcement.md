@@ -11,7 +11,7 @@
     "不引入外部依赖"
   ],
   "done_when": [
-    "bash scripts/step-manager.sh doctor",
+    "bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-manager.sh doctor",
     "bash tests/test-step-manager-check-action.sh",
     "bash tests/test-gate-dangerous-executable.sh",
     "bash tests/test-step-phase-enforcement.sh"

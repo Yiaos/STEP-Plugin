@@ -2,6 +2,8 @@
 
 > 基于 STEP baseline v2（2026-02-16）重新对比。
 
+注：文中提到的 `gate.sh` / `scenario-check.sh` / `step-stop-check.sh` 等脚本均位于安装目录 `${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/`。
+
 ---
 
 ## 一、各工具概览

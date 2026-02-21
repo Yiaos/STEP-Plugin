@@ -20,9 +20,9 @@
 - 无。
 
 ### Consistency checks passed
-- `bash scripts/gate.sh lite findings-two-action-rule` 通过，含测试与 scenario 覆盖（最新输出见本次审查记录）。
-- `bash scripts/scenario-check.sh findings-two-action-rule 2026-02-19-findings-two-action-rule` → `Coverage: 3/3 (100%)`。
-- `bash scripts/scenario-check.sh stabilize-step-trigger-enforcement 2026-02-17-stabilize-step-reliability` → `Coverage: 4/4 (100%)`。
+- `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh lite findings-two-action-rule` 通过，含测试与 scenario 覆盖（最新输出见本次审查记录）。
+- `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/scenario-check.sh findings-two-action-rule 2026-02-19-findings-two-action-rule` → `Coverage: 3/3 (100%)`。
+- `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/scenario-check.sh stabilize-step-trigger-enforcement 2026-02-17-stabilize-step-reliability` → `Coverage: 4/4 (100%)`。
 - `bash tests/test-step-phase-enforcement.sh` → `11/11 passed`。
 
 ### Residual risks

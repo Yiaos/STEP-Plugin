@@ -57,7 +57,8 @@ CFG
 \`\`\`
 TASK
 
-  out=\$(bash scripts/gate.sh quick demo --quick-reason "doc typo" 2>&1)
+  OPENCODE_PLUGIN_ROOT="\$PWD"
+  out=\$(bash "\$OPENCODE_PLUGIN_ROOT/scripts/gate.sh" quick demo --quick-reason "doc typo" 2>&1)
   echo \"\$out\" | grep -q 'Gate (level: quick'
   echo \"\$out\" | grep -q 'scenario-coverage: SKIPPED'
   [ -f .step/changes/init/evidence/demo-gate.json ]

@@ -61,7 +61,8 @@ it('[S-demo-01] a', () => {})
 A
 
   set +e
-  out=\$(bash scripts/gate.sh lite demo 2>&1)
+  OPENCODE_PLUGIN_ROOT="\$PWD"
+  out=\$(bash "\$OPENCODE_PLUGIN_ROOT/scripts/gate.sh" lite demo 2>&1)
   code=\$?
   set -e
   [ \"\$code\" -ne 0 ]

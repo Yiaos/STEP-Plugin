@@ -1,6 +1,6 @@
 #!/bin/bash
 # STEP Scenario Coverage Check
-# Usage: ./scripts/scenario-check.sh <task-slug> [change-name]
+# Usage: scenario-check.sh <task-slug> [change-name]
 # 验证 task Markdown(JSON代码块) 中每个场景 ID 都有对应的测试
 # task-slug 即文件名（不含 .md），如: user-register-api
 

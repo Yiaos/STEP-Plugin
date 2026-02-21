@@ -9,7 +9,8 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-TARGET_DIR="${HOME}/.config/opencode/tools/step"
+OPENCODE_PLUGIN_ROOT="${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}"
+TARGET_DIR="$OPENCODE_PLUGIN_ROOT"
 COMMANDS_LINK="${HOME}/.config/opencode/commands/step"
 SKILLS_LINK="${HOME}/.config/opencode/skills/step"
 HOOKS_LINK="${HOME}/.config/opencode/hooks/step"
@@ -112,7 +113,7 @@ install() {
   echo "  Usage: In any project, run /step to initialize the STEP protocol."
   echo ""
   echo "  Plugin structure:"
-  echo "  ~/.config/opencode/tools/step/"
+  echo "  ${OPENCODE_PLUGIN_ROOT}/"
   echo "  ├── commands/step.md        # /step command"
   echo "  ├── commands/status.md      # /step/status command"
   echo "  ├── hooks/"

@@ -13,8 +13,8 @@ description: "初始化或恢复 STEP 协议（Stateful Task Execution Protocol�
 
 ## 如果 .step/ 不存在（首次初始化）
 
-1. 找到 STEP 插件根目录（`~/.config/opencode/tools/step/`）
-2. 运行 `bash ~/.config/opencode/tools/step/scripts/step-init.sh`
+1. 设定插件根目录变量：`OPENCODE_PLUGIN_ROOT=${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}`
+2. 运行 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-init.sh`
 3. 将 state.json 的 `current_phase` 设为 `phase-0-discovery`
 4. 若输出包含 `[EXISTING PROJECT`：
    - 分析现有代码结构、框架与约定
@@ -46,7 +46,7 @@ description: "初始化或恢复 STEP 协议（Stateful Task Execution Protocol�
 
 则在变更开始阶段自动创建独立 worktree：
 
-- 执行 `./scripts/step-worktree.sh create {change-name}`
+- 执行 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-worktree.sh create {change-name}`
 - 在该 worktree 内执行 Phase 4（TDD + gate + review + commit）
 - commit 后询问是否“合并回创建时所在分支并归档”
 
@@ -54,14 +54,14 @@ description: "初始化或恢复 STEP 协议（Stateful Task Execution Protocol�
 
 进入 STEP 流程前，先执行：
 
-`bash ~/.config/opencode/tools/step/scripts/step-manager.sh doctor`
+`bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-manager.sh doctor`
 
 然后必须进入状态机执行态（示例）：
 
-`bash ~/.config/opencode/tools/step/scripts/step-manager.sh enter --mode full --change init`
+`bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-manager.sh enter --mode full --change init`
 
 - 若检查结果为 PASS：继续进入对应阶段
-- 若检查结果为 FAIL：立即停止进入流程，先按脚本输出的修复命令完成修复（例如 `bash ~/.config/opencode/tools/step/install.sh --force`）
+- 若检查结果为 FAIL：立即停止进入流程，先按脚本输出的修复命令完成修复（例如 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/install.sh --force`）
 - 若未 enter：PreToolUse 会先自动 enter（默认 full），再按当前 phase 校验 Write/Edit/Bash/Task；不会在 `idle` 直接放行实现命令
 
 ## 全阶段规则

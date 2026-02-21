@@ -29,7 +29,7 @@
 - [x] Deployer — 部署策略建议（可选）
 
 ### 质量门禁（可执行脚本）
-- [x] gate.sh — lint / typecheck / test / build，三级：quick / standard / full
+- [x] gate.sh — lint / typecheck / test / build，三级：quick / lite / full
 - [x] scenario-check.sh — BDD 场景 ID 硬匹配，100% 覆盖验证
 - [x] step-stop-check.sh — 会话结束前检查 state.json 更新状态
 

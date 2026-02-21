@@ -73,7 +73,8 @@ printf '%s\n' "$@" > .step/changes/init/evidence/test-args.txt
 RUN
   chmod +x tests/fake-runner.sh
 
-  bash scripts/gate.sh lite demo >/dev/null 2>&1
+  OPENCODE_PLUGIN_ROOT="\$PWD"
+  bash "\$OPENCODE_PLUGIN_ROOT/scripts/gate.sh" lite demo >/dev/null 2>&1
   grep -q 'test/a.test.ts' .step/changes/init/evidence/test-args.txt
   grep -q 'test/b.test.ts' .step/changes/init/evidence/test-args.txt
 "

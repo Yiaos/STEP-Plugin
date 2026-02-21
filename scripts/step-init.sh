@@ -1,6 +1,6 @@
 #!/bin/bash
 # STEP Protocol — 项目初始化脚本
-# 由 /step 命令调用，在当前项目创建 .step/ 目录和 scripts/
+# 由 /step 命令调用，在当前项目创建 .step/ 目录
 
 set -e
 
@@ -81,7 +81,7 @@ ensure_agents_step_guidance() {
 - `.step/baseline.md`: 需求与约束唯一事实源（SSOT）
 - `.step/state.json`: 流程状态机唯一事实源（phase/change/task/next_action）
 - `.step/changes/{change}/evidence/`: gate/review 证据
-- `scripts/`: 执行入口与硬约束脚本
+- `STEP 插件安装目录 scripts/`: 执行入口与硬约束脚本
 - `AGENTS.md`: 仅导航，不复制 baseline 细则
 
 ### 冲突优先级
@@ -140,7 +140,7 @@ PROJECT_TYPE=$(echo "$PROJECT_DETECT" | head -1)
 PROJECT_DETAILS=$(echo "$PROJECT_DETECT" | tail -n +2)
 
 # 创建目录结构
-mkdir -p .step/changes/init/tasks .step/changes/init/evidence .step/archive scripts
+mkdir -p .step/changes/init/tasks .step/changes/init/evidence .step/archive
 
 # 复制模板文件
 cp "${TEMPLATES_DIR}/config.json" .step/config.json
@@ -150,22 +150,6 @@ cp "${TEMPLATES_DIR}/decisions.md" .step/decisions.md
 cp "${TEMPLATES_DIR}/findings.md" .step/changes/init/findings.md
 cp "${TEMPLATES_DIR}/spec.md" .step/changes/init/spec.md
 cp "${TEMPLATES_DIR}/design.md" .step/changes/init/design.md
-
-# 复制 gate 脚本（如果 scripts/ 下没有的话）
-if [ ! -f "scripts/gate.sh" ]; then
-  cp "${PLUGIN_ROOT}/scripts/gate.sh" scripts/gate.sh
-  chmod +x scripts/gate.sh
-fi
-
-if [ ! -f "scripts/scenario-check.sh" ]; then
-  cp "${PLUGIN_ROOT}/scripts/scenario-check.sh" scripts/scenario-check.sh
-  chmod +x scripts/scenario-check.sh
-fi
-
-if [ ! -f "scripts/step-worktree.sh" ]; then
-  cp "${PLUGIN_ROOT}/scripts/step-worktree.sh" scripts/step-worktree.sh
-  chmod +x scripts/step-worktree.sh
-fi
 
 # 设置初始时间戳 + 项目类型
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -198,10 +182,12 @@ echo "   │       └── evidence/    # Gate/Review 证据（Phase 4/5）"
 echo "   ├── archive/             # 已完成变更归档"
 echo "   └── (无全局 evidence，证据按 change 存放)"
 echo ""
-echo "   scripts/"
+echo "   STEP 执行脚本位于插件安装目录:"
+echo "   ${PLUGIN_ROOT}/scripts/"
 echo "   ├── gate.sh              # 质量门禁"
 echo "   ├── scenario-check.sh    # 场景覆盖检查"
-echo "   └── step-worktree.sh     # worktree 创建/归档合并清理"
+echo "   ├── step-worktree.sh     # worktree 创建/归档合并清理"
+echo "   └── step-archive.sh      # 变更归档"
 echo ""
 echo "   AGENTS.md 已写入 STEP 文档职责导航"
 echo ""

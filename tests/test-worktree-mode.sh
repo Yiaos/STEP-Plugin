@@ -112,7 +112,8 @@ STATE
   git add .
   git commit -m 'init' >/dev/null 2>&1
 
-  bash scripts/step-worktree.sh create demo-change >/dev/null 2>&1
+  OPENCODE_PLUGIN_ROOT="\$PWD"
+  bash "\$OPENCODE_PLUGIN_ROOT/scripts/step-worktree.sh" create demo-change >/dev/null 2>&1
   [ -d .worktrees/demo-change ]
 
   printf 'feature-v1\n' > .worktrees/demo-change/app.txt
@@ -125,7 +126,7 @@ STATE
 
   export STEP_CONFLICT_RESOLVER='git checkout --ours app.txt >/dev/null 2>&1 && cp app.txt .step/ours.txt && git checkout --theirs app.txt >/dev/null 2>&1 && cp app.txt .step/theirs.txt && cat .step/ours.txt .step/theirs.txt > app.txt && printf "## 解决说明\n- app.txt 保留了 main-v2 与 feature-v1 两侧改动\n" > .step/conflict-resolution-summary.md'
 
-  output=\$(bash scripts/step-worktree.sh finalize demo-change --yes 2>&1)
+  output=\$(bash "\$OPENCODE_PLUGIN_ROOT/scripts/step-worktree.sh" finalize demo-change --yes 2>&1)
   echo \"\$output\" | grep -q 'Conflicts resolved by LLM'
   echo \"\$output\" | grep -q '冲突解决后强制验证'
   [ -f .step/conflict-report.md ]

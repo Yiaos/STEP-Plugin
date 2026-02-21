@@ -74,12 +74,13 @@ STEP 定义 7 个角色，每个角色对应一个 agent 定义文件（`STEP/ag
 ├── archive/                   # 已完成变更归档
 │   └── 2026-02-15-init/
 └── （无全局 evidence，证据按 change 存放）
-scripts/
-├── gate.sh                    # 质量门禁
-├── scenario-check.sh          # 场景覆盖检查
-├── step-archive.sh            # 变更归档
-└── step-worktree.sh           # worktree 创建/归档合并清理
 ```
+
+脚本入口位于插件安装目录：
+
+`OPENCODE_PLUGIN_ROOT=${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}`
+
+`$OPENCODE_PLUGIN_ROOT/scripts/{gate.sh,scenario-check.sh,step-worktree.sh,step-archive.sh}`
 
 ---
 
@@ -461,7 +462,7 @@ Step 2: 写测试（按 routing.test_writing 派发 @step-qa）
 
 Step 3: 写实现（按 config.json file_routing 选 agent）
   若 `config.worktree.enabled=true`:
-    → 自动执行 `./scripts/step-worktree.sh create {change-name}`
+    → 自动执行 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-worktree.sh create {change-name}`
     → 在该变更的独立 worktree 中继续执行 Phase 4
   前端文件（匹配 file_routing.frontend.patterns）→ @step-designer
   后端文件（匹配 file_routing.backend.patterns）→ @step-developer
@@ -469,10 +470,10 @@ Step 3: 写实现（按 config.json file_routing 选 agent）
   → 每实现一个场景，跑 gate lite
 
 Step 4: Gate 验证
-  ./scripts/gate.sh quick user-register-api  # 小改动快速门禁
-  ./scripts/gate.sh lite user-register-api   # 常规增量测试
+  bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh quick user-register-api  # 小改动快速门禁
+  bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh lite user-register-api   # 常规增量测试
   # Review 前或归档前
-  ./scripts/gate.sh full user-register-api --all
+  bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh full user-register-api --all
   → 包含场景覆盖检查（scenario-check.sh）
   → 通过 → Step 5
   → 失败 → Gate 失败处理流程（见下方）
@@ -504,7 +505,7 @@ Step 5: Review + Commit（每完成一个任务都执行）
   │    Commit 后输出简短摘要：做了什么、为什么、影响  │
   │    worktree 模式下：                              │
   │      询问是否合并回主分支并归档                  │
-  │      用户确认后执行 `step-worktree.sh finalize`  │
+  │      用户确认后执行 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-worktree.sh finalize {change-name}` │
   │                                                │
   │ 4. Review 不通过 → 修复 → 重新 Gate → 重新 Review│
   └────────────────────────────────────────────────┘
@@ -520,7 +521,7 @@ Step 6: 更新状态
 
 ## Gate 失败处理流程
 
-当 `gate.sh` 报告失败时，不是简单地"回去修"。有两个阶段：**失败分析** + **分级修复**。
+当 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh` 报告失败时，不是简单地"回去修"。有两个阶段：**失败分析** + **分级修复**。
 
 ### 阶段 1: 失败原因分析（指定 Claude Opus 或 Codex xhigh）
 
@@ -937,7 +938,7 @@ Layer 4: 独立审查    ← Phase 5 QA（需求合规 + 代码质量）
 
 像 `/brainstorm` 和 `/plan` 一样，STEP 通过 opencode 的自定义命令触发：
 
-**命令文件：** `~/.config/opencode/commands/step/step.md`
+**命令文件：** `commands/step.md`（安装后路径：`~/.config/opencode/commands/step/step.md`）
 
 ```markdown
 ---
@@ -948,7 +949,7 @@ description: "初始化 STEP 协议并开始全生命周期开发流程。自动
 
 如果 .step/ 不存在：
   1. 创建 .step/ 目录结构（config.json, baseline.md, decisions.md, state.json）
-  2. 创建 scripts/gate.sh 和 scripts/scenario-check.sh
+  2. 使用安装目录脚本执行 gate/scenario-check/worktree/archive
   3. 将 state.json 的 current_phase 设为 "phase-0-discovery"
   4. 告诉用户："STEP 已初始化。当前阶段: Phase 0 Discovery。请描述你的想法，我们开始讨论。"
 
@@ -986,7 +987,7 @@ next_action 必须精确到文件名和具体动作。
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh"
+            "command": "OPENCODE_PLUGIN_ROOT=${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}; ${OPENCODE_PLUGIN_ROOT}/hooks/session-start.sh"
           }
         ]
       }
@@ -1122,8 +1123,8 @@ Session 开始
 - 遵循 established_patterns
 - 测试先行: 按 routing.test_writing 派发 @step-qa 写测试 → 确认 FAIL → 再写实现
 - 场景 ID: 测试名必须包含 [S-{slug}-xx]
-- Gate: `./scripts/gate.sh lite {slug}`（默认增量；Review 前与归档前必须跑 `full --all`）
-- Quick 模式：`./scripts/gate.sh quick {slug}`（模型判定小改动时使用）
+- Gate: `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh lite {slug}`（默认增量；Review 前与归档前必须跑 `full --all`）
+- Quick 模式：`bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh quick {slug}`（模型判定小改动时使用）
 - 完成判定: 所有 scenario pass + gate pass → 才能标 done
 
 ### Gate 失败
@@ -1144,7 +1145,7 @@ Session 开始
 
 ### 归档
 - 变更完成后，使用 `/archive` 命令或说 "归档 {change-name}" 归档到 `.step/archive/`
-- 归档脚本: `./scripts/step-archive.sh [change-name|--all]`
+- 归档脚本: `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-archive.sh [change-name|--all]`
 ```
 
 ---
@@ -1154,10 +1155,10 @@ Session 开始
 初始化逻辑在 `scripts/step-init.sh` 中实现，由 `/step` 命令调用。主要功能：
 
 1. **项目检测** — `detect_project()` 扫描 16 种包管理器/清单文件 + 6 种工具目录，判断是已有项目还是绿地项目
-2. **创建目录** — `.step/changes/init/tasks/`, `.step/changes/init/evidence/`, `.step/archive/`, `scripts/`
+2. **创建目录** — `.step/changes/init/tasks/`, `.step/changes/init/evidence/`, `.step/archive/`
 3. **创建初始变更文档** — `.step/changes/init/findings.md` + `.step/changes/init/spec.md` + `.step/changes/init/design.md`
 4. **复制模板** — 从 `templates/` 复制 `config.json`, `state.json`, `baseline.md`, `decisions.md`, `findings.md`
-5. **复制脚本** — 复制 `gate.sh`, `scenario-check.sh`, `step-worktree.sh` 到项目 `scripts/` 目录
+5. **脚本入口** — gate/scenario/worktree/archive 统一使用 STEP 插件安装目录下 `scripts/`
 6. **已有项目提示** — 检测到已有代码时，提示 LLM 先分析现有代码结构再讨论新需求
 
 详见 `scripts/step-init.sh` 源码。
@@ -1207,7 +1208,7 @@ Session 开始
 | 文件创建、修改、删除    | 方向已在讨论中达成共识的    |
 | 运行测试、lint、build   | gate.sh 及任何验证命令      |
 | install.sh --force      | 重装 STEP 插件              |
-| 创建目录结构            | .step/ 子目录、scripts/ 等  |
+| 创建目录结构            | .step/ 子目录等             |
 
 ### 需要用户确认
 
@@ -1303,8 +1304,8 @@ LLM 输出（批量展示，一次确认）:
 ```
 Step 1: 写测试 → 确认全部 FAIL (TDD RED)
 Step 2: 写实现 → 测试通过 (TDD GREEN)
-Step 3: Gate → gate.sh lite {slug}（默认增量）
-Step 3.5: Review 前强制全量回归 → gate.sh full {slug} --all
+Step 3: Gate → bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh lite {slug}（默认增量）
+Step 3.5: Review 前强制全量回归 → bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh full {slug} --all
          lint + typecheck + test + scenario
 ```
 
@@ -1372,9 +1373,9 @@ LLM: "✅ 已完成并提交。请 check 以下变更：
 
 当 `.step/config.json` 中 `worktree.enabled=true` 时：
 
-1. 变更开始阶段自动创建 worktree：`./scripts/step-worktree.sh create {change-name}`
+1. 变更开始阶段自动创建 worktree：`bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-worktree.sh create {change-name}`
 2. Commit 后询问用户是否“合并回主分支并归档”
-3. 用户确认后执行 `./scripts/step-worktree.sh finalize {change-name}`：
+3. 用户确认后执行 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-worktree.sh finalize {change-name}`：
    - 先合并到“创建该 worktree 时所在分支”
    - 再归档 change
    - 若冲突，统一交由大模型解冲突（禁止直接 ours/theirs 丢弃代码）
@@ -1420,7 +1421,7 @@ LLM: "✅ 已完成并提交。请 check 以下变更：
       "status": "not_run"
     }
   ],
-  "done_when": ["gate.sh lite fix-empty-password"]
+  "done_when": ["bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh lite fix-empty-password"]
 }
 ```
 ````
@@ -1495,7 +1496,7 @@ mv .step/changes/init/ .step/archive/2026-02-15-init/
 | 5   | 统一使用 opencode，删除 tool                 | config.json 改为 routing（agent 路由）+ file_routing（文件分流）+ gate（命令）              |
 | 6   | review 模型可选，规则可独立演进              | 创建 step-reviewer agent，需求合规为第一优先级                                              |
 | 7   | gate 失败如何处理                            | 新增"Gate 失败处理流程"：Opus/Codex xhigh 先分析根因 → 分类修复最多 3 轮 → 仍失败标 blocked |
-| 8   | 初始化做成 /step 命令                        | 创建 `commands/step/step.md`，检测 .step/ 是否存在：不存在则初始化，存在则恢复              |
+| 8   | 初始化做成 /step 命令                        | 创建 `commands/step.md`（安装后 `~/.config/opencode/commands/step/step.md`），检测 .step/ 是否存在：不存在则初始化，存在则恢复              |
 | 9   | 测试代码模型可配置                           | routing.test_writing 配置测试编写 agent（默认 @step-qa），与实现 agent 不同形成对抗性       |
 ### `/step/status` 命令
 

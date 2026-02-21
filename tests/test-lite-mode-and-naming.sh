@@ -33,7 +33,7 @@ assert "[S-006-02] SKILL.md 包含自主操作规则精简版" bash -c "
 
 # [S-006-03] AGENTS.md 不包含自主操作规则（已还原）
 assert "[S-006-03] AGENTS.md 不包含自主操作规则" bash -c "
-  ! grep -q '自主操作规则' '/Users/iaos/worksp/dev/agent/AGENTS.md'
+  ! grep -q '自主操作规则' '$SCRIPT_DIR/AGENTS.md'
 "
 
 # ── Lite Mode ──

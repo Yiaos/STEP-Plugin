@@ -4,6 +4,8 @@
 
 superpowers 强在“执行纪律提示词体系”，STEP 强在“协议 + 脚本 + 状态 + 归档”的工程闭环。
 
+注：文中脚本指安装目录 `${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/` 下的 `gate.sh`、`scenario-check.sh`、`step-stop-check.sh` 等。
+
 ## 维度对比
 
 ### 1) 约束机制类型
@@ -29,7 +31,7 @@ superpowers 强在“执行纪律提示词体系”，STEP 强在“协议 + 脚
 ### 5) 并行开发
 
 - superpowers：理念上鼓励子代理并行。
-- STEP：当前实现通过 `worktree.enabled` + `scripts/step-worktree.sh` 解决并行分支落地。
+- STEP：当前实现通过 `worktree.enabled` + `${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-worktree.sh` 解决并行分支落地。
 
 ## STEP 当前实现中吸收到的“纪律化做法”
 

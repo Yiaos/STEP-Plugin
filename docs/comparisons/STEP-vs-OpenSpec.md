@@ -8,9 +8,9 @@ STEP 偏“执行协议与质量控制”，OpenSpec 偏“规格变更管理与
 
 - 统一变更结构：`.step/changes/{change}/findings.md|spec.md|design.md|tasks/`
 - 全局状态机：`.step/state.json`（phase/change/task 追踪）
-- 可执行质量脚本：`gate.sh`、`scenario-check.sh`、`step-archive.sh`
+- 可执行质量脚本（安装目录）：`${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh`、`${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/scenario-check.sh`、`${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-archive.sh`
 - 两阶段 review：先需求合规，再代码质量
-- 可选 worktree 流程：`scripts/step-worktree.sh`（创建、合并、冲突报告、归档、清理）
+- 可选 worktree 流程：`${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-worktree.sh`（创建、合并、冲突报告、归档、清理）
 
 ## 与 OpenSpec 的主要差异
 

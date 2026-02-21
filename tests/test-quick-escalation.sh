@@ -52,7 +52,8 @@ CFG
 \`\`\`
 TASK
 
-  bash scripts/gate.sh quick demo --quick-reason "small refactor" --escalated true --escalation-reason "touch behavior" >/dev/null 2>&1
+  OPENCODE_PLUGIN_ROOT="\$PWD"
+  bash "\$OPENCODE_PLUGIN_ROOT/scripts/gate.sh" quick demo --quick-reason "small refactor" --escalated true --escalation-reason "touch behavior" >/dev/null 2>&1
   grep -q 'escalated' .step/changes/init/evidence/demo-gate.json
   grep -q 'true' .step/changes/init/evidence/demo-gate.json
   grep -q 'escalation_reason' .step/changes/init/evidence/demo-gate.json

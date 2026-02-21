@@ -6,7 +6,7 @@ hooks:
     - matcher: "Write|Edit|Bash|Task"
       hooks:
         - type: command
-          command: "STEP_AUTO_ENTER=true STEP_AUTO_ENTER_MODE=full bash scripts/step-pretool-guard.sh && (cat .step/state.json 2>/dev/null | head -25 || true)"
+          command: "OPENCODE_PLUGIN_ROOT=${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}; STEP_AUTO_ENTER=true STEP_AUTO_ENTER_MODE=full bash ${OPENCODE_PLUGIN_ROOT}/scripts/step-pretool-guard.sh && (cat .step/state.json 2>/dev/null | head -25 || true)"
   PostToolUse:
     - matcher: "Write|Edit"
       hooks:
@@ -15,7 +15,7 @@ hooks:
   Stop:
     - hooks:
         - type: command
-          command: "bash scripts/step-stop-check.sh 2>/dev/null"
+          command: "OPENCODE_PLUGIN_ROOT=${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}; bash ${OPENCODE_PLUGIN_ROOT}/scripts/step-stop-check.sh 2>/dev/null"
 ---
 
 # STEP Protocol — Core Rules
@@ -73,12 +73,12 @@ hooks:
 Step 1: 加载上下文 → 输出状态行
 Step 2: 写测试（按 routing.test_writing 派发 @step-qa） → 确认全部 FAIL (TDD RED)
 Step 3: 写实现（按 file_routing 选 agent） → 每场景跑 gate lite
-  若 config.worktree.enabled=true：先执行 ./scripts/step-worktree.sh create {change}
+  若 config.worktree.enabled=true：先执行 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-worktree.sh create {change}`
 
-Step 4: Gate 验证 → 小改动可 `gate.sh quick {slug}`，常规 `gate.sh lite {slug}`
+Step 4: Gate 验证 → 小改动可 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh quick {slug}`，常规 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh lite {slug}`
 Step 5: Review + Commit（每完成一个任务都执行）
   commit 后询问是否合并回主分支并归档
-  用户确认后执行 ./scripts/step-worktree.sh finalize {change}
+  用户确认后执行 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-worktree.sh finalize {change}`
 Step 6: 更新 state.json + baseline.md 对应项 [ ] → [x] → 进入下一任务
 ```
 
@@ -90,9 +90,9 @@ Step 6: 更新 state.json + baseline.md 对应项 [ ] → [x] → 进入下一�
 0. **环境自检**: 若收到 `step-doctor` 的失败警告，**必须**优先修复环境（运行提示的修复命令），在环境恢复 PASS 前不进行业务开发。
 1. **测试先行**: 按 `config.json` 的 `routing.test_writing` 派发 @step-qa 写测试 → 确认 FAIL → 再写实现（QA 写测试 + Developer 写实现 = 天然对抗性）
 2. **场景 ID 绑定**: 测试名必须包含 `[S-{slug}-xx]`
-3. **Gate 必须带 slug**: `./scripts/gate.sh quick|lite|full {slug}`——必须指定 task-slug，确保 evidence 自动保存到 `.step/changes/{change}/evidence/{slug}-gate.json`
-4. **增量优先 + 全量兜底**: 日常执行默认增量 gate；Phase 5 Review 前、归档前必须执行一次 `./scripts/gate.sh full {slug} --all`
-5. **场景 100% 覆盖**: `scenario-check.sh` 验证每个场景 ID 都有对应测试
+3. **Gate 必须带 slug**: `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh quick|lite|full {slug}`——必须指定 task-slug，确保 evidence 自动保存到 `.step/changes/{change}/evidence/{slug}-gate.json`
+4. **增量优先 + 全量兜底**: 日常执行默认增量 gate；Phase 5 Review 前、归档前必须执行一次 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh full {slug} --all`
+5. **场景 100% 覆盖**: `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/scenario-check.sh` 验证每个场景 ID 都有对应测试
 6. **所有测试类型必须**: unit / integration / e2e 都是必须的，不可跳过
 7. **修改前必须 Read**: 修改任何文件前必须先用 Read 工具查看当前内容，不得凭记忆编辑
 8. **Baseline 完成跟踪**: 任务标记 done 时，同步更新 baseline.md 对应功能项 `[ ]` → `[x]`
@@ -158,7 +158,7 @@ Lite mode 跳过此检查点。
 ## 保证与限制
 
 ### 硬保证（技术层面强制）
-1. **gate.sh / scenario-check.sh** — 脚本执行结果是确定性的，跑了就准
+1. **gate.sh / scenario-check.sh（安装目录脚本）** — 脚本执行结果是确定性的，跑了就准
 2. **Subagent 模型绑定** — `agents/*.md` frontmatter 默认模型 + oh-my-opencode preset 覆盖，subagent 启动时模型确定
 3. **SessionStart Hook 注入** — 有 `.step/` 目录就一定注入状态到上下文
 4. **PreToolUse Guard** — `step-pretool-guard.sh` 在调用前执行 phase/action/dispatch 校验
@@ -299,9 +299,9 @@ Quick 模式由模型语义判断是否适用，不使用文件数/关键词硬�
 - ✅ TDD 必须（测试先行）
 - ✅ BDD 场景 100% 覆盖必须
 - ✅ 场景 ID: `[S-{slug}-xx]`
-- Gate: `gate.sh quick {slug}`（小改动）或 `gate.sh lite {slug}`（常规增量）
+- Gate: `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh quick {slug}`（小改动）或 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh lite {slug}`（常规增量）
 - e2e 按需
-- Gate lite 通过 → 先执行 `gate.sh full {slug} --all` → **完整 Code Review**（需求合规 > 代码质量）
+- Gate lite 通过 → 先执行 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh full {slug} --all` → **完整 Code Review**（需求合规 > 代码质量）
 - Review 通过 → Commit → 更新 state.json + baseline.md
 - **Lite 精简的是规划阶段，不是质量保证阶段**
 
@@ -322,7 +322,7 @@ Quick 模式由模型语义判断是否适用，不使用文件数/关键词硬�
 2. **自然语言** — 用户说 "归档" 或 "归档 {change-name}"
 3. **命令** — `/archive`、`/archive {change-name}`
 
-**归档脚本**: `./scripts/step-archive.sh [change-name|--all]`
+**归档脚本**: `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-archive.sh [change-name|--all]`
 
 **规则**: 仅变更下所有任务都为 status: done 才可归档，归档不是删除（仍可搜索历史）。
 

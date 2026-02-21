@@ -3,7 +3,8 @@
 
 set -u
 
-TOOLS_DIR="${HOME}/.config/opencode/tools/step"
+OPENCODE_PLUGIN_ROOT="${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}"
+TOOLS_DIR="$OPENCODE_PLUGIN_ROOT"
 INSTALL_SCRIPT="${TOOLS_DIR}/install.sh"
 
 COMMANDS_LINK="${HOME}/.config/opencode/commands/step"
@@ -72,7 +73,7 @@ fi
 
 echo "STEP Doctor 结果: FAIL"
 if [ -f "$INSTALL_SCRIPT" ]; then
-  echo "修复建议: bash ~/.config/opencode/tools/step/install.sh --force"
+  echo "修复建议: bash ${TOOLS_DIR}/install.sh --force"
 else
   echo "修复建议: 在 STEP 仓库根目录执行 bash install.sh --force"
 fi

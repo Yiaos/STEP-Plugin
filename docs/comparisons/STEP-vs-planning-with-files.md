@@ -18,7 +18,7 @@ STEP 是“协议 + 状态机 + 可执行 gate + 角色路由”的工程执行�
 
 ### 2) 可执行约束
 
-- STEP 有真实脚本门禁：`scripts/gate.sh`、`scripts/scenario-check.sh`、`scripts/step-stop-check.sh`。
+- STEP 有真实脚本门禁：`${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh`、`${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/scenario-check.sh`、`${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-stop-check.sh`。
 - planning-with-files 主要依赖执行纪律，不内置项目级 gate 脚本约束。
 
 ### 3) 结构化状态与恢复
@@ -34,7 +34,7 @@ STEP 是“协议 + 状态机 + 可执行 gate + 角色路由”的工程执行�
 
 ### 5) 并行与分支隔离
 
-- STEP 当前通过可选 worktree 模式支持并行线：`worktree.enabled=true` 时自动走 `scripts/step-worktree.sh`。
+- STEP 当前通过可选 worktree 模式支持并行线：`worktree.enabled=true` 时自动走 `${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-worktree.sh`。
 - worktree 合并策略在 STEP 内置（冲突自动策略 + 冲突报告 + 合并后归档 + 清理）。
 - planning-with-files 本身不提供 git/worktree 自动化流程。
 

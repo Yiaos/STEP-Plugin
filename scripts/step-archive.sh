@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# chmod +x scripts/step-archive.sh
+# chmod +x step-archive.sh
 set -euo pipefail
 
 CHANGES_DIR=".step/changes"
@@ -32,8 +32,8 @@ process.exit(data && data.status === expected ? 0 : 1)
 print_usage() {
   cat <<'USAGE'
 Usage:
-  ./scripts/step-archive.sh [change-name1] [change-name2] ...
-  ./scripts/step-archive.sh --all
+  step-archive.sh [change-name1] [change-name2] ...
+  step-archive.sh --all
 USAGE
 }
 

@@ -59,7 +59,7 @@ TOTAL=$((TOTAL + 1))
   trap 'rm -rf "$box"' EXIT
   mkdir -p "$box/.step/changes/c1"
   set_state "$box/.step/state.json" "phase-1-prd" "c1" ""
-  out=$(cd "$box" && bash ./scripts/step-manager.sh transition --to phase-2-tech-design 2>&1)
+  out=$(cd "$box" && bash "$box/scripts/step-manager.sh" transition --to phase-2-tech-design 2>&1)
   code=$?
   rm -rf "$box"
   trap - EXIT
@@ -78,7 +78,7 @@ TOTAL=$((TOTAL + 1))
   mkdir -p "$box/.step/changes/c1"
   touch "$box/.step/changes/c1/spec.md"
   set_state "$box/.step/state.json" "phase-1-prd" "c1" ""
-  (cd "$box" && bash ./scripts/step-manager.sh transition --to phase-2-tech-design >/dev/null 2>&1)
+  (cd "$box" && bash "$box/scripts/step-manager.sh" transition --to phase-2-tech-design >/dev/null 2>&1)
   code=$?
   rm -rf "$box"
   trap - EXIT
@@ -96,7 +96,7 @@ TOTAL=$((TOTAL + 1))
   trap 'rm -rf "$box"' EXIT
   mkdir -p "$box/.step/changes/c1/evidence"
   set_state "$box/.step/state.json" "phase-4-execution" "" "demo"
-  out=$(cd "$box" && bash ./scripts/step-manager.sh transition --to phase-5-review 2>&1)
+  out=$(cd "$box" && bash "$box/scripts/step-manager.sh" transition --to phase-5-review 2>&1)
   code=$?
   rm -rf "$box"
   trap - EXIT
@@ -123,7 +123,7 @@ TOTAL=$((TOTAL + 1))
 }
 EOF
   set_state "$box/.step/state.json" "phase-4-execution" "c1" "demo"
-  (cd "$box" && bash ./scripts/step-manager.sh transition --to phase-5-review >/dev/null 2>&1)
+  (cd "$box" && bash "$box/scripts/step-manager.sh" transition --to phase-5-review >/dev/null 2>&1)
   code=$?
   rm -rf "$box"
   trap - EXIT
@@ -141,7 +141,7 @@ TOTAL=$((TOTAL + 1))
   trap 'rm -rf "$box"' EXIT
   mkdir -p "$box/.step/changes/c1/evidence"
   set_state "$box/.step/state.json" "phase-5-review" "c1" "demo"
-  out=$(cd "$box" && bash ./scripts/step-manager.sh transition --to done 2>&1)
+  out=$(cd "$box" && bash "$box/scripts/step-manager.sh" transition --to done 2>&1)
   code=$?
   rm -rf "$box"
   trap - EXIT
@@ -160,7 +160,7 @@ TOTAL=$((TOTAL + 1))
   mkdir -p "$box/.step/changes/c1/evidence"
   touch "$box/.step/changes/c1/evidence/demo-review.md"
   set_state "$box/.step/state.json" "phase-5-review" "c1" "demo"
-  (cd "$box" && bash ./scripts/step-manager.sh transition --to done >/dev/null 2>&1)
+  (cd "$box" && bash "$box/scripts/step-manager.sh" transition --to done >/dev/null 2>&1)
   code=$?
   rm -rf "$box"
   trap - EXIT

@@ -1,6 +1,6 @@
 #!/bin/bash
 # STEP Gate — 质量门禁
-# Usage: ./scripts/gate.sh [quick|lite|full] [task-slug] [--all] [--quick-reason <text>] [--escalated true|false] [--escalation-reason <text>]
+# Usage: gate.sh [quick|lite|full] [task-slug] [--all] [--quick-reason <text>] [--escalated true|false] [--escalation-reason <text>]
 #   quick    — 轻量门禁（lint + 记录证据）
 #   lite     — lint + typecheck + test + scenario coverage
 #   full     — lite + build
@@ -54,13 +54,13 @@ case "$LEVEL_RAW" in
     ;;
   *)
     echo "❌ Invalid level: $LEVEL_RAW"
-    echo "Usage: ./scripts/gate.sh [quick|lite|full] [task-slug]"
+    echo "Usage: gate.sh [quick|lite|full] [task-slug]"
     exit 2
     ;;
 esac
 
 if [ -z "$TASK_ID" ]; then
-  echo "❌ gate 必须指定 task slug（例如: ./scripts/gate.sh lite user-register-api）"
+  echo "❌ gate 必须指定 task slug（例如: gate.sh lite user-register-api）"
   exit 2
 fi
 

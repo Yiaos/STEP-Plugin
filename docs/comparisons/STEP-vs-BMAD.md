@@ -19,7 +19,7 @@ BMAD 更像“团队协作与迭代管理框架”，STEP 更像“AI 代理驱�
 ### 3) 工程验证机制
 
 - BMAD：可接入测试体系，但框架本身不绑定固定脚本闸门。
-- STEP：内置 `gate.sh` / `scenario-check.sh`，并把结果写入 `.step/changes/{change}/evidence/`。
+- STEP：内置 `gate.sh` / `scenario-check.sh`（安装目录 `${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/`），并把结果写入 `.step/changes/{change}/evidence/`。
 
 ### 4) 会话连续性
 
