@@ -33,7 +33,7 @@
   "gate": {
     "lint": "echo 'no lint configured'",
     "typecheck": "echo 'no typecheck configured'",
-    "test": "bash tests/test-attention-management.sh && bash tests/test-stop-hook.sh && bash tests/test-stop-strict-exit-code.sh && bash tests/test-init-detection.sh && bash tests/test-execution-rules.sh && bash tests/test-docs-correction.sh && bash tests/test-lite-mode-and-naming.sh && bash tests/test-archive-feature.sh && bash tests/test-change-structure-scripts.sh && bash tests/test-session-start-hook.sh && bash tests/test-worktree-mode.sh && bash tests/test-step-manager-check-action.sh && bash tests/test-step-phase-enforcement.sh && bash tests/test-phase-gate-requirements.sh && bash tests/test-findings-two-action-rule.sh",
+    "test": "bash tests/test-attention-management.sh && bash tests/test-stop-hook.sh && bash tests/test-stop-strict-exit-code.sh && bash tests/test-init-detection.sh && bash tests/test-execution-rules.sh && bash tests/test-docs-correction.sh && bash tests/test-lite-mode-and-naming.sh && bash tests/test-archive-feature.sh && bash tests/test-change-structure-scripts.sh && bash tests/test-session-start-hook.sh && bash tests/test-worktree-mode.sh && bash tests/test-step-manager-check-action.sh && bash tests/test-step-phase-enforcement.sh && bash tests/test-phase-gate-requirements.sh && bash tests/test-findings-two-action-rule.sh && bash tests/test-e2e-rule-consistency.sh && bash tests/test-workflow-split.sh && bash tests/test-agent-enforcement.sh && bash tests/test-cancel-mechanism.sh && bash tests/test-scenario-status-sync.sh && bash tests/test-step-archive.sh && bash tests/test-step-pretool-guard.sh && bash tests/test-gate-incremental.sh",
     "build": "echo 'no build configured'"
   },
   "worktree": {
@@ -45,6 +45,7 @@
       "full": true,
       "lite": false
     },
+    "bypass_tools": [],
     "planning_phase_write_lock": {
       "full": true,
       "lite": false

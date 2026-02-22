@@ -7,6 +7,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TEMPLATES_DIR="${PLUGIN_ROOT}/templates"
+CORE_SCRIPT="${PLUGIN_ROOT}/scripts/step-core.js"
 STEP_AGENTS_BEGIN="<!-- STEP:BEGIN DOC-ROLES -->"
 STEP_AGENTS_END="<!-- STEP:END DOC-ROLES -->"
 
@@ -91,37 +92,10 @@ ensure_agents_step_guidance() {
 EOF
 )
 
-  node -e '
-const fs = require("fs")
-const file = process.argv[1]
-const begin = process.argv[2]
-const end = process.argv[3]
-const block = process.argv[4]
-const section = `${begin}\n${block}\n${end}`
-
-let current = ""
-if (fs.existsSync(file)) {
-  current = fs.readFileSync(file, "utf-8")
-}
-
-if (!current) {
-  fs.writeFileSync(file, `# AGENTS\n\n${section}\n`, "utf-8")
-  process.exit(0)
-}
-
-const beginIdx = current.indexOf(begin)
-const endIdx = current.indexOf(end)
-let next
-if (beginIdx >= 0 && endIdx > beginIdx) {
-  const head = current.slice(0, beginIdx)
-  const tail = current.slice(endIdx + end.length)
-  next = `${head}${section}${tail}`
-} else {
-  const normalized = current.endsWith("\n") ? current : `${current}\n`
-  next = `${normalized}\n${section}\n`
-}
-fs.writeFileSync(file, next, "utf-8")
-' "$agents_file" "$STEP_AGENTS_BEGIN" "$STEP_AGENTS_END" "$guidance_content"
+  printf '%s' "$guidance_content" | node "$CORE_SCRIPT" agents ensure-block \
+    --file "$agents_file" \
+    --begin "$STEP_AGENTS_BEGIN" \
+    --end "$STEP_AGENTS_END" >/dev/null
 }
 
 # ── 主流程 ────────────────────────────────────────────────────
@@ -153,14 +127,8 @@ cp "${TEMPLATES_DIR}/design.md" .step/changes/init/design.md
 
 # 设置初始时间戳 + 项目类型
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-node -e '
-const fs = require("fs")
-const file = ".step/state.json"
-const data = JSON.parse(fs.readFileSync(file, "utf-8"))
-data.last_updated = process.argv[1]
-data.project_type = process.argv[2]
-fs.writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`, "utf-8")
-' "$TIMESTAMP" "$PROJECT_TYPE"
+node "$CORE_SCRIPT" state set --file .step/state.json --path last_updated --value "$TIMESTAMP" >/dev/null
+node "$CORE_SCRIPT" state set --file .step/state.json --path project_type --value "$PROJECT_TYPE" >/dev/null
 
 ensure_agents_step_guidance
 

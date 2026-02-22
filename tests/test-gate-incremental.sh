@@ -1,5 +1,6 @@
 #!/bin/bash
-# T-015 测试：gate 默认增量测试
+# T-033 测试：gate 增量测试在多段命令场景的行为
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
 PASS=0; FAIL=0; TOTAL=0
 
@@ -13,70 +14,185 @@ assert() {
   fi
 }
 
-echo "=== T-015: gate 默认增量测试 ==="
+echo "=== T-033: gate incremental multi-segment ==="
 
-assert "[S-015-01] gate lite 默认只传 task 声明的测试文件" bash -c "
+assert "[S-gate-incremental-01] multi-segment test command supports incremental subset" bash -c "
   set -e
   tmpdir=\$(mktemp -d)
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
-  mkdir -p .step/changes/init/tasks .step/changes/init/evidence scripts tests test
-  cp '$SCRIPT_DIR/scripts/gate.sh' scripts/gate.sh
+  mkdir -p scripts tests .step/changes/c1/tasks
   cp '$SCRIPT_DIR/scripts/step-core.js' scripts/step-core.js
-  chmod +x scripts/gate.sh scripts/step-core.js
+  chmod +x scripts/step-core.js
 
-  cat > .step/config.json <<'CFG'
+  cat > .step/state.json <<'EOF'
 {
-  "routing": {},
-  "file_routing": {},
-  "gate": {
-    "lint": "echo lint",
-    "typecheck": "echo typecheck",
-    "test": "bash tests/fake-runner.sh",
-    "build": "echo build"
+  \"project\": \"demo\",
+  \"current_phase\": \"phase-4-execution\",
+  \"current_change\": \"c1\",
+  \"last_updated\": \"2026-02-22T00:00:00Z\",
+  \"last_agent\": \"tester\",
+  \"last_session_summary\": \"\",
+  \"session\": { \"mode\": \"full\" },
+  \"established_patterns\": {},
+  \"tasks\": { \"current\": \"demo\", \"upcoming\": [] },
+  \"key_decisions\": [],
+  \"known_issues\": [],
+  \"constraints_quick_ref\": [],
+  \"progress_log\": []
+}
+EOF
+
+  cat > .step/config.json <<'EOF'
+{
+  \"routing\": {},
+  \"file_routing\": {},
+  \"gate\": {
+    \"lint\": \"true\",
+    \"typecheck\": \"true\",
+    \"test\": \"bash tests/a.sh && bash tests/b.sh\",
+    \"build\": \"true\"
   }
 }
-CFG
+EOF
 
-  cat > .step/changes/init/tasks/demo.md <<'TASK'
+  cat > .step/changes/c1/tasks/demo.md <<'EOF'
 # demo
+
 \`\`\`json task
 {
-  "id": "demo",
-  "title": "demo",
-  "mode": "lite",
-  "status": "planned",
-  "done_when": [],
-  "scenarios": [
-    {
-      "id": "S-demo-01",
-      "test_file": "test/a.test.ts"
-    },
-    {
-      "id": "S-demo-02",
-      "test_file": "test/b.test.ts"
-    }
-  ]
+  \"id\": \"demo\",
+  \"title\": \"demo\",
+  \"mode\": \"full\",
+  \"status\": \"in_progress\",
+  \"done_when\": [],
+  \"scenarios\": {
+    \"happy_path\": [
+      {
+        \"id\": \"S-gate-incremental-01\",
+        \"test_file\": \"tests/a.sh\",
+        \"test_name\": \"[S-gate-incremental-01]\",
+        \"test_type\": \"unit\",
+        \"status\": \"not_run\"
+      }
+    ]
+  }
 }
 \`\`\`
-TASK
+EOF
 
-  cat > test/a.test.ts <<'A'
-it('[S-demo-01] a', () => {})
-A
-  cat > test/b.test.ts <<'B'
-it('[S-demo-02] b', () => {})
-B
-  cat > tests/fake-runner.sh <<'RUN'
+  cat > tests/a.sh <<'EOF'
 #!/bin/bash
-printf '%s\n' "$@" > .step/changes/init/evidence/test-args.txt
-RUN
-  chmod +x tests/fake-runner.sh
+set -e
+assert() {
+  local _name=\"\$1\"; shift
+  \"\$@\"
+}
+assert \"[S-gate-incremental-01]\" touch .ran-a
+EOF
+  chmod +x tests/a.sh
 
-  OPENCODE_PLUGIN_ROOT="\$PWD"
-  bash "\$OPENCODE_PLUGIN_ROOT/scripts/gate.sh" lite demo >/dev/null 2>&1
-  grep -q 'test/a.test.ts' .step/changes/init/evidence/test-args.txt
-  grep -q 'test/b.test.ts' .step/changes/init/evidence/test-args.txt
+  cat > tests/b.sh <<'EOF'
+#!/bin/bash
+set -e
+touch .ran-b
+EOF
+  chmod +x tests/b.sh
+
+  out=\$(node scripts/step-core.js gate run --level lite --task demo --mode incremental --config .step/config.json 2>&1)
+  echo \"\$out\" | grep -q 'test-scope: incremental'
+  [ -f .ran-a ]
+  [ ! -f .ran-b ]
+"
+
+assert "[S-gate-incremental-02] non-test segment falls back to full test" bash -c "
+  set -e
+  tmpdir=\$(mktemp -d)
+  trap 'rm -rf \"\$tmpdir\"' EXIT
+  cd \"\$tmpdir\"
+  mkdir -p scripts tests .step/changes/c1/tasks
+  cp '$SCRIPT_DIR/scripts/step-core.js' scripts/step-core.js
+  chmod +x scripts/step-core.js
+
+  cat > .step/state.json <<'EOF'
+{
+  \"project\": \"demo\",
+  \"current_phase\": \"phase-4-execution\",
+  \"current_change\": \"c1\",
+  \"last_updated\": \"2026-02-22T00:00:00Z\",
+  \"last_agent\": \"tester\",
+  \"last_session_summary\": \"\",
+  \"session\": { \"mode\": \"full\" },
+  \"established_patterns\": {},
+  \"tasks\": { \"current\": \"demo\", \"upcoming\": [] },
+  \"key_decisions\": [],
+  \"known_issues\": [],
+  \"constraints_quick_ref\": [],
+  \"progress_log\": []
+}
+EOF
+
+  cat > .step/config.json <<'EOF'
+{
+  \"routing\": {},
+  \"file_routing\": {},
+  \"gate\": {
+    \"lint\": \"true\",
+    \"typecheck\": \"true\",
+    \"test\": \"echo prepare && bash tests/a.sh && bash tests/b.sh\",
+    \"build\": \"true\"
+  }
+}
+EOF
+
+  cat > .step/changes/c1/tasks/demo.md <<'EOF'
+# demo
+
+\`\`\`json task
+{
+  \"id\": \"demo\",
+  \"title\": \"demo\",
+  \"mode\": \"full\",
+  \"status\": \"in_progress\",
+  \"done_when\": [],
+  \"scenarios\": {
+    \"happy_path\": [
+      {
+        \"id\": \"S-gate-incremental-02\",
+        \"test_file\": \"tests/a.sh\",
+        \"test_name\": \"[S-gate-incremental-02]\",
+        \"test_type\": \"unit\",
+        \"status\": \"not_run\"
+      }
+    ]
+  }
+}
+\`\`\`
+EOF
+
+  cat > tests/a.sh <<'EOF'
+#!/bin/bash
+set -e
+assert() {
+  local _name=\"\$1\"; shift
+  \"\$@\"
+}
+assert \"[S-gate-incremental-02]\" touch .ran-a
+EOF
+  chmod +x tests/a.sh
+
+  cat > tests/b.sh <<'EOF'
+#!/bin/bash
+set -e
+touch .ran-b
+EOF
+  chmod +x tests/b.sh
+
+  out=\$(node scripts/step-core.js gate run --level lite --task demo --mode incremental --config .step/config.json 2>&1)
+  echo \"\$out\" | grep -q '增量测试未生效（multi-segment-non-test-segment）'
+  echo \"\$out\" | grep -q 'test-scope: all'
+  [ -f .ran-a ]
+  [ -f .ran-b ]
 "
 
 echo ""

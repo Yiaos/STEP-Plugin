@@ -43,6 +43,10 @@
             "full": { "type": "boolean" },
             "lite": { "type": "boolean" }
           }
+        },
+        "bypass_tools": {
+          "type": "array",
+          "items": { "type": "string" }
         }
       }
     }

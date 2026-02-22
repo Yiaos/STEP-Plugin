@@ -12,21 +12,7 @@ TODAY="$(date +%F)"
 task_status_is() {
   local task_file="$1"
   local expected="$2"
-  node -e '
-const fs = require("fs")
-const file = process.argv[1]
-const expected = process.argv[2]
-const raw = fs.readFileSync(file, "utf-8").replace(/\r\n/g, "\n")
-let data
-if (file.endsWith(".md")) {
-  const m = raw.match(/```json(?:\s+task)?\n([\s\S]*?)\n```/)
-  if (!m) process.exit(2)
-  data = JSON.parse(m[1])
-} else {
-  data = JSON.parse(raw)
-}
-process.exit(data && data.status === expected ? 0 : 1)
-' "$task_file" "$expected" >/dev/null 2>&1
+  node "$CORE_SCRIPT" task status --file "$task_file" --expected "$expected" >/dev/null 2>&1
 }
 
 print_usage() {
@@ -69,6 +55,11 @@ change_all_tasks_done() {
     [ -f "$task_file" ] || continue
     found=1
     if ! task_status_is "$task_file" "done"; then
+      return 1
+    fi
+    local task_slug
+    task_slug="$(basename "$task_file" .md)"
+    if ! node "$CORE_SCRIPT" task ready --task "$task_slug" --change "$name" >/dev/null 2>&1; then
       return 1
     fi
   done

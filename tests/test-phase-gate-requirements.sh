@@ -26,7 +26,8 @@ new_sandbox() {
   mkdir -p "$dir/.step" "$dir/scripts"
   cp "$SCRIPT_DIR/templates/state.json" "$dir/.step/state.json"
   cp "$SCRIPT_DIR/scripts/step-manager.sh" "$dir/scripts/step-manager.sh"
-  chmod +x "$dir/scripts/step-manager.sh"
+  cp "$SCRIPT_DIR/scripts/step-core.js" "$dir/scripts/step-core.js"
+  chmod +x "$dir/scripts/step-manager.sh" "$dir/scripts/step-core.js"
   printf '%s' "$dir"
 }
 
@@ -139,7 +140,30 @@ TOTAL=$((TOTAL + 1))
 {
   box=$(new_sandbox)
   trap 'rm -rf "$box"' EXIT
-  mkdir -p "$box/.step/changes/c1/evidence"
+  mkdir -p "$box/.step/changes/c1/evidence" "$box/.step/changes/c1/tasks"
+  cat > "$box/.step/changes/c1/evidence/demo-gate.json" <<'EOF'
+{
+  "task_id": "demo",
+  "timestamp": "2026-02-22T00:00:00Z",
+  "passed": true,
+  "scenario": {
+    "timestamp": "2026-02-22T00:00:00Z",
+    "passed": true
+  }
+}
+EOF
+  cat > "$box/.step/changes/c1/tasks/demo.md" <<'EOF'
+```json task
+{
+  "id": "demo",
+  "title": "demo",
+  "mode": "full",
+  "status": "done",
+  "scenarios": [],
+  "done_when": []
+}
+```
+EOF
   set_state "$box/.step/state.json" "phase-5-review" "c1" "demo"
   out=$(cd "$box" && bash "$box/scripts/step-manager.sh" transition --to done 2>&1)
   code=$?
@@ -157,8 +181,34 @@ TOTAL=$((TOTAL + 1))
 {
   box=$(new_sandbox)
   trap 'rm -rf "$box"' EXIT
-  mkdir -p "$box/.step/changes/c1/evidence"
-  touch "$box/.step/changes/c1/evidence/demo-review.md"
+  mkdir -p "$box/.step/changes/c1/evidence" "$box/.step/changes/c1/tasks"
+  cat > "$box/.step/changes/c1/evidence/demo-gate.json" <<'EOF'
+{
+  "task_id": "demo",
+  "timestamp": "2026-02-22T00:00:00Z",
+  "passed": true,
+  "scenario": {
+    "timestamp": "2026-02-22T00:00:00Z",
+    "passed": true
+  }
+}
+EOF
+  cat > "$box/.step/changes/c1/tasks/demo.md" <<'EOF'
+```json task
+{
+  "id": "demo",
+  "title": "demo",
+  "mode": "full",
+  "status": "done",
+  "scenarios": [],
+  "done_when": []
+}
+```
+EOF
+  cat > "$box/.step/changes/c1/evidence/demo-review.md" <<'EOF'
+## Code Review — demo
+**Assessment**: APPROVE
+EOF
   set_state "$box/.step/state.json" "phase-5-review" "c1" "demo"
   (cd "$box" && bash "$box/scripts/step-manager.sh" transition --to done >/dev/null 2>&1)
   code=$?
@@ -168,6 +218,51 @@ TOTAL=$((TOTAL + 1))
     pass_case "[S-024-06] phase-5->done 存在 review 证据时通过"
   else
     fail_case "[S-024-06] phase-5->done 存在 review 证据时通过"
+  fi
+}
+
+# [S-024-07] phase-5->done gate 证据过期时阻断
+TOTAL=$((TOTAL + 1))
+{
+  box=$(new_sandbox)
+  trap 'rm -rf "$box"' EXIT
+  mkdir -p "$box/.step/changes/c1/evidence" "$box/.step/changes/c1/tasks"
+  cat > "$box/.step/changes/c1/evidence/demo-gate.json" <<'EOF'
+{
+  "task_id": "demo",
+  "timestamp": "2026-02-22T00:00:00Z",
+  "passed": true,
+  "scenario": {
+    "timestamp": "2026-02-22T00:10:00Z",
+    "passed": true
+  }
+}
+EOF
+  cat > "$box/.step/changes/c1/tasks/demo.md" <<'EOF'
+```json task
+{
+  "id": "demo",
+  "title": "demo",
+  "mode": "full",
+  "status": "done",
+  "scenarios": [],
+  "done_when": []
+}
+```
+EOF
+  cat > "$box/.step/changes/c1/evidence/demo-review.md" <<'EOF'
+## Code Review — demo
+**Assessment**: APPROVE
+EOF
+  set_state "$box/.step/state.json" "phase-5-review" "c1" "demo"
+  out=$(cd "$box" && bash "$box/scripts/step-manager.sh" transition --to done 2>&1)
+  code=$?
+  rm -rf "$box"
+  trap - EXIT
+  if [ "$code" -ne 0 ] && printf '%s' "$out" | grep -q 'gate 证据已过期'; then
+    pass_case "[S-024-07] phase-5->done gate 证据过期时阻断"
+  else
+    fail_case "[S-024-07] phase-5->done gate 证据过期时阻断"
   fi
 }
 

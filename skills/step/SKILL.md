@@ -22,6 +22,33 @@ hooks:
 
 > Stateful Task Execution Protocol. 完整规范见 `WORKFLOW.md`（STEP 插件根目录）。
 
+<!-- SECTION:core-rules -->
+- Full 模式：phase-1/2/3 启用写锁；phase-4/5 要求 execution dispatch（可通过 enforcement.bypass_tools 白名单豁免）
+- Gate 结论必须有新鲜运行证据，禁止口头通过
+- 变更通过 `.step/changes/{change}/` 管理，完成后归档到 `.step/archive/`
+<!-- /SECTION:core-rules -->
+
+<!-- SECTION:phase-0-1 -->
+- Phase 0/1：用户主导探索与需求确认，不写实现代码
+- Findings 阈值：Discovery/Lite-L1 每 2 个探索动作更新一次
+<!-- /SECTION:phase-0-1 -->
+
+<!-- SECTION:phase-2-3 -->
+- Phase 2/3：方案对比、任务拆分、场景矩阵确认
+- Findings 阈值：Phase 2/3 每 3 个探索动作更新一次
+<!-- /SECTION:phase-2-3 -->
+
+<!-- SECTION:phase-4-5 -->
+- Phase 4：TDD + gate，执行阶段优先通过 Task 委派到 execution agent
+- Phase 5：先需求合规，再代码质量
+- Findings 阈值：Execution/Review 阶段每 4 个动作更新一次
+<!-- /SECTION:phase-4-5 -->
+
+<!-- SECTION:common -->
+- Session 结束必须更新 state.json（last_updated/progress_log/next_action）
+- baseline 冲突必须走新变更，不可直接覆写
+<!-- /SECTION:common -->
+
 ## 命名规则
 
 任务使用**语义化 slug** 命名（参考 OpenSpec 理念）：
@@ -44,7 +71,7 @@ hooks:
 - **用户主导**，LLM 是对话伙伴，不逐个提问
 - 不做技术决策，不写代码
 - 探索过程中发现关键事实/约束 → 写入 `.step/changes/{change}/findings.md`（可选）
-- **Findings 2-Action Rule**: 每完成 2 个有效探索动作（读文件/检索/调研/分析）必须更新 findings（新增事实或明确"本轮无新增发现"）
+- **Findings 2-Action Rule（分级阈值）**: Discovery/Lite-L1 每 2 个有效探索动作更新一次 findings；执行阶段阈值放宽（见 Execution 硬规则）
 - 重大发现应提炼为 ADR 写入 `decisions.md`
 - 目标方向明确 + 边界清晰 + 用户确认 → 进入 Phase 1
 
@@ -58,14 +85,14 @@ hooks:
 - 用户开放讨论，可追问细节、提出新方案
 - 整体确定后，细节用选择题快速确认
 - 技术调研中的中间发现 → 追加到 `.step/changes/{change}/findings.md`（可选）
-- **Findings 2-Action Rule**: 每完成 2 个有效探索动作必须更新 findings，保持调研证据连续性
+- **Findings 2-Action Rule（分级阈值）**: 规划阶段每 3 个有效探索动作更新一次 findings，保持调研证据连续性
 - 输出: `.step/changes/{change}/design.md` + `.step/decisions.md`（ADR）
 
 ### Phase 3: Plan & Tasks（结构化确认）
 - 生成任务图 + 依赖关系 + BDD 场景矩阵
 - 每个任务 Markdown(JSON 代码块) 含: happy_path / edge_cases / error_handling 场景
 - 场景 ID 格式: `S-{slug}-{seq}` (如 `S-user-register-api-01`)
-- 每个场景通过 `test_type` 指定验证方式（unit / integration / e2e），**三种类型都是必须的**
+- 每个场景通过 `test_type` 指定验证方式（unit / integration / e2e），unit 与 integration 必须；e2e 在 Full 必须，Lite 按需
 - 用户审核确认后写入 `.step/changes/{change}/tasks/`
 
 ### Phase 4: Execution（TDD + Gate）
@@ -93,13 +120,15 @@ Step 6: 更新 state.json + baseline.md 对应项 [ ] → [x] → 进入下一�
 3. **Gate 必须带 slug**: `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh quick|lite|full {slug}`——必须指定 task-slug，确保 evidence 自动保存到 `.step/changes/{change}/evidence/{slug}-gate.json`
 4. **增量优先 + 全量兜底**: 日常执行默认增量 gate；Phase 5 Review 前、归档前必须执行一次 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh full {slug} --all`
 5. **场景 100% 覆盖**: `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/scenario-check.sh` 验证每个场景 ID 都有对应测试
-6. **所有测试类型必须**: unit / integration / e2e 都是必须的，不可跳过
-7. **修改前必须 Read**: 修改任何文件前必须先用 Read 工具查看当前内容，不得凭记忆编辑
-8. **Baseline 完成跟踪**: 任务标记 done 时，同步更新 baseline.md 对应功能项 `[ ]` → `[x]`
-9. **Evidence 必须保存**: gate 证据保存到 `.step/changes/{change}/evidence/{slug}-gate.json`；review 记录保存到 `.step/changes/{change}/evidence/{slug}-review.md`
-10. **验证铁律**: <HARD-GATE>声称"测试通过"/"gate 通过"/"Review 通过"前，必须在本条消息中展示实际运行输出。没有新鲜证据的通过声明等于撒谎。</HARD-GATE>
-11. **Gate 安全约束**: gate 命令执行前必须通过危险命令黑名单校验（`gate.dangerous_executables`）
-12. **分模式执行约束**: `full` 模式在 phase-1/2/3 启用写锁并强制 Task 委派；`lite/quick` 默认不强制 PM/Architect（由 `config.enforcement` 控制）
+6. **场景状态自动同步**: `scenario-check` / `gate` 会把 `scenario.status` 从 `not_run` 更新为 `pass` / `fail`
+7. **Done 前置条件**: `task.status=done` 前，必须保证该 task 下所有场景状态为 `pass`（不得存在 `not_run` / `fail`）
+8. **测试类型要求**: unit / integration 必须；e2e 在 Full 模式必须，Lite 模式按需
+9. **修改前必须 Read**: 修改任何文件前必须先用 Read 工具查看当前内容，不得凭记忆编辑
+10. **Baseline 完成跟踪**: 任务标记 done 时，同步更新 baseline.md 对应功能项 `[ ]` → `[x]`
+11. **Evidence 必须保存**: gate 证据保存到 `.step/changes/{change}/evidence/{slug}-gate.json`；review 记录保存到 `.step/changes/{change}/evidence/{slug}-review.md`
+12. **验证铁律**: <HARD-GATE>声称"测试通过"/"gate 通过"/"Review 通过"前，必须在本条消息中展示实际运行输出。没有新鲜证据的通过声明等于撒谎。</HARD-GATE>
+13. **Gate 安全约束**: gate 命令执行前必须通过危险命令黑名单校验（`gate.dangerous_executables`）
+14. **分模式执行约束**: `full` 模式在 phase-1/2/3 启用写锁并强制 Task 委派；`lite/quick` 默认不强制 PM/Architect（由 `config.enforcement` 控制）
 
 ## Gate 失败处理
 

@@ -26,7 +26,8 @@ new_box() {
   mkdir -p "$dir/.step" "$dir/scripts"
   cp "$SCRIPT_DIR/templates/state.json" "$dir/.step/state.json"
   cp "$SCRIPT_DIR/scripts/step-manager.sh" "$dir/scripts/step-manager.sh"
-  chmod +x "$dir/scripts/step-manager.sh"
+  cp "$SCRIPT_DIR/scripts/step-core.js" "$dir/scripts/step-core.js"
+  chmod +x "$dir/scripts/step-manager.sh" "$dir/scripts/step-core.js"
   printf '%s' "$dir"
 }
 
@@ -112,8 +113,9 @@ TOTAL=$((TOTAL + 1))
   mkdir -p "$box/.step" "$box/scripts"
   cp "$SCRIPT_DIR/templates/state.json" "$box/.step/state.json"
   cp "$SCRIPT_DIR/scripts/step-manager.sh" "$box/scripts/step-manager.sh"
+  cp "$SCRIPT_DIR/scripts/step-core.js" "$box/scripts/step-core.js"
   cp "$SCRIPT_DIR/scripts/step-pretool-guard.sh" "$box/scripts/step-pretool-guard.sh"
-  chmod +x "$box/scripts/step-manager.sh" "$box/scripts/step-pretool-guard.sh"
+  chmod +x "$box/scripts/step-manager.sh" "$box/scripts/step-core.js" "$box/scripts/step-pretool-guard.sh"
   node -e 'const fs=require("fs");const f=process.argv[1];const s=JSON.parse(fs.readFileSync(f,"utf-8"));s.current_phase="idle";fs.writeFileSync(f,JSON.stringify(s,null,2)+"\n","utf-8");' "$box/.step/state.json"
   out=$(cd "$box" && OPENCODE_TOOL_NAME=Write bash "$box/scripts/step-pretool-guard.sh" 2>&1)
   code=$?
@@ -171,8 +173,9 @@ TOTAL=$((TOTAL + 1))
   mkdir -p "$box/.step" "$box/scripts"
   cp "$SCRIPT_DIR/templates/state.json" "$box/.step/state.json"
   cp "$SCRIPT_DIR/scripts/step-manager.sh" "$box/scripts/step-manager.sh"
+  cp "$SCRIPT_DIR/scripts/step-core.js" "$box/scripts/step-core.js"
   cp "$SCRIPT_DIR/scripts/step-pretool-guard.sh" "$box/scripts/step-pretool-guard.sh"
-  chmod +x "$box/scripts/step-manager.sh" "$box/scripts/step-pretool-guard.sh"
+  chmod +x "$box/scripts/step-manager.sh" "$box/scripts/step-core.js" "$box/scripts/step-pretool-guard.sh"
   node -e 'const fs=require("fs");const f=process.argv[1];const s=JSON.parse(fs.readFileSync(f,"utf-8"));s.current_phase="idle";fs.writeFileSync(f,JSON.stringify(s,null,2)+"\n","utf-8");' "$box/.step/state.json"
   out=$(cd "$box" && STEP_AUTO_ENTER=true STEP_AUTO_ENTER_MODE=full OPENCODE_TOOL_NAME=Write bash "$box/scripts/step-pretool-guard.sh" 2>&1)
   code=$?
@@ -239,6 +242,87 @@ TOTAL=$((TOTAL + 1))
   else
     echo "    detail: $out"
     fail_case "[S-stabilize-step-trigger-enforcement-11] lite 模式不强制委派 step-pm"
+  fi
+}
+
+# [S-manager-core-migrate-01] manager enter sets phase and change
+TOTAL=$((TOTAL + 1))
+{
+  box=$(new_box)
+  trap 'rm -rf "$box"' EXIT
+  (cd "$box" && bash "$box/scripts/step-manager.sh" enter --mode full --change test-change >/dev/null 2>&1)
+  phase=$(node -e 'const fs=require("fs");const s=JSON.parse(fs.readFileSync(process.argv[1],"utf-8"));process.stdout.write(s.current_phase||"")' "$box/.step/state.json")
+  change=$(node -e 'const fs=require("fs");const s=JSON.parse(fs.readFileSync(process.argv[1],"utf-8"));process.stdout.write(s.current_change||"")' "$box/.step/state.json")
+  rm -rf "$box"
+  trap - EXIT
+  if [ "$phase" = "phase-0-discovery" ] && [ "$change" = "test-change" ]; then
+    pass_case "[S-manager-core-migrate-01] manager enter sets phase and change"
+  else
+    fail_case "[S-manager-core-migrate-01] manager enter sets phase and change"
+  fi
+}
+
+# [S-manager-core-migrate-02] manager transition updates phase
+TOTAL=$((TOTAL + 1))
+{
+  box=$(new_box)
+  trap 'rm -rf "$box"' EXIT
+  (cd "$box" && bash "$box/scripts/step-manager.sh" enter --mode full --change init >/dev/null 2>&1)
+  (cd "$box" && bash "$box/scripts/step-manager.sh" transition --to phase-1-prd >/dev/null 2>&1)
+  phase=$(node -e 'const fs=require("fs");const s=JSON.parse(fs.readFileSync(process.argv[1],"utf-8"));process.stdout.write(s.current_phase||"")' "$box/.step/state.json")
+  rm -rf "$box"
+  trap - EXIT
+  if [ "$phase" = "phase-1-prd" ]; then
+    pass_case "[S-manager-core-migrate-02] manager transition updates phase"
+  else
+    fail_case "[S-manager-core-migrate-02] manager transition updates phase"
+  fi
+}
+
+# [S-manager-core-migrate-03] invalid transition rejected
+TOTAL=$((TOTAL + 1))
+{
+  box=$(new_box)
+  trap 'rm -rf "$box"' EXIT
+  (cd "$box" && bash "$box/scripts/step-manager.sh" enter --mode full --change init >/dev/null 2>&1)
+  out=$(cd "$box" && bash "$box/scripts/step-manager.sh" transition --to phase-4-execution 2>&1)
+  code=$?
+  rm -rf "$box"
+  trap - EXIT
+  if [ "$code" -ne 0 ] && printf '%s' "$out" | grep -q '非法 phase 迁移'; then
+    pass_case "[S-manager-core-migrate-03] invalid transition rejected"
+  else
+    fail_case "[S-manager-core-migrate-03] invalid transition rejected"
+  fi
+}
+
+# [S-manager-core-migrate-04] thin shell delegates correctly
+TOTAL=$((TOTAL + 1))
+{
+  if grep -q 'node "$CORE_SCRIPT" manager' "$SCRIPT_DIR/scripts/step-manager.sh"; then
+    pass_case "[S-manager-core-migrate-04] thin shell delegates correctly"
+  else
+    fail_case "[S-manager-core-migrate-04] thin shell delegates correctly"
+  fi
+}
+
+# [S-manager-core-migrate-05] missing state handled gracefully
+TOTAL=$((TOTAL + 1))
+{
+  box=$(mktemp -d)
+  trap 'rm -rf "$box"' EXIT
+  mkdir -p "$box/scripts"
+  cp "$SCRIPT_DIR/scripts/step-manager.sh" "$box/scripts/step-manager.sh"
+  cp "$SCRIPT_DIR/scripts/step-core.js" "$box/scripts/step-core.js"
+  chmod +x "$box/scripts/step-manager.sh" "$box/scripts/step-core.js"
+  out=$(cd "$box" && bash "$box/scripts/step-manager.sh" status-line 2>&1)
+  code=$?
+  rm -rf "$box"
+  trap - EXIT
+  if [ "$code" -eq 0 ] && printf '%s' "$out" | grep -q 'Phase idle'; then
+    pass_case "[S-manager-core-migrate-05] missing state handled gracefully"
+  else
+    fail_case "[S-manager-core-migrate-05] missing state handled gracefully"
   fi
 }
 

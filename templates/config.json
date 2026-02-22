@@ -55,6 +55,7 @@
       "full": true,
       "lite": false
     },
+    "bypass_tools": [],
     "planning_phase_write_lock": {
       "full": true,
       "lite": false

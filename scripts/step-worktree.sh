@@ -42,19 +42,7 @@ read_worktree_config() {
   fi
 
   local value
-  value=$(node -e '
-const fs = require("fs")
-const file = process.argv[1]
-const key = process.argv[2]
-try {
-  const cfg = JSON.parse(fs.readFileSync(file, "utf-8"))
-  const wt = cfg && typeof cfg === "object" ? cfg.worktree : undefined
-  const val = wt && typeof wt === "object" ? wt[key] : undefined
-  if (val !== undefined && val !== null) process.stdout.write(String(val))
-} catch (_) {
-  process.exit(0)
-}
-' "$CONFIG_FILE" "$key" 2>/dev/null || true)
+  value=$(node "$CORE_SCRIPT" state get --file "$CONFIG_FILE" --path "worktree.${key}" 2>/dev/null || true)
 
   if [ -z "$value" ]; then
     printf "%s" "$default_value"
@@ -403,21 +391,7 @@ current_task_for_change() {
   task_status_is() {
     local task_file="$1"
     local expected="$2"
-    node -e '
-const fs = require("fs")
-const file = process.argv[1]
-const expected = process.argv[2]
-const raw = fs.readFileSync(file, "utf-8").replace(/\r\n/g, "\n")
-let data
-if (file.endsWith(".md")) {
-  const m = raw.match(/```json(?:\s+task)?\n([\s\S]*?)\n```/)
-  if (!m) process.exit(2)
-  data = JSON.parse(m[1])
-} else {
-  data = JSON.parse(raw)
-}
-process.exit(data && data.status === expected ? 0 : 1)
-' "$task_file" "$expected" >/dev/null 2>&1
+    node "$CORE_SCRIPT" task status --file "$task_file" --expected "$expected" >/dev/null 2>&1
   }
 
   # 2) 回退：寻找 in_progress 任务
@@ -448,19 +422,7 @@ set_task_status() {
   local status="$4"
   local task_file="$merge_wt/.step/changes/${change_name}/tasks/${task_slug}.md"
   [ -f "$task_file" ] || return 1
-  node -e '
-const fs = require("fs")
-const file = process.argv[1]
-const status = process.argv[2]
-const raw = fs.readFileSync(file, "utf-8").replace(/\r\n/g, "\n")
-const m = raw.match(/```json(?:\s+task)?\n([\s\S]*?)\n```/)
-if (!m) process.exit(2)
-const task = JSON.parse(m[1])
-task.status = status
-const nextJson = JSON.stringify(task, null, 2)
-const next = raw.replace(m[0], `\`\`\`json task\n${nextJson}\n\`\`\``)
-fs.writeFileSync(file, next, "utf-8")
-' "$task_file" "$status" >/dev/null 2>&1
+  node "$CORE_SCRIPT" task set-status --file "$task_file" --status "$status" >/dev/null 2>&1
 }
 
 run_post_conflict_gate() {

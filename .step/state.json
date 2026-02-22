@@ -2,10 +2,10 @@
   "project": "STEP-Plugin",
   "project_type": "existing",
   "current_phase": "done",
-  "current_change": "2026-02-19-findings-two-action-rule",
-  "last_updated": "2026-02-19T13:20:00Z",
-  "last_agent": "orchestrator",
-  "last_session_summary": "Full rebuild: baseline snapshot, decisions reduced to four core ADRs, and state synced.",
+  "current_change": "2026-02-21-consolidate-bash-into-core",
+  "last_updated": "2026-02-21T18:00:00Z",
+  "last_agent": "developer",
+  "last_session_summary": "已完成本变更全部任务并闭环：修复 P0 项（WORKFLOW 精简、Agent 执行委派语义、场景覆盖闭环），并完成全量回归。",
   "session": {
     "mode": "full"
   },
@@ -17,7 +17,7 @@
     "config_architecture": "agent .md -> config.json routing -> file_routing -> gate"
   },
   "tasks": {
-    "current": "findings-two-action-rule",
+    "current": null,
     "upcoming": []
   },
   "key_decisions": [
@@ -43,6 +43,264 @@
     "state format backward compatibility"
   ],
   "progress_log": [
+    {
+      "date": "2026-02-22",
+      "task": "unify-e2e-rule",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "incremental",
+      "gate_scope": "incremental",
+      "gate_at": "2026-02-22T00:45:54Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-22",
+      "task": "optimize-two-action-rule",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "incremental",
+      "gate_scope": "incremental",
+      "gate_at": "2026-02-22T00:45:46Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-22",
+      "task": "manager-core-migrate",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "incremental",
+      "gate_scope": "incremental",
+      "gate_at": "2026-02-22T00:45:45Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-22",
+      "task": "cancel-mechanism",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "incremental",
+      "gate_scope": "incremental",
+      "gate_at": "2026-02-22T00:45:39Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-22",
+      "task": "agent-enforcement-enhance",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "incremental",
+      "gate_scope": "incremental",
+      "gate_at": "2026-02-22T00:45:38Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-22",
+      "task": "split-workflow-doc",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "incremental",
+      "gate_scope": "incremental",
+      "gate_at": "2026-02-22T00:45:53Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-22",
+      "task": "phased-injection",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "incremental",
+      "gate_scope": "incremental",
+      "gate_at": "2026-02-22T00:45:50Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-22",
+      "task": "session-start-fix",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "incremental",
+      "gate_scope": "incremental",
+      "gate_at": "2026-02-22T00:45:53Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-22",
+      "task": "dedup-task-status",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "incremental",
+      "gate_scope": "incremental",
+      "gate_at": "2026-02-22T01:39:27Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-22",
+      "task": "guard-single-call",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "incremental",
+      "gate_scope": "incremental",
+      "gate_at": "2026-02-22T00:45:41Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-21",
+      "task": "2026-02-21-consolidate-bash-into-core",
+      "summary": "10 个任务全部完成：scenario 覆盖 100%，每任务 gate 证据通过；WORKFLOW 精简到 199 行；scripts 内 node -e 清零；agent dispatch 语义打通。",
+      "next_action": "可执行 /archive 归档 2026-02-21-consolidate-bash-into-core"
+    },
+    {
+      "date": "2026-02-21",
+      "task": "optimize-two-action-rule",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "all",
+      "gate_scope": "all",
+      "gate_at": "2026-02-21T15:32:07Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-21",
+      "task": "split-workflow-doc",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "all",
+      "gate_scope": "all",
+      "gate_at": "2026-02-21T15:31:37Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-21",
+      "task": "cancel-mechanism",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "all",
+      "gate_scope": "all",
+      "gate_at": "2026-02-21T15:31:23Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-21",
+      "task": "phased-injection",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "all",
+      "gate_scope": "all",
+      "gate_at": "2026-02-21T15:31:08Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-21",
+      "task": "dedup-task-status",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "all",
+      "gate_scope": "all",
+      "gate_at": "2026-02-21T15:30:53Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-21",
+      "task": "unify-e2e-rule",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "all",
+      "gate_scope": "all",
+      "gate_at": "2026-02-21T15:30:38Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-21",
+      "task": "guard-single-call",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "all",
+      "gate_scope": "all",
+      "gate_at": "2026-02-21T15:30:23Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-21",
+      "task": "session-start-fix",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "all",
+      "gate_scope": "all",
+      "gate_at": "2026-02-21T15:30:08Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-21",
+      "task": "manager-core-migrate",
+      "summary": "修复约束缺口：scenario-check 自动写回 scenario.status；新增 task ready 并接入 transition/archive/stop-check，避免 task.status=done 但场景未执行。",
+      "next_action": "按任务顺序逐个补齐场景证据并推进状态",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "all",
+      "gate_scope": "all",
+      "gate_at": "2026-02-21T15:29:53Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-21",
+      "task": "agent-enforcement-enhance",
+      "summary": "Gate failed at scenario-coverage",
+      "next_action": "analyze-scenario-coverage-failure",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "all",
+      "gate_scope": "all",
+      "gate_at": "2026-02-21T15:31:52Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-21",
+      "task": "consolidate-bash-into-core",
+      "summary": "完成 10 个任务：manager 迁移、hook/guard 重构、dispatch 强化、findings 阈值分级、文档拆分；新增 4 个测试并全量回归通过。",
+      "next_action": "可执行 /archive 归档本次变更"
+    },
+    {
+      "date": "2026-02-21",
+      "task": "",
+      "summary": "架构分析 + spec/design/findings + 10 task 拆分完成，进入 phase-3-planning",
+      "next_action": "开始执行 manager-core-migrate"
+    },
     {
       "date": "2026-02-20",
       "task": "findings-two-action-rule",

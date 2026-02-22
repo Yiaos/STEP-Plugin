@@ -40,7 +40,8 @@ assert "[S-stabilize-step-trigger-enforcement-04] fallback dangerous list" bash 
   trap 'rm -rf \"\$tmpdir\"' EXIT
   mkdir -p \"\$tmpdir/scripts\"
   cp '$SCRIPT_DIR/scripts/step-manager.sh' \"\$tmpdir/scripts/step-manager.sh\"
-  chmod +x \"\$tmpdir/scripts/step-manager.sh\"
+  cp '$SCRIPT_DIR/scripts/step-core.js' \"\$tmpdir/scripts/step-core.js\"
+  chmod +x \"\$tmpdir/scripts/step-manager.sh\" \"\$tmpdir/scripts/step-core.js\"
   set +e
   out=\$(bash \"\$tmpdir/scripts/step-manager.sh\" check-action --tool Bash --command 'rm -rf /tmp/test' 2>&1)
   code=\$?
@@ -52,6 +53,15 @@ assert "[S-stabilize-step-trigger-enforcement-04] fallback dangerous list" bash 
 assert "[S-stabilize-step-trigger-enforcement-05] absolute path dangerous command blocked" bash -c "
   set +e
   out=\$(bash '$SCRIPT_DIR/scripts/step-manager.sh' check-action --tool Bash --command '/bin/rm -rf /tmp/test' 2>&1)
+  code=\$?
+  set -e
+  [ \"\$code\" -ne 0 ]
+  echo \"\$out\" | grep -q '危险命令黑名单'
+"
+
+assert "[S-guard-single-call-04] dangerous bash blocked" bash -c "
+  set +e
+  out=\$(bash '$SCRIPT_DIR/scripts/step-manager.sh' check-action --tool Bash --command 'rm -rf /tmp/test' 2>&1)
   code=\$?
   set -e
   [ \"\$code\" -ne 0 ]

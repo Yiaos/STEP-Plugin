@@ -22,21 +22,7 @@ state_get() {
 task_status_is() {
   local task_file="$1"
   local expected="$2"
-  node -e '
-const fs = require("fs")
-const file = process.argv[1]
-const expected = process.argv[2]
-const raw = fs.readFileSync(file, "utf-8").replace(/\r\n/g, "\n")
-let data
-if (file.endsWith(".md")) {
-  const m = raw.match(/```json(?:\s+task)?\n([\s\S]*?)\n```/)
-  if (!m) process.exit(2)
-  data = JSON.parse(m[1])
-} else {
-  data = JSON.parse(raw)
-}
-process.exit(data && data.status === expected ? 0 : 1)
-' "$task_file" "$expected" >/dev/null 2>&1
+  node "$CORE_SCRIPT" task status --file "$task_file" --expected "$expected" >/dev/null 2>&1
 }
 
 TODAY=$(date -u +%Y-%m-%d)
@@ -53,19 +39,7 @@ else
 fi
 
 # 检查 progress_log 是否有今日条目
-if node -e '
-const fs = require("fs")
-const file = process.argv[1]
-const today = process.argv[2]
-const state = JSON.parse(fs.readFileSync(file, "utf-8"))
-const log = Array.isArray(state.progress_log) ? state.progress_log : []
-const ok = log.some((entry) => {
-  if (!entry || typeof entry !== "object") return false
-  const date = typeof entry.date === "string" ? entry.date : ""
-  return date.includes(today)
-})
-process.exit(ok ? 0 : 1)
-' "$STATE_FILE" "$TODAY" >/dev/null 2>&1; then
+if node "$CORE_SCRIPT" state has-progress --file "$STATE_FILE" --date "$TODAY" >/dev/null 2>&1; then
   PROGRESS_OK=true
 else
   PROGRESS_OK=false
@@ -74,20 +48,7 @@ else
 fi
 
 # 失败记录约束：gate 失败时必须立即记录可执行 next_action，且 next_action 不能等于 failed_action
-if node -e '
-const fs = require("fs")
-const file = process.argv[1]
-const today = process.argv[2]
-const state = JSON.parse(fs.readFileSync(file, "utf-8"))
-const log = Array.isArray(state.progress_log) ? state.progress_log : []
-const hit = log.find((entry) => entry && entry.date && String(entry.date).includes(today) && entry.gate_status === "fail")
-if (!hit) process.exit(0)
-const nextAction = typeof hit.next_action === "string" ? hit.next_action.trim() : ""
-const failedAction = typeof hit.failed_action === "string" ? hit.failed_action.trim() : ""
-if (!nextAction) process.exit(2)
-if (failedAction && nextAction === failedAction) process.exit(3)
-process.exit(0)
-' "$STATE_FILE" "$TODAY" >/dev/null 2>&1; then
+if node "$CORE_SCRIPT" state validate-failure-log --file "$STATE_FILE" --date "$TODAY" >/dev/null 2>&1; then
   :
 else
   rc=$?
@@ -98,6 +59,36 @@ else
     echo "[STEP STOP CHECK] WARN: next_action 不得与 failed_action 相同"
   else
     echo "[STEP STOP CHECK] WARN: 失败记录检查异常"
+  fi
+fi
+
+# findings 更新频率检查（2-Action Rule 分级阈值）
+PHASE="$(state_get "current_phase")"
+FINDINGS_ACTIONS_RAW="$(state_get "session.findings_actions")"
+FINDINGS_UPDATED_RAW="$(state_get "session.findings_updated")"
+FINDINGS_THRESHOLD=2
+case "$PHASE" in
+  phase-0-discovery|lite-l1-quick-spec)
+    FINDINGS_THRESHOLD=2
+    ;;
+  phase-1-prd|phase-2-tech-design|phase-3-planning)
+    FINDINGS_THRESHOLD=3
+    ;;
+  phase-4-execution|phase-5-review|lite-l2-execution|lite-l3-review)
+    FINDINGS_THRESHOLD=4
+    ;;
+  idle|done)
+    FINDINGS_THRESHOLD=0
+    ;;
+  *)
+    FINDINGS_THRESHOLD=2
+    ;;
+esac
+
+if [ "$FINDINGS_THRESHOLD" -gt 0 ] && [[ "$FINDINGS_ACTIONS_RAW" =~ ^[0-9]+$ ]]; then
+  if [ "$FINDINGS_ACTIONS_RAW" -ge "$FINDINGS_THRESHOLD" ] && [ "$FINDINGS_UPDATED_RAW" != "true" ]; then
+    ISSUES=$((ISSUES + 1))
+    echo "[STEP STOP CHECK] WARN: findings 更新不足（phase=$PHASE, actions=$FINDINGS_ACTIONS_RAW, threshold=$FINDINGS_THRESHOLD）"
   fi
 fi
 
@@ -115,6 +106,14 @@ for change_dir in .step/changes/*; do
     found=1
     if ! task_status_is "$task_file" "done"; then
       all_done=false
+      break
+    fi
+    task_slug="$(basename "$task_file" .md)"
+    change_name="$(basename "$change_dir")"
+    if ! node "$CORE_SCRIPT" task ready --task "$task_slug" --change "$change_name" >/dev/null 2>&1; then
+      all_done=false
+      ISSUES=$((ISSUES + 1))
+      echo "[STEP STOP CHECK] WARN: $change_name/$task_slug 标记为 done，但场景状态未完成（存在 not_run/fail）"
       break
     fi
   done
