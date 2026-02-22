@@ -8,6 +8,24 @@ PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 CORE_SCRIPT="${PLUGIN_ROOT}/scripts/step-core.js"
 DOCTOR_SCRIPT="${PLUGIN_ROOT}/scripts/step-manager.sh"
 
+# Plugin 注入已启用时，SessionStart hook 走空输出，避免重复注入。
+# 仅在 hooks.json 显式设置 STEP_SESSIONSTART_SKIP_IF_PLUGIN=true 时生效，
+# 以避免影响单测（单测会直接调用本脚本）。
+if [ "${STEP_SESSIONSTART_SKIP_IF_PLUGIN:-false}" = "true" ]; then
+  OPENCODE_PLUGIN_FILE="${OPENCODE_STEP_PLUGIN_FILE:-${HOME}/.config/opencode/plugins/step.js}"
+  if [ -f "$OPENCODE_PLUGIN_FILE" ]; then
+    cat <<'EOF'
+{
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "additionalContext": ""
+  }
+}
+EOF
+    exit 0
+  fi
+fi
+
 DOCTOR_OUTPUT=""
 DOCTOR_EXIT_CODE=0
 DOCTOR_FIX_CMD=""

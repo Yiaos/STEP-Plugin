@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "OPENCODE_PLUGIN_ROOT=${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}; ${OPENCODE_PLUGIN_ROOT}/hooks/session-start.sh"
+            "command": "OPENCODE_PLUGIN_ROOT=${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}; OPENCODE_STEP_PLUGIN_FILE=${OPENCODE_STEP_PLUGIN_FILE:-$HOME/.config/opencode/plugins/step.js} ${OPENCODE_PLUGIN_ROOT}/hooks/session-start.sh"
           }
         ]
       }

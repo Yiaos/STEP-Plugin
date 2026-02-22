@@ -147,6 +147,8 @@ Full 模式执行阶段可启用 dispatch 强约束；可通过 `enforcement.byp
 
 归档前置条件：**变更下所有 tasks 的 status 都为 done**，并满足场景状态闭环。
 
+归档建议顺序：Review 通过后先提交，再提示是否归档；归档仅影响 `.step/changes/` 审计目录，不改变已提交代码。
+
 ## 自主操作规则
 
 ### 不需要用户确认
@@ -188,7 +190,7 @@ Full 模式执行阶段可启用 dispatch 强约束；可通过 `enforcement.byp
 - Hotfix：`changes/YYYY-MM-DD-{slug}-hotfix/`
 - 约束变更：先做影响分析再迁移
 
-所有变更统一走：spec -> design -> tasks -> execution -> review -> archive。
+所有变更统一走：spec -> design -> tasks -> execution -> review -> commit -> archive(optional)。
 
 ## 附：状态恢复输出
 

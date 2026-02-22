@@ -21,6 +21,7 @@ uninstall_plugin() {
   TARGET_DIR="$OPENCODE_PLUGIN_ROOT"
   rm -f "${HOME}/.config/opencode/commands/step" && echo "  Removed commands symlink"
   rm -f "${HOME}/.config/opencode/skills/step"   && echo "  Removed skills symlink"
+  rm -f "${HOME}/.config/opencode/plugins/step.js" && echo "  Removed plugin symlink"
   rm -f "${HOME}/.config/opencode/hooks/step"     && echo "  Removed hooks symlink"
   rm -f "${HOME}/.config/opencode/agents/step"    && echo "  Removed agents symlink"
   rm -rf "$TARGET_DIR"                            && echo "  Removed $TARGET_DIR"

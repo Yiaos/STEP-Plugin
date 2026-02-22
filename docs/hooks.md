@@ -4,9 +4,15 @@
 
 ## SessionStart
 
+- 主路径：`.opencode/plugins/step.js`
+- 机制：`experimental.chat.system.transform` 调用 `step-core.js hook session-start`
+- 注入 state/spec/findings/task/baseline/config/skill（按 phase 裁剪）
+
+## SessionStart Fallback
+
 - `hooks/session-start.sh`
 - 调用 `step-core.js hook session-start`
-- 注入 state/spec/findings/task/baseline/config/skill（按 phase 裁剪）
+- 默认始终注入；仅在显式设置 `STEP_SESSIONSTART_SKIP_IF_PLUGIN=true` 且确认插件文件存在时返回空 context（用于去重）
 
 ## PreToolUse
 

@@ -1,3 +1,5 @@
+# Add findings two-action rule
+
 ```json task
 {
   "id": "findings-two-action-rule",
@@ -19,7 +21,7 @@
         "test_file": "tests/test-findings-two-action-rule.sh",
         "test_name": "[S-findings-two-action-rule-01] findings 2-action rule documented",
         "test_type": "integration",
-        "status": "not_run"
+        "status": "pass"
       }
     ],
     "edge_cases": [
@@ -31,7 +33,7 @@
         "test_file": "tests/test-findings-two-action-rule.sh",
         "test_name": "[S-findings-two-action-rule-02] gate includes findings rule test",
         "test_type": "unit",
-        "status": "not_run"
+        "status": "pass"
       }
     ],
     "error_handling": [
@@ -43,7 +45,7 @@
         "test_file": "tests/test-findings-two-action-rule.sh",
         "test_name": "[S-findings-two-action-rule-03] missing rule fails tests",
         "test_type": "e2e",
-        "status": "not_run"
+        "status": "pass"
       }
     ]
   }

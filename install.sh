@@ -15,6 +15,7 @@ COMMANDS_LINK="${HOME}/.config/opencode/commands/step"
 SKILLS_LINK="${HOME}/.config/opencode/skills/step"
 HOOKS_LINK="${HOME}/.config/opencode/hooks/step"
 AGENTS_LINK="${HOME}/.config/opencode/agents/step"
+PLUGIN_LINK="${HOME}/.config/opencode/plugins/step.js"
 
 # 颜色
 RED='\033[0;31m'
@@ -56,6 +57,7 @@ install() {
   # 创建 opencode 目录（如果不存在）
   mkdir -p "${HOME}/.config/opencode/commands"
   mkdir -p "${HOME}/.config/opencode/skills"
+  mkdir -p "${HOME}/.config/opencode/plugins"
   mkdir -p "${HOME}/.config/opencode/hooks"
   mkdir -p "${HOME}/.config/opencode/agents"
 
@@ -71,7 +73,9 @@ install() {
   cp -R "${SCRIPT_DIR}/hooks" "$TARGET_DIR/"
   cp -R "${SCRIPT_DIR}/skills" "$TARGET_DIR/"
   cp -R "${SCRIPT_DIR}/scripts" "$TARGET_DIR/"
+  [ -d "${SCRIPT_DIR}/lib" ] && cp -R "${SCRIPT_DIR}/lib" "$TARGET_DIR/"
   [ -d "${SCRIPT_DIR}/schemas" ] && cp -R "${SCRIPT_DIR}/schemas" "$TARGET_DIR/"
+  [ -d "${SCRIPT_DIR}/.opencode" ] && cp -R "${SCRIPT_DIR}/.opencode" "$TARGET_DIR/"
   cp -R "${SCRIPT_DIR}/templates" "$TARGET_DIR/"
   cp -R "${SCRIPT_DIR}/agents" "$TARGET_DIR/"
   [ -f "${SCRIPT_DIR}/WORKFLOW.md" ] && cp "${SCRIPT_DIR}/WORKFLOW.md" "$TARGET_DIR/"
@@ -90,6 +94,7 @@ install() {
   chmod +x "$TARGET_DIR/scripts/step-doctor.sh"
   chmod +x "$TARGET_DIR/scripts/step-manager.sh"
   chmod +x "$TARGET_DIR/scripts/step-pretool-guard.sh"
+  [ -f "$TARGET_DIR/.opencode/plugins/step.js" ] && chmod +x "$TARGET_DIR/.opencode/plugins/step.js"
   [ -f "$TARGET_DIR/install.sh" ] && chmod +x "$TARGET_DIR/install.sh"
   [ -f "$TARGET_DIR/uninstall.sh" ] && chmod +x "$TARGET_DIR/uninstall.sh"
   echo "  Set executable permissions"
@@ -99,6 +104,9 @@ install() {
   ln -sfn "$TARGET_DIR/skills" "$SKILLS_LINK"
   ln -sfn "$TARGET_DIR/hooks" "$HOOKS_LINK"
   ln -sfn "$TARGET_DIR/agents" "$AGENTS_LINK"
+  if [ -f "$TARGET_DIR/.opencode/plugins/step.js" ]; then
+    ln -sfn "$TARGET_DIR/.opencode/plugins/step.js" "$PLUGIN_LINK"
+  fi
   echo "  Created symlinks"
 
   echo ""
@@ -109,6 +117,7 @@ install() {
   echo "  Skills:   $SKILLS_LINK → $TARGET_DIR/skills"
   echo "  Hooks:    $HOOKS_LINK → $TARGET_DIR/hooks"
   echo "  Agents:   $AGENTS_LINK → $TARGET_DIR/agents"
+  [ -f "$TARGET_DIR/.opencode/plugins/step.js" ] && echo "  Plugin:   $PLUGIN_LINK → $TARGET_DIR/.opencode/plugins/step.js"
   echo ""
   echo "  Usage: In any project, run /step to initialize the STEP protocol."
   echo ""
@@ -119,12 +128,15 @@ install() {
   echo "  ├── hooks/"
   echo "  │   ├── hooks.json          # PreToolUse/PostToolUse/Stop/SessionStart"
   echo "  │   └── session-start.sh    # Auto-detect .step/ and inject state"
+  echo "  ├── .opencode/plugins/"
+  echo "  │   └── step.js             # OpenCode system.transform injection"
   echo "  ├── skills/step/SKILL.md    # Core protocol rules"
   echo "  ├── scripts/"
   echo "  │   ├── step-init.sh        # Project initialization"
   echo "  │   ├── step-stop-check.sh  # Stop hook state check"
   echo "  │   ├── gate.sh             # Quality gate (quick/lite/full)"
   echo "  │   └── scenario-check.sh   # BDD scenario coverage check"
+  echo "  ├── lib/core/               # Core modules (validators/guards/parsers/phase-policy)"
   echo "  ├── agents/                 # Role-based agent definitions"
   echo "  │   ├── pm.md               # Product Manager (Phase 0-1)"
   echo "  │   ├── architect.md        # Architect (Phase 2-3)"

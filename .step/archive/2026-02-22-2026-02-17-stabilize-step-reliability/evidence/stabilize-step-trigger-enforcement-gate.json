@@ -4,14 +4,14 @@
     "task_id": "stabilize-step-trigger-enforcement",
     "change": "2026-02-17-stabilize-step-reliability",
     "task_file": ".step/changes/2026-02-17-stabilize-step-reliability/tasks/stabilize-step-trigger-enforcement.md",
-    "timestamp": "2026-02-20T00:30:54Z",
-    "total": 4,
-    "covered": 4,
+    "timestamp": "2026-02-22T04:48:33Z",
+    "total": 11,
+    "covered": 11,
     "coverage_pct": 100,
     "passed": true
   },
-  "level": "lite:incremental:all",
-  "timestamp": "2026-02-19T14:47:55Z",
+  "level": "lite:all:all",
+  "timestamp": "2026-02-22T04:48:33Z",
   "passed": true,
   "results": [
     {

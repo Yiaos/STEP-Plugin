@@ -21,8 +21,9 @@ assert "[S-gate-incremental-01] multi-segment test command supports incremental 
   tmpdir=\$(mktemp -d)
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
-  mkdir -p scripts tests .step/changes/c1/tasks
+  mkdir -p scripts lib tests .step/changes/c1/tasks
   cp '$SCRIPT_DIR/scripts/step-core.js' scripts/step-core.js
+  cp -R '$SCRIPT_DIR/lib/core' lib/core
   chmod +x scripts/step-core.js
 
   cat > .step/state.json <<'EOF'
@@ -110,8 +111,9 @@ assert "[S-gate-incremental-02] non-test segment falls back to full test" bash -
   tmpdir=\$(mktemp -d)
   trap 'rm -rf \"\$tmpdir\"' EXIT
   cd \"\$tmpdir\"
-  mkdir -p scripts tests .step/changes/c1/tasks
+  mkdir -p scripts lib tests .step/changes/c1/tasks
   cp '$SCRIPT_DIR/scripts/step-core.js' scripts/step-core.js
+  cp -R '$SCRIPT_DIR/lib/core' lib/core
   chmod +x scripts/step-core.js
 
   cat > .step/state.json <<'EOF'

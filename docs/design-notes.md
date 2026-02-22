@@ -11,6 +11,8 @@
 7. Gate 失败先分析后修复，最多 3 轮
 8. `/step` 负责初始化和恢复
 9. 测试写作 agent 可配置
+10. `step-core.js` 分层拆分到 `lib/core/*`（parser/guard/validator）
+11. phase/mode/dispatch 规则拆分到 `lib/core/phase-policy.js`
 
 ## 实现取舍
 

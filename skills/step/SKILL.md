@@ -104,8 +104,8 @@ Step 3: 写实现（按 file_routing 选 agent） → 每场景跑 gate lite
 
 Step 4: Gate 验证 → 小改动可 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh quick {slug}`，常规 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh lite {slug}`
 Step 5: Review + Commit（每完成一个任务都执行）
-  commit 后询问是否合并回主分支并归档
-  用户确认后执行 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-worktree.sh finalize {change}`
+  Review 通过后先提交/推送，再询问是否归档（归档仅影响 `.step/changes/` 审计目录）
+  worktree 模式：worktree 内先 commit，用户确认后执行 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-worktree.sh finalize {change}`（合并+归档），归档完成后 push 主分支
 Step 6: 更新 state.json + baseline.md 对应项 [ ] → [x] → 进入下一任务
 ```
 
@@ -280,8 +280,8 @@ STEP 定义 7 个角色，通过 `agents/*.md` 实现 subagent 模型绑定：
 
 Post-MVP 变更**与初始开发结构统一**，每个变更都是 `.step/changes/` 下的一个独立文件夹：
 
-- **新增功能**: 新建 `.step/changes/YYYY-MM-DD-{slug}/`（含 spec.md + design.md + tasks/）→ 走 Phase 1-4 → gate + review + commit → 更新 baseline → 归档
-- **Hotfix**: 新建 `.step/changes/YYYY-MM-DD-{slug}-hotfix/`（含 spec.md + design.md + tasks/）→ TDD 修复 → gate full 回归 → review + commit → 归档
+- **新增功能**: 新建 `.step/changes/YYYY-MM-DD-{slug}/`（含 spec.md + design.md + tasks/）→ 走 Phase 1-4 → gate + review → 更新 baseline → 归档 → commit/push
+- **Hotfix**: 新建 `.step/changes/YYYY-MM-DD-{slug}-hotfix/`（含 spec.md + design.md + tasks/）→ TDD 修复 → gate full 回归 → review → 归档 → commit/push
 - **约束变更**: 高影响变更 → spec.md 中注明影响分析 → 创建迁移任务 → Phase 4 执行 → gate full
 - **Baseline 整理**: 多轮变更后 baseline 臃肿时。流程：归档旧版到 archive/ → 合成干净快照 → 同时精简 state.json 和 decisions.md → 用户确认后写入。审计链通过归档文件保留
 
@@ -331,13 +331,13 @@ Quick 模式由模型语义判断是否适用，不使用文件数/关键词硬�
 - Gate: `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh quick {slug}`（小改动）或 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh lite {slug}`（常规增量）
 - e2e 按需
 - Gate lite 通过 → 先执行 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh full {slug} --all` → **完整 Code Review**（需求合规 > 代码质量）
-- Review 通过 → Commit → 更新 state.json + baseline.md
+- Review 通过 → 更新 baseline.md → Commit/Push → 询问是否归档（更新 state.json）
 - **Lite 精简的是规划阶段，不是质量保证阶段**
 
 ### 完成后：Check + 迭代
-- Commit 后提示用户 check 结果 + 询问是否归档
-- 用户说"没问题" → 归档或保留
-- **用户提出修改意见 → 不新建 task，在当前 task 上继续迭代**（status 回退 in_progress → 修改 → gate → review → commit → 再次 check）
+- Review 通过后提示用户 check 结果，完成提交/推送后再确认是否归档
+- 用户说"先不归档" → 保留变更目录
+- **用户提出修改意见 → 不新建 task，在当前 task 上继续迭代**（status 回退 in_progress → 修改 → gate → review → commit/push → 再次 check → 归档可选）
 
 ### 升级规则
 执行中发现复杂度超预期（影响 > 3 文件 / 需要新架构决策）→ **必须升级到 Full Mode**
@@ -370,8 +370,8 @@ Quick 模式由模型语义判断是否适用，不使用文件数/关键词硬�
 
 启用后流程：
 1. 变更开始时自动创建 worktree（create）
-2. commit 完成后询问是否合并回主分支并归档
-3. 用户确认后 finalize：合并 → 冲突交由大模型解决（保留双方有效改动）→ 归档 → 清理 worktree
+2. worktree 内 commit 完成后询问是否合并回主分支
+3. 用户确认后 finalize：合并 → 冲突交由大模型解决（保留双方有效改动）→ 归档 → 清理 worktree（归档完成后再 push 主分支）
    - 必须生成 `.step/conflict-report.md`
    - 必须向用户说明：冲突文件、每个文件的解决策略和原因、gate/scenario 验证结果
 

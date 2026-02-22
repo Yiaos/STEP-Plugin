@@ -4,6 +4,416 @@ const fs = require("fs")
 const path = require("path")
 const { spawnSync } = require("child_process")
 
+function createFallbackCommandParser() {
+  const unique = (arr) => [...new Set(arr)]
+  const splitChain = (command) => {
+    const text = String(command || "")
+    const parts = []
+    let cur = ""
+    let quote = null
+    for (let i = 0; i < text.length; i += 1) {
+      const ch = text[i]
+      const next = text[i + 1]
+      if (quote) {
+        if (ch === quote) quote = null
+        cur += ch
+        continue
+      }
+      if (ch === '"' || ch === "'") {
+        quote = ch
+        cur += ch
+        continue
+      }
+      if (ch === "&" && next === "&") {
+        if (cur.trim()) parts.push(cur.trim())
+        cur = ""
+        i += 1
+        continue
+      }
+      if (ch === "|" && next === "|") {
+        if (cur.trim()) parts.push(cur.trim())
+        cur = ""
+        i += 1
+        continue
+      }
+      if (ch === ";" || ch === "|" || ch === "\n") {
+        if (cur.trim()) parts.push(cur.trim())
+        cur = ""
+        continue
+      }
+      cur += ch
+    }
+    if (cur.trim()) parts.push(cur.trim())
+    return parts
+  }
+  const tokenize = (segment) => {
+    const text = String(segment || "")
+    const tokens = []
+    let cur = ""
+    let quote = null
+    for (let i = 0; i < text.length; i += 1) {
+      const ch = text[i]
+      if (quote) {
+        if (ch === quote) quote = null
+        else cur += ch
+        continue
+      }
+      if (ch === '"' || ch === "'") {
+        quote = ch
+        continue
+      }
+      if (/\s/.test(ch)) {
+        if (cur.length > 0) {
+          tokens.push(cur)
+          cur = ""
+        }
+        continue
+      }
+      cur += ch
+    }
+    if (quote) {
+      throw new Error(`命令引号不闭合: ${segment}`)
+    }
+    if (cur.length > 0) tokens.push(cur)
+    return tokens
+  }
+  const normalizeExecutableName = (raw) => {
+    const normalized = String(raw || "").replace(/\\+$/, "")
+    const parts = normalized.split("/")
+    return parts[parts.length - 1] || normalized
+  }
+  const firstExecutableFromTokens = (tokens) => {
+    if (!Array.isArray(tokens) || tokens.length === 0) return { exe: "", index: -1 }
+    let i = 0
+    let exe = tokens[i] || ""
+    if (normalizeExecutableName(exe) === "env") {
+      i += 1
+      while (i < tokens.length) {
+        const t = tokens[i]
+        if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(t)) {
+          i += 1
+          continue
+        }
+        exe = t
+        break
+      }
+    }
+    if (normalizeExecutableName(exe) === "command") {
+      i += 1
+      exe = tokens[i] || ""
+    }
+    return { exe: normalizeExecutableName(exe), index: i }
+  }
+  const firstExecutableFromCommand = (command) => {
+    const tokens = tokenize(String(command || "").trim())
+    if (tokens.length === 0) return ""
+    return firstExecutableFromTokens(tokens).exe
+  }
+  const shellInnerCommand = (tokens, executableIndex) => {
+    if (!Array.isArray(tokens) || executableIndex < 0) return ""
+    for (let i = executableIndex + 1; i < tokens.length; i += 1) {
+      const token = String(tokens[i] || "")
+      if (!token) continue
+      if (token === "--") break
+      if (token === "-c" || token === "--command") return String(tokens[i + 1] || "")
+      if (/^-[A-Za-z]+$/.test(token) && token.includes("c")) return String(tokens[i + 1] || "")
+    }
+    return ""
+  }
+  const shellWrappers = new Set(["bash", "sh", "zsh", "ksh", "dash"])
+  const executablesFromCommand = (command, depth = 0) => {
+    if (!command || !String(command).trim()) return []
+    if (depth > 4) return []
+    const out = []
+    const segments = splitChain(String(command))
+    for (const seg of segments) {
+      const tokens = tokenize(seg)
+      if (tokens.length === 0) continue
+      const first = firstExecutableFromTokens(tokens)
+      if (!first.exe) continue
+      out.push(first.exe)
+      if (shellWrappers.has(first.exe)) {
+        const inner = shellInnerCommand(tokens, first.index)
+        if (inner) out.push(...executablesFromCommand(inner, depth + 1))
+      }
+    }
+    return unique(out)
+  }
+  return {
+    splitChain,
+    tokenize,
+    normalizeExecutableName,
+    firstExecutableFromTokens,
+    firstExecutableFromCommand,
+    shellInnerCommand,
+    executablesFromCommand,
+  }
+}
+
+function createFallbackStateValidator() {
+  const isObject = (v) => typeof v === "object" && v !== null && !Array.isArray(v)
+  const validStatePhases = new Set([
+    "idle",
+    "phase-0-discovery",
+    "phase-1-prd",
+    "phase-2-tech-design",
+    "phase-3-planning",
+    "phase-4-execution",
+    "phase-5-review",
+    "lite-l1-quick-spec",
+    "lite-l2-execution",
+    "lite-l3-review",
+    "done",
+  ])
+
+  const validateState = (state) => {
+    const errors = []
+    if (!isObject(state)) {
+      errors.push("state 需为对象")
+      return errors
+    }
+    const required = [
+      "project",
+      "current_phase",
+      "current_change",
+      "last_updated",
+      "last_agent",
+      "last_session_summary",
+      "session",
+      "established_patterns",
+      "tasks",
+      "key_decisions",
+      "known_issues",
+      "constraints_quick_ref",
+      "progress_log",
+    ]
+    for (const k of required) {
+      if (!(k in state)) errors.push(`缺少字段: ${k}`)
+    }
+    if ("project" in state && typeof state.project !== "string") errors.push("project 必须是字符串")
+    if ("current_phase" in state) {
+      if (typeof state.current_phase !== "string") errors.push("current_phase 必须是字符串")
+      else if (!validStatePhases.has(state.current_phase)) errors.push("current_phase 不在允许范围")
+    }
+    if ("current_change" in state && typeof state.current_change !== "string") errors.push("current_change 必须是字符串")
+    if ("last_updated" in state && typeof state.last_updated !== "string") errors.push("last_updated 必须是字符串")
+    if ("last_agent" in state && typeof state.last_agent !== "string") errors.push("last_agent 必须是字符串")
+    if ("last_session_summary" in state && typeof state.last_session_summary !== "string") {
+      errors.push("last_session_summary 必须是字符串")
+    }
+    if ("tasks" in state) {
+      if (!isObject(state.tasks)) {
+        errors.push("tasks 必须是对象")
+      } else {
+        if (!Object.prototype.hasOwnProperty.call(state.tasks, "current")) {
+          errors.push("tasks.current 缺失")
+        } else {
+          const t = state.tasks.current
+          if (!(t === null || typeof t === "string")) errors.push("tasks.current 必须是 string 或 null")
+        }
+        if (!Array.isArray(state.tasks.upcoming)) errors.push("tasks.upcoming 必须是数组")
+      }
+    }
+    if (!isObject(state.session)) {
+      errors.push("session 必须是对象")
+    } else if (typeof state.session.mode !== "string") {
+      errors.push("session.mode 必须是字符串")
+    } else if (!["full", "lite", "quick"].includes(state.session.mode)) {
+      errors.push("session.mode 必须是 full/lite/quick")
+    }
+    return errors
+  }
+
+  return { validateState }
+}
+
+function createFallbackActionGuard(parser) {
+  const firstDangerousExecutable = (command, dangerousExecutables) => {
+    const dangerousSet = new Set(
+      (Array.isArray(dangerousExecutables) ? dangerousExecutables : []).map((v) => parser.normalizeExecutableName(v)),
+    )
+    const executables = parser.executablesFromCommand(command)
+    for (const executable of executables) {
+      if (dangerousSet.has(executable)) {
+        return executable
+      }
+    }
+    return ""
+  }
+  return { firstDangerousExecutable }
+}
+
+function createFallbackPhasePolicy() {
+  const getPathValueLocal = (obj, dotPath) => {
+    if (!dotPath) return obj
+    const parts = String(dotPath).split(".")
+    let cur = obj
+    for (const p of parts) {
+      if (cur == null || !(p in cur)) return undefined
+      cur = cur[p]
+    }
+    return cur
+  }
+  const getConfigValueLocal = (config, dotPath) => {
+    if (typeof config !== "object" || config === null || Array.isArray(config)) {
+      return undefined
+    }
+    return getPathValueLocal(config, dotPath)
+  }
+  const getConfigBoolLocal = (config, dotPath, fallback) => {
+    const value = getConfigValueLocal(config, dotPath)
+    return typeof value === "boolean" ? value : fallback
+  }
+  const modeFamilyLocal = (mode) => ((mode === "quick" || mode === "lite") ? "lite" : "full")
+
+  return {
+    getPathValue: getPathValueLocal,
+    getConfigValue: getConfigValueLocal,
+    getModeFromPhase(phase) {
+      if (["lite-l1-quick-spec", "lite-l2-execution", "lite-l3-review"].includes(phase)) return "lite"
+      return "full"
+    },
+    modeFamily: modeFamilyLocal,
+    currentModeFromState(state) {
+      const m = getPathValueLocal(state, "session.mode")
+      if (["quick", "lite", "full"].includes(m)) return m
+      return this.getModeFromPhase(String((state && state.current_phase) || ""))
+    },
+    phaseForMode(mode) {
+      if (mode === "full") return "phase-0-discovery"
+      if (mode === "lite" || mode === "quick") return "lite-l1-quick-spec"
+      return null
+    },
+    canTransition(from, to) {
+      if (from === to) return true
+      const allowed = {
+        idle: ["phase-0-discovery", "lite-l1-quick-spec"],
+        "phase-0-discovery": ["phase-1-prd"],
+        "phase-1-prd": ["phase-2-tech-design"],
+        "phase-2-tech-design": ["phase-3-planning"],
+        "phase-3-planning": ["phase-4-execution"],
+        "phase-4-execution": ["phase-5-review"],
+        "phase-5-review": ["done"],
+        "lite-l1-quick-spec": ["lite-l2-execution"],
+        "lite-l2-execution": ["lite-l3-review"],
+        "lite-l3-review": ["done"],
+      }
+      return Array.isArray(allowed[from]) && allowed[from].includes(to)
+    },
+    isPhaseAllowedForTool(phase, tool) {
+      if (tool === "Write" || tool === "Edit") {
+        return [
+          "phase-1-prd",
+          "phase-2-tech-design",
+          "phase-3-planning",
+          "phase-4-execution",
+          "phase-5-review",
+          "lite-l1-quick-spec",
+          "lite-l2-execution",
+          "lite-l3-review",
+        ].includes(phase)
+      }
+      if (tool === "Bash" || tool === "Task") return phase !== "idle"
+      return true
+    },
+    isPlanningPhase(phase) {
+      return ["phase-1-prd", "phase-2-tech-design", "phase-3-planning"].includes(phase)
+    },
+    isExecutionPhase(phase) {
+      return ["phase-4-execution", "phase-5-review"].includes(phase)
+    },
+    isReadonlyBashInPlanningPhase(command) {
+      if (!command || !String(command).trim()) return false
+      const trimmed = String(command).trim()
+      if (/^(ls|pwd)(\s+.*)?$/.test(trimmed)) return true
+      if (/^git\s+(status|diff|log)(\s+.*)?$/.test(trimmed)) return true
+      return false
+    },
+    commandLooksLikeControl(command) {
+      if (!command || !String(command).trim()) return true
+      const cmd = String(command)
+      const tokens = [
+        "step-manager.sh doctor",
+        "step-manager.sh enter",
+        "step-manager.sh transition",
+        "step-manager.sh phase-gate",
+        "step-manager.sh status-line",
+        "step-manager.sh assert-phase",
+        "step-manager.sh check-action",
+        "step-core.js manager",
+      ]
+      return tokens.some((token) => cmd.includes(token))
+    },
+    isCommandAllowedWhenIdle(command) {
+      if (!command || !String(command).trim()) return true
+      const cmd = String(command)
+      return [
+        "step-manager.sh doctor",
+        "step-manager.sh enter",
+        "step-manager.sh transition",
+        "step-manager.sh status-line",
+        "step-core.js manager enter",
+        "step-core.js manager transition",
+        "step-core.js manager status-line",
+      ].some((token) => cmd.includes(token))
+    },
+    isBashCommandAllowedInPhase(phase, command) {
+      if (this.commandLooksLikeControl(command)) return true
+      if (["phase-0-discovery", "phase-1-prd", "phase-2-tech-design", "phase-3-planning", "lite-l1-quick-spec"].includes(phase)) {
+        return this.isReadonlyBashInPlanningPhase(command)
+      }
+      return true
+    },
+    enforceWriteLockForMode(config, mode) {
+      const direct = getConfigValueLocal(config, "enforcement.planning_phase_write_lock")
+      if (typeof direct === "boolean") return direct
+      const family = modeFamilyLocal(mode)
+      return getConfigBoolLocal(config, `enforcement.planning_phase_write_lock.${family}`, family === "full")
+    },
+    requireDispatchForMode(config, mode) {
+      const direct = getConfigValueLocal(config, "enforcement.require_dispatch")
+      if (typeof direct === "boolean") return direct
+      const family = modeFamilyLocal(mode)
+      return getConfigBoolLocal(config, `enforcement.require_dispatch.${family}`, false)
+    },
+    getBypassTools(config) {
+      const tools = getConfigValueLocal(config, "enforcement.bypass_tools")
+      if (!Array.isArray(tools)) return []
+      return tools.map((v) => String(v))
+    },
+    expectedDispatchAgentForPhase(config, phase) {
+      const mapping = {
+        "phase-0-discovery": "routing.discovery.agent",
+        "phase-1-prd": "routing.prd.agent",
+        "lite-l1-quick-spec": "routing.lite_spec.agent",
+        "phase-2-tech-design": "routing.tech_design.agent",
+        "phase-3-planning": "routing.planning.agent",
+      }
+      const p = mapping[phase]
+      if (!p) return ""
+      const value = getConfigValueLocal(config, p)
+      return typeof value === "string" ? value : ""
+    },
+  }
+}
+
+let validateStateModule
+let commandParser
+let firstDangerousExecutable
+let phasePolicy
+
+try {
+  ;({ validateState: validateStateModule } = require("../lib/core/state-validator"))
+  commandParser = require("../lib/core/command-parser")
+  ;({ firstDangerousExecutable } = require("../lib/core/action-guard"))
+  phasePolicy = require("../lib/core/phase-policy")
+} catch {
+  commandParser = createFallbackCommandParser()
+  ;({ validateState: validateStateModule } = createFallbackStateValidator())
+  ;({ firstDangerousExecutable } = createFallbackActionGuard(commandParser))
+  phasePolicy = createFallbackPhasePolicy()
+}
+
 function fail(message, code = 1) {
   console.error(`❌ ${message}`)
   process.exit(code)
@@ -121,58 +531,7 @@ function isObject(v) {
 }
 
 function validateState(state) {
-  const errors = []
-  if (!isObject(state)) {
-    errors.push("state 需为对象")
-    return errors
-  }
-  const required = [
-    "project",
-    "current_phase",
-    "current_change",
-    "last_updated",
-    "last_agent",
-    "last_session_summary",
-    "session",
-    "established_patterns",
-    "tasks",
-    "key_decisions",
-    "known_issues",
-    "constraints_quick_ref",
-    "progress_log",
-  ]
-  for (const k of required) {
-    if (!(k in state)) {
-      errors.push(`缺少字段: ${k}`)
-    }
-  }
-  if ("tasks" in state) {
-    if (!isObject(state.tasks)) {
-      errors.push("tasks 必须是对象")
-    } else {
-      if (!("current" in state.tasks)) {
-        errors.push("tasks.current 缺失")
-      } else {
-        const t = state.tasks.current
-        if (!(t === null || typeof t === "string")) {
-          errors.push("tasks.current 必须是 string 或 null")
-        }
-      }
-      if (!("upcoming" in state.tasks) || !Array.isArray(state.tasks.upcoming)) {
-        errors.push("tasks.upcoming 必须是数组")
-      }
-    }
-  }
-  if (!("session" in state) || !isObject(state.session)) {
-    errors.push("session 必须是对象")
-  } else {
-    if (!("mode" in state.session) || typeof state.session.mode !== "string") {
-      errors.push("session.mode 必须是字符串")
-    } else if (!["full", "lite", "quick"].includes(state.session.mode)) {
-      errors.push("session.mode 必须是 full/lite/quick")
-    }
-  }
-  return errors
+  return validateStateModule(state)
 }
 
 function validateTask(task) {
@@ -574,86 +933,22 @@ function checkScenarioCoverage(taskSlug, changeName) {
 }
 
 function splitChain(command) {
-  const parts = []
-  let cur = ""
-  let quote = null
-  for (let i = 0; i < command.length; i += 1) {
-    const ch = command[i]
-    const next = command[i + 1]
-
-    if (quote) {
-      if (ch === quote) {
-        quote = null
-      }
-      cur += ch
-      continue
-    }
-
-    if (ch === '"' || ch === "'") {
-      quote = ch
-      cur += ch
-      continue
-    }
-
-    if (ch === "&" && next === "&") {
-      if (cur.trim()) {
-        parts.push(cur.trim())
-      }
-      cur = ""
-      i += 1
-      continue
-    }
-
-    cur += ch
-  }
-  if (cur.trim()) {
-    parts.push(cur.trim())
-  }
-  return parts
+  return commandParser.splitChain(command)
 }
 
 function tokenize(segment) {
-  const tokens = []
-  let cur = ""
-  let quote = null
-
-  for (let i = 0; i < segment.length; i += 1) {
-    const ch = segment[i]
-    if (quote) {
-      if (ch === quote) {
-        quote = null
-      } else {
-        cur += ch
-      }
-      continue
-    }
-    if (ch === '"' || ch === "'") {
-      quote = ch
-      continue
-    }
-    if (/\s/.test(ch)) {
-      if (cur.length > 0) {
-        tokens.push(cur)
-        cur = ""
-      }
-      continue
-    }
-    cur += ch
+  try {
+    return commandParser.tokenize(segment)
+  } catch (err) {
+    fail(String(err && err.message ? err.message : err))
   }
-  if (quote) {
-    fail(`命令引号不闭合: ${segment}`)
-  }
-  if (cur.length > 0) {
-    tokens.push(cur)
-  }
-  return tokens
 }
 
 function sanitizeTokens(tokens, dangerousExecutables) {
   if (tokens.length === 0) {
     fail("空命令段")
   }
-  const exe = tokens[0]
+  const exe = normalizeExecutableName(tokens[0])
   if (dangerousExecutables.has(exe)) {
     fail(`命中危险命令黑名单: ${exe}`)
   }
@@ -896,7 +1191,7 @@ function runGate(level, taskSlug, configPath, mode, metadata) {
   }
 
   const commands = getGateCommands(configPath)
-  const dangerousExecutables = new Set(commands.dangerous_executables)
+  const dangerousExecutables = new Set(commands.dangerous_executables.map((v) => normalizeExecutableName(v)))
   const testFiles = level === "quick" ? [] : getTaskTestFiles(taskSlug, null)
   let testCommand = commands.test
   let testScope = "all"
@@ -1070,210 +1365,76 @@ function readJsonSafe(filePath, fallback = null) {
   }
 }
 
-function getValueByPath(data, dotPath) {
-  return getPathValue(data, dotPath)
-}
-
-function getConfigValue(config, dotPath) {
-  if (!isObject(config)) return undefined
-  return getValueByPath(config, dotPath)
-}
-
-function getConfigBool(config, dotPath, fallback) {
-  const value = getConfigValue(config, dotPath)
-  return typeof value === "boolean" ? value : fallback
-}
-
 function getModeFromPhase(phase) {
-  if (["lite-l1-quick-spec", "lite-l2-execution", "lite-l3-review"].includes(phase)) {
-    return "lite"
-  }
-  return "full"
+  return phasePolicy.getModeFromPhase(phase)
 }
 
 function modeFamily(mode) {
-  if (mode === "quick" || mode === "lite") {
-    return "lite"
-  }
-  return "full"
+  return phasePolicy.modeFamily(mode)
 }
 
 function currentModeFromState(state) {
-  const m = getValueByPath(state, "session.mode")
-  if (["quick", "lite", "full"].includes(m)) {
-    return m
-  }
-  return getModeFromPhase(String(state.current_phase || ""))
+  return phasePolicy.currentModeFromState(state)
 }
 
 function phaseForMode(mode) {
-  if (mode === "full") return "phase-0-discovery"
-  if (mode === "lite" || mode === "quick") return "lite-l1-quick-spec"
-  return null
+  return phasePolicy.phaseForMode(mode)
 }
 
 function canTransition(from, to) {
-  if (from === to) return true
-  const allowed = {
-    idle: ["phase-0-discovery", "lite-l1-quick-spec"],
-    "phase-0-discovery": ["phase-1-prd"],
-    "phase-1-prd": ["phase-2-tech-design"],
-    "phase-2-tech-design": ["phase-3-planning"],
-    "phase-3-planning": ["phase-4-execution"],
-    "phase-4-execution": ["phase-5-review"],
-    "phase-5-review": ["done"],
-    "lite-l1-quick-spec": ["lite-l2-execution"],
-    "lite-l2-execution": ["lite-l3-review"],
-    "lite-l3-review": ["done"],
-  }
-  return Array.isArray(allowed[from]) && allowed[from].includes(to)
+  return phasePolicy.canTransition(from, to)
 }
 
 function isPhaseAllowedForTool(phase, tool) {
-  if (tool === "Write" || tool === "Edit") {
-    return [
-      "phase-1-prd",
-      "phase-2-tech-design",
-      "phase-3-planning",
-      "phase-4-execution",
-      "phase-5-review",
-      "lite-l1-quick-spec",
-      "lite-l2-execution",
-      "lite-l3-review",
-    ].includes(phase)
-  }
-  if (tool === "Bash" || tool === "Task") {
-    return phase !== "idle"
-  }
-  return true
+  return phasePolicy.isPhaseAllowedForTool(phase, tool)
 }
 
 function isPlanningPhase(phase) {
-  return ["phase-1-prd", "phase-2-tech-design", "phase-3-planning"].includes(phase)
+  return phasePolicy.isPlanningPhase(phase)
 }
 
 function isExecutionPhase(phase) {
-  return ["phase-4-execution", "phase-5-review"].includes(phase)
+  return phasePolicy.isExecutionPhase(phase)
 }
 
 function isReadonlyBashInPlanningPhase(command) {
-  if (!command || !String(command).trim()) return false
-  const trimmed = String(command).trim()
-  if (/^(ls|pwd)(\s+.*)?$/.test(trimmed)) return true
-  if (/^git\s+(status|diff|log)(\s+.*)?$/.test(trimmed)) return true
-  return false
+  return phasePolicy.isReadonlyBashInPlanningPhase(command)
 }
 
 function commandLooksLikeControl(command) {
-  if (!command || !String(command).trim()) return true
-  const cmd = String(command)
-  const tokens = [
-    "step-manager.sh doctor",
-    "step-manager.sh enter",
-    "step-manager.sh transition",
-    "step-manager.sh phase-gate",
-    "step-manager.sh status-line",
-    "step-manager.sh assert-phase",
-    "step-manager.sh check-action",
-    "step-core.js manager",
-  ]
-  return tokens.some((token) => cmd.includes(token))
+  return phasePolicy.commandLooksLikeControl(command)
 }
 
 function isCommandAllowedWhenIdle(command) {
-  if (!command || !String(command).trim()) return true
-  const cmd = String(command)
-  return [
-    "step-manager.sh doctor",
-    "step-manager.sh enter",
-    "step-manager.sh transition",
-    "step-manager.sh status-line",
-    "step-core.js manager enter",
-    "step-core.js manager transition",
-    "step-core.js manager status-line",
-  ].some((token) => cmd.includes(token))
+  return phasePolicy.isCommandAllowedWhenIdle(command)
 }
 
 function isBashCommandAllowedInPhase(phase, command) {
-  if (commandLooksLikeControl(command)) return true
-  if (["phase-0-discovery", "phase-1-prd", "phase-2-tech-design", "phase-3-planning", "lite-l1-quick-spec"].includes(phase)) {
-    return isReadonlyBashInPlanningPhase(command)
-  }
-  return true
+  return phasePolicy.isBashCommandAllowedInPhase(phase, command)
 }
 
 function enforceWriteLockForMode(config, mode) {
-  const direct = getConfigValue(config, "enforcement.planning_phase_write_lock")
-  if (typeof direct === "boolean") {
-    return direct
-  }
-  const family = modeFamily(mode)
-  return getConfigBool(config, `enforcement.planning_phase_write_lock.${family}`, family === "full")
+  return phasePolicy.enforceWriteLockForMode(config, mode)
 }
 
 function requireDispatchForMode(config, mode) {
-  const direct = getConfigValue(config, "enforcement.require_dispatch")
-  if (typeof direct === "boolean") {
-    return direct
-  }
-  const family = modeFamily(mode)
-  return getConfigBool(config, `enforcement.require_dispatch.${family}`, false)
+  return phasePolicy.requireDispatchForMode(config, mode)
 }
 
 function getBypassTools(config) {
-  const tools = getConfigValue(config, "enforcement.bypass_tools")
-  if (!Array.isArray(tools)) return []
-  return tools.map((v) => String(v))
+  return phasePolicy.getBypassTools(config)
 }
 
 function expectedDispatchAgentForPhase(config, phase) {
-  const mapping = {
-    "phase-0-discovery": "routing.discovery.agent",
-    "phase-1-prd": "routing.prd.agent",
-    "lite-l1-quick-spec": "routing.lite_spec.agent",
-    "phase-2-tech-design": "routing.tech_design.agent",
-    "phase-3-planning": "routing.planning.agent",
-  }
-  const p = mapping[phase]
-  if (!p) return ""
-  const value = getConfigValue(config, p)
-  return typeof value === "string" ? value : ""
+  return phasePolicy.expectedDispatchAgentForPhase(config, phase)
 }
 
-function firstExecutableFromCommand(command) {
-  if (!command || !String(command).trim()) return ""
-  const tokens = tokenize(String(command).trim())
-  if (tokens.length === 0) return ""
-
-  const base = (raw) => {
-    const normalized = String(raw || "").replace(/\\+$/, "")
-    const parts = normalized.split("/")
-    return parts[parts.length - 1] || normalized
-  }
-
-  let i = 0
-  let exe = tokens[i] || ""
-  if (base(exe) === "env") {
-    i += 1
-    while (i < tokens.length) {
-      const t = tokens[i]
-      if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(t)) {
-        i += 1
-        continue
-      }
-      exe = t
-      break
-    }
-  }
-  if (base(exe) === "command") {
-    i += 1
-    exe = tokens[i] || ""
-  }
-  return base(exe)
+function normalizeExecutableName(raw) {
+  return commandParser.normalizeExecutableName(raw)
 }
 
 function dangerousExecutablesFromConfig(config) {
-  const configured = getConfigValue(config, "gate.dangerous_executables")
+  const configured = phasePolicy.getConfigValue(config, "gate.dangerous_executables")
   if (Array.isArray(configured)) {
     return configured.map((v) => String(v))
   }
@@ -1536,10 +1697,9 @@ function managerCheckAction(paths, args) {
   if (!command) return
 
   const config = managerReadConfig(paths)
-  const dangerous = new Set(dangerousExecutablesFromConfig(config))
-  const first = firstExecutableFromCommand(command)
-  if (first && dangerous.has(first)) {
-    fail(`命中危险命令黑名单: ${first}`)
+  const hit = firstDangerousExecutable(command, dangerousExecutablesFromConfig(config))
+  if (hit) {
+    fail(`命中危险命令黑名单: ${hit}`)
   }
 }
 
@@ -1653,9 +1813,9 @@ function managerRun(sub, args) {
 
 function executionAgentsFromConfig(config) {
   const agents = new Set(["step-developer", "step-designer"])
-  const execAgent = getConfigValue(config, "routing.execution.agent")
+  const execAgent = phasePolicy.getConfigValue(config, "routing.execution.agent")
   if (typeof execAgent === "string" && execAgent) agents.add(execAgent)
-  const fr = getConfigValue(config, "file_routing")
+  const fr = phasePolicy.getConfigValue(config, "file_routing")
   if (isObject(fr)) {
     for (const key of Object.keys(fr)) {
       const a = fr[key] && fr[key].agent
@@ -1691,7 +1851,7 @@ function parseToolPayload(payloadText) {
   const pick = (expr) => {
     const paths = expr.split("|")
     for (const p of paths) {
-      const value = getValueByPath(data, p)
+      const value = phasePolicy.getPathValue(data, p)
       if (value !== undefined && value !== null) {
         return typeof value === "string" ? value : JSON.stringify(value)
       }
@@ -2020,6 +2180,12 @@ function main() {
       }
     } catch {
       process.exit(2)
+    }
+    if (expected === "done") {
+      const errors = validateTask(task)
+      if (errors.length > 0) {
+        process.exit(1)
+      }
     }
     process.exit(task && task.status === expected ? 0 : 1)
   }

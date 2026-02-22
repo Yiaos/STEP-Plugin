@@ -47,8 +47,8 @@ description: "初始化或恢复 STEP 协议（Stateful Task Execution Protocol�
 则在变更开始阶段自动创建独立 worktree：
 
 - 执行 `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-worktree.sh create {change-name}`
-- 在该 worktree 内执行 Phase 4（TDD + gate + review + commit）
-- commit 后询问是否“合并回创建时所在分支并归档”
+- 在该 worktree 内执行 Phase 4（TDD + gate + review + commit(worktree 内)）
+- worktree 内 commit 后询问是否合并，合并+归档完成后再 push
 
 ## 可用性前置检查
 
@@ -72,7 +72,7 @@ description: "初始化或恢复 STEP 协议（Stateful Task Execution Protocol�
 - Phase 1 (PRD): 分段展示 baseline 草稿，选择题确认
 - Phase 2 (Tech Design): 开放式技术方案讨论
 - Phase 3 (Planning): 任务图与 BDD 场景矩阵
-- Phase 4 (Execution): TDD + gate + review + commit
+- Phase 4 (Execution): TDD + gate + review + commit/push（完成后可归档）
 - Phase 5 (Review): 独立审查（需求合规 > 代码质量）
 
 每次对话结束必须更新 `.step/state.json`。`next_action` 必须精确到文件名和动作。

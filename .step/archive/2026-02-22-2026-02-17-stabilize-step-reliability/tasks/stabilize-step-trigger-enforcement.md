@@ -1,3 +1,5 @@
+# Stabilize STEP trigger and enforcement
+
 ```json task
 {
   "id": "stabilize-step-trigger-enforcement",
@@ -26,7 +28,7 @@
         "test_file": "tests/test-step-manager-check-action.sh",
         "test_name": "[S-stabilize-step-trigger-enforcement-01] step-manager doctor health pass",
         "test_type": "unit",
-        "status": "not_run"
+        "status": "pass"
       },
       {
         "id": "S-stabilize-step-trigger-enforcement-02",
@@ -36,7 +38,7 @@
         "test_file": "tests/test-step-manager-check-action.sh",
         "test_name": "[S-stabilize-step-trigger-enforcement-02] check-action blocks dangerous command",
         "test_type": "integration",
-        "status": "not_run"
+        "status": "pass"
       },
       {
         "id": "S-stabilize-step-trigger-enforcement-05",
@@ -46,7 +48,7 @@
         "test_file": "tests/test-step-phase-enforcement.sh",
         "test_name": "[S-stabilize-step-trigger-enforcement-05] pretool guard 在 idle 阻断 Write",
         "test_type": "integration",
-        "status": "not_run"
+        "status": "pass"
       },
       {
         "id": "S-stabilize-step-trigger-enforcement-06",
@@ -56,7 +58,7 @@
         "test_file": "tests/test-step-phase-enforcement.sh",
         "test_name": "[S-stabilize-step-trigger-enforcement-06] idle 允许绝对路径 step-manager enter",
         "test_type": "unit",
-        "status": "not_run"
+        "status": "pass"
       },
       {
         "id": "S-stabilize-step-trigger-enforcement-08",
@@ -66,7 +68,7 @@
         "test_file": "tests/test-step-phase-enforcement.sh",
         "test_name": "[S-stabilize-step-trigger-enforcement-08] pretool guard 可自动 enter（idle -> phase-0）",
         "test_type": "integration",
-        "status": "not_run"
+        "status": "pass"
       }
     ],
     "edge_cases": [
@@ -78,7 +80,7 @@
         "test_file": "tests/test-step-manager-check-action.sh",
         "test_name": "[S-stabilize-step-trigger-enforcement-03] empty command allowed",
         "test_type": "unit",
-        "status": "not_run"
+        "status": "pass"
       },
       {
         "id": "S-stabilize-step-trigger-enforcement-07",
@@ -88,7 +90,7 @@
         "test_file": "tests/test-step-phase-enforcement.sh",
         "test_name": "[S-stabilize-step-trigger-enforcement-07] phase-1 阻断实现类 Bash（npm test）",
         "test_type": "integration",
-        "status": "not_run"
+        "status": "pass"
       },
       {
         "id": "S-stabilize-step-trigger-enforcement-09",
@@ -98,7 +100,7 @@
         "test_file": "tests/test-step-phase-enforcement.sh",
         "test_name": "[S-stabilize-step-trigger-enforcement-09] lite 模式 phase-1 不启用写锁",
         "test_type": "unit",
-        "status": "not_run"
+        "status": "pass"
       },
       {
         "id": "S-stabilize-step-trigger-enforcement-11",
@@ -108,7 +110,7 @@
         "test_file": "tests/test-step-phase-enforcement.sh",
         "test_name": "[S-stabilize-step-trigger-enforcement-11] lite 模式不强制委派 step-pm",
         "test_type": "unit",
-        "status": "not_run"
+        "status": "pass"
       }
     ],
     "error_handling": [
@@ -120,7 +122,7 @@
         "test_file": "tests/test-step-manager-check-action.sh",
         "test_name": "[S-stabilize-step-trigger-enforcement-04] fallback dangerous list",
         "test_type": "e2e",
-        "status": "not_run"
+        "status": "pass"
       },
       {
         "id": "S-stabilize-step-trigger-enforcement-10",
@@ -130,7 +132,7 @@
         "test_file": "tests/test-step-phase-enforcement.sh",
         "test_name": "[S-stabilize-step-trigger-enforcement-10] full 模式 phase-1 必须委派 step-pm",
         "test_type": "e2e",
-        "status": "not_run"
+        "status": "pass"
       }
     ]
   },

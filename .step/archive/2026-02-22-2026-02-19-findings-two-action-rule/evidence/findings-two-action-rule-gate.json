@@ -4,14 +4,14 @@
     "task_id": "findings-two-action-rule",
     "change": "2026-02-19-findings-two-action-rule",
     "task_file": ".step/changes/2026-02-19-findings-two-action-rule/tasks/findings-two-action-rule.md",
-    "timestamp": "2026-02-20T00:31:14Z",
+    "timestamp": "2026-02-22T04:49:27Z",
     "total": 3,
     "covered": 3,
     "coverage_pct": 100,
     "passed": true
   },
-  "level": "lite:incremental:all",
-  "timestamp": "2026-02-20T00:31:14Z",
+  "level": "lite:all:all",
+  "timestamp": "2026-02-22T04:49:27Z",
   "passed": true,
   "results": [
     {

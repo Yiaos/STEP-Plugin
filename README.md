@@ -28,7 +28,7 @@ STEP 提供 6 阶段生命周期：
 
 - BDD 场景矩阵：每个场景有 ID，测试名必须包含 ID，100% 覆盖才能通过
 - Gate 门禁：lint + typecheck + test + scenario coverage
-- SessionStart Hook 自动恢复状态
+- Plugin system.transform 注入 + SessionStart Hook fallback 自动恢复状态
 - baseline 活快照 + 变更审计链防漂移
 - Post-MVP 流程（新增功能、Hotfix、约束变更）同样遵循 STEP
 
@@ -45,10 +45,11 @@ STEP 提供 6 阶段生命周期：
                                           │
                                           ▼
                     ┌──────────────────────────────────────────────────────┐
-                    │  SessionStart Hook                                   │
-                    │  ├── 检测 .step/state.json → 注入状态到上下文        │
-                    │  ├── 注入 routing 表 → LLM 知道阶段→agent 映射       │
-                    │  └── 注入 SKILL.md → LLM 知道协议规则                │
+                    │  Session Context Injection                           │
+                    │  ├── OpenCode plugin system.transform（主路径）      │
+                    │  ├── hooks/session-start.sh（fallback）              │
+                    │  ├── 注入 routing/state/spec/task 上下文             │
+                    │  └── 注入 SKILL.md 分阶段规则                        │
                     └──────────────────────────────────────────────────────┘
                                           │
                                           ▼
@@ -77,7 +78,7 @@ STEP 提供 6 阶段生命周期：
   │                         ▼                                                        │
   │  Phase 5 Review                                                                  │
   │  @step-reviewer (codex)                                                          │
-  │  需求合规(P0) > 代码质量(P1-P3) → Commit → 更新 state.json                        │
+  │  需求合规(P0) > 代码质量(P1-P3) → Commit/Push → 询问归档(更新 state)             │
   └─────────────────────────────────────────────────────────────────────────────────┘
 
   ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -85,7 +86,7 @@ STEP 提供 6 阶段生命周期：
   │                                                                                 │
   │  L1 Quick Spec ──→ L2 Execution ──→ L3 Review                                  │
   │  编排器自行处理     @step-qa(测试)     @step-reviewer                             │
-  │  (一次确认)         @step-developer    Commit → Check → 归档提示                  │
+  │  (一次确认)         @step-developer    Check → Commit/Push → 询问归档              │
   │                     @step-designer                                               │
   │                     (自主执行)                                                    │
   └─────────────────────────────────────────────────────────────────────────────────┘
@@ -123,7 +124,7 @@ oh-my-opencode preset   →  WITH   用户环境的实际模型 ID
 |----|------|---------|
 | gate.sh / scenario-check.sh | 脚本执行，退出码决定 pass/fail | **硬保证** |
 | Agent 模型绑定 | frontmatter + preset，框架层强制 | **硬保证** |
-| SessionStart Hook 注入 | bash 脚本，确定性执行 | **硬保证** |
+| Plugin transform 注入 + SessionStart fallback | JS 插件主路径 + shell 兜底 | **硬保证** |
 | 阶段流转 / TDD 先测试 | SKILL.md 规则 + agent Critical Actions | 软保证（prompt） |
 | 按 routing 表派发 agent | LLM 自主决策 | 软保证（prompt） |
 | baseline 确认 | 契约 + changes/ 流程 | 软保证（无文件锁） |
@@ -158,12 +159,15 @@ ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/
 ├── hooks/
 │   ├── hooks.json          # SessionStart hook
 │   └── session-start.sh    # 自动检测 .step/ 并注入状态
+├── .opencode/plugins/
+│   └── step.js             # OpenCode system.transform 注入入口
 ├── skills/step/SKILL.md    # 核心协议规则
 ├── scripts/
 │   ├── step-init.sh        # 项目初始化
 │   ├── gate.sh             # 质量门禁 (quick/lite/full)
 │   ├── scenario-check.sh   # BDD 场景覆盖检查
 │   └── step-archive.sh     # 变更归档
+├── lib/core/               # step-core 模块（parser/guard/validator/phase-policy）
 ├── agents/                 # 角色 agent 定义
 │   ├── pm.md               # 产品经理 (Phase 0-1)
 │   ├── architect.md        # 架构师 (Phase 2-3)
@@ -307,8 +311,8 @@ STEP 执行脚本位于插件安装目录：
 当 `worktree.enabled: true` 时，STEP 流程会遵循以下规则：
 
 - 变更开始阶段自动创建独立 worktree（`bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-worktree.sh create {change}`）
-- Commit 完成后询问是否“合并回主分支并归档”
-- 用户确认后执行：合并回“创建该 worktree 时所在分支” → 归档 change
+- worktree 内 commit 完成后询问是否合并回主分支
+- 用户确认后执行：合并回“创建该 worktree 时所在分支” → 归档 change（归档完成后再 push 主分支）
 - 合并冲突时按策略自动解冲突，并输出冲突文件与采用的解决策略
 - 合并完成后自动清理 feature worktree
 

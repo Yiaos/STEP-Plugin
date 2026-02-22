@@ -20,6 +20,11 @@ fail_case() {
   FAIL=$((FAIL + 1))
 }
 
+assert() {
+  local _name="$1"; shift
+  "$@"
+}
+
 new_box() {
   local dir
   dir=$(mktemp -d)
@@ -119,6 +124,7 @@ TOTAL=$((TOTAL + 1))
   node -e 'const fs=require("fs");const f=process.argv[1];const s=JSON.parse(fs.readFileSync(f,"utf-8"));s.current_phase="idle";fs.writeFileSync(f,JSON.stringify(s,null,2)+"\n","utf-8");' "$box/.step/state.json"
   out=$(cd "$box" && OPENCODE_TOOL_NAME=Write bash "$box/scripts/step-pretool-guard.sh" 2>&1)
   code=$?
+  assert "[S-stabilize-step-trigger-enforcement-05] pretool guard 在 idle 阻断 Write" bash -c "[ '$code' -ne 0 ] && printf '%s' \"$out\" | grep -q '不允许工具=Write'"
   rm -rf "$box"
   trap - EXIT
   if [ "$code" -ne 0 ] && printf '%s' "$out" | grep -q '不允许工具=Write'; then
@@ -137,6 +143,7 @@ TOTAL=$((TOTAL + 1))
   cmd="bash $box/scripts/step-manager.sh enter --mode full --change init"
   out=$(cd "$box" && bash "$box/scripts/step-manager.sh" assert-phase --tool Bash --command "$cmd" 2>&1)
   code=$?
+  assert "[S-stabilize-step-trigger-enforcement-06] idle 允许绝对路径 step-manager enter" test "$code" -eq 0
   rm -rf "$box"
   trap - EXIT
   if [ "$code" -eq 0 ]; then
@@ -156,6 +163,7 @@ TOTAL=$((TOTAL + 1))
   (cd "$box" && bash "$box/scripts/step-manager.sh" transition --to phase-1-prd >/dev/null 2>&1)
   out=$(cd "$box" && bash "$box/scripts/step-manager.sh" assert-phase --tool Bash --command "npm test" 2>&1)
   code=$?
+  assert "[S-stabilize-step-trigger-enforcement-07] phase-1 阻断实现类 Bash（npm test）" bash -c "[ '$code' -ne 0 ] && printf '%s' \"$out\" | grep -q '仅允许流程控制或只读命令'"
   rm -rf "$box"
   trap - EXIT
   if [ "$code" -ne 0 ] && printf '%s' "$out" | grep -q '仅允许流程控制或只读命令'; then
@@ -180,6 +188,7 @@ TOTAL=$((TOTAL + 1))
   out=$(cd "$box" && STEP_AUTO_ENTER=true STEP_AUTO_ENTER_MODE=full OPENCODE_TOOL_NAME=Write bash "$box/scripts/step-pretool-guard.sh" 2>&1)
   code=$?
   phase=$(node -e 'const fs=require("fs");const s=JSON.parse(fs.readFileSync(process.argv[1],"utf-8"));process.stdout.write(s.current_phase||"")' "$box/.step/state.json")
+  assert "[S-stabilize-step-trigger-enforcement-08] pretool guard 可自动 enter（idle -> phase-0）" bash -c "[ '$code' -ne 0 ] && [ '$phase' = 'phase-0-discovery' ]"
   rm -rf "$box"
   trap - EXIT
   if [ "$code" -ne 0 ] && [ "$phase" = "phase-0-discovery" ] && printf '%s' "$out" | grep -q '不允许工具=Write'; then
@@ -197,6 +206,7 @@ TOTAL=$((TOTAL + 1))
   (cd "$box" && bash "$box/scripts/step-manager.sh" enter --mode lite --change init >/dev/null 2>&1)
   out=$(cd "$box" && bash "$box/scripts/step-manager.sh" assert-phase --tool Write 2>&1)
   code=$?
+  assert "[S-stabilize-step-trigger-enforcement-09] lite 模式 phase-1 不启用写锁" test "$code" -eq 0
   rm -rf "$box"
   trap - EXIT
   if [ "$code" -eq 0 ]; then
@@ -217,6 +227,7 @@ TOTAL=$((TOTAL + 1))
   (cd "$box" && bash "$box/scripts/step-manager.sh" transition --to phase-1-prd >/dev/null 2>&1)
   out=$(cd "$box" && bash "$box/scripts/step-manager.sh" assert-dispatch --tool Task --agent step-architect 2>&1)
   code=$?
+  assert "[S-stabilize-step-trigger-enforcement-10] full 模式 phase-1 必须委派 step-pm" bash -c "[ '$code' -ne 0 ] && printf '%s' \"$out\" | grep -q '必须委派给 step-pm'"
   rm -rf "$box"
   trap - EXIT
   if [ "$code" -ne 0 ] && printf '%s' "$out" | grep -q '必须委派给 step-pm'; then
@@ -235,6 +246,7 @@ TOTAL=$((TOTAL + 1))
   (cd "$box" && bash "$box/scripts/step-manager.sh" enter --mode lite --change init >/dev/null 2>&1)
   out=$(cd "$box" && bash "$box/scripts/step-manager.sh" assert-dispatch --tool Task --agent step-architect 2>&1)
   code=$?
+  assert "[S-stabilize-step-trigger-enforcement-11] lite 模式不强制委派 step-pm" test "$code" -eq 0
   rm -rf "$box"
   trap - EXIT
   if [ "$code" -eq 0 ]; then

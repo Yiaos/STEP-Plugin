@@ -2,8 +2,8 @@
   "project": "STEP-Plugin",
   "project_type": "existing",
   "current_phase": "done",
-  "current_change": true,
-  "last_updated": "2026-02-21T18:00:00Z",
+  "current_change": "",
+  "last_updated": "2026-02-22T02:54:11Z",
   "last_agent": "developer",
   "last_session_summary": "已完成本变更全部任务并闭环：修复 P0 项（WORKFLOW 精简、Agent 执行委派语义、场景覆盖闭环），并完成全量回归。",
   "session": {
@@ -43,6 +43,30 @@
     "state format backward compatibility"
   ],
   "progress_log": [
+    {
+      "date": "2026-02-22",
+      "task": "stabilize-step-trigger-enforcement",
+      "summary": "Gate failed at scenario-coverage",
+      "next_action": "analyze-scenario-coverage-failure",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "all",
+      "gate_scope": "all",
+      "gate_at": "2026-02-22T04:48:33Z",
+      "failed_action": ""
+    },
+    {
+      "date": "2026-02-22",
+      "task": "findings-two-action-rule",
+      "summary": "",
+      "next_action": "",
+      "gate_status": "pass",
+      "gate_level": "lite",
+      "gate_mode": "all",
+      "gate_scope": "all",
+      "gate_at": "2026-02-22T04:49:27Z",
+      "failed_action": ""
+    },
     {
       "date": "2026-02-22",
       "task": "unify-e2e-rule",
