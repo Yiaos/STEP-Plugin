@@ -2,7 +2,7 @@
   "project": "STEP-Plugin",
   "project_type": "existing",
   "current_phase": "done",
-  "current_change": "2026-02-21-consolidate-bash-into-core",
+  "current_change": true,
   "last_updated": "2026-02-21T18:00:00Z",
   "last_agent": "developer",
   "last_session_summary": "已完成本变更全部任务并闭环：修复 P0 项（WORKFLOW 精简、Agent 执行委派语义、场景覆盖闭环），并完成全量回归。",
