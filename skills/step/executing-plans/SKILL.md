@@ -9,6 +9,11 @@ description: Use when you have a written implementation plan to execute in a sep
 
 Load plan, review critically, execute tasks in batches, report for review between batches.
 
+STEP overlay:
+- Confirm current phase is `phase-4-execution` or `phase-5-review` before execution
+- Run gate checks after each task batch and persist evidence
+- Update `.step/state.json` (`progress_log`/`next_action`) when state changes
+
 **Core principle:** Batch execution with checkpoints for architect review.
 
 **Announce at start:** "I'm using the executing-plans skill to implement this plan."
@@ -29,12 +34,15 @@ For each task:
 2. Follow each step exactly (plan has bite-sized steps)
 3. Run verifications as specified
 4. Mark as completed
+5. Run: `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh lite <task-slug>`
+6. Run: `bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/scenario-check.sh <task-slug> [change-name]`
 
 ### Step 3: Report
 When batch complete:
 - Show what was implemented
 - Show verification output
 - Say: "Ready for feedback."
+- Include key gate/scenario-check output to avoid evidence-free success claims
 
 ### Step 4: Continue
 Based on feedback:
@@ -46,7 +54,7 @@ Based on feedback:
 
 After all tasks complete and verified:
 - Announce: "I'm using the finishing-a-development-branch skill to complete this work."
-- **REQUIRED SUB-SKILL:** Use superpowers:finishing-a-development-branch
+- **REQUIRED SUB-SKILL:** Use step:finishing-a-development-branch
 - Follow that skill to verify tests, present options, execute choice
 
 ## When to Stop and Ask for Help
@@ -79,6 +87,12 @@ After all tasks complete and verified:
 ## Integration
 
 **Required workflow skills:**
-- **superpowers:using-git-worktrees** - REQUIRED: Set up isolated workspace before starting
-- **superpowers:writing-plans** - Creates the plan this skill executes
-- **superpowers:finishing-a-development-branch** - Complete development after all tasks
+- **step:using-git-worktrees** - REQUIRED: Set up isolated workspace before starting
+- **step:writing-plans** - Creates the plan this skill executes
+- **step:finishing-a-development-branch** - Complete development after all tasks
+
+## STEP Evidence Reminder
+
+- Gate evidence: `.step/changes/{change}/evidence/{task-slug}-gate.json`
+- Review evidence: `.step/changes/{change}/evidence/{task-slug}-review.md`
+- Move task status to done only after evidence and scenario coverage both pass

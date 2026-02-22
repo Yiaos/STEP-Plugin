@@ -1,11 +1,13 @@
 ---
-description: "显示 STEP 项目当前健康状态与交付进度。"
+description: "Show current STEP project health and delivery progress."
 ---
 
-执行：
+Run:
 
 ```bash
 node ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-core.js status report --root .step
 ```
 
-如果未初始化 STEP，提示用户先执行 `/step`。
+If STEP is not initialized, instruct the user to run `/step` first.
+
+After status output, if wrapping up, call `step:verification-before-completion` for final verification.

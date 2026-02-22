@@ -137,3 +137,14 @@ From 24 failure memories:
 Run the command. Read the output. THEN claim the result.
 
 This is non-negotiable.
+
+## STEP Evidence Overlay
+
+In STEP, collect at least this evidence before any completion claim:
+
+```bash
+bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/gate.sh lite <task-slug>
+bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/scenario-check.sh <task-slug> [change-name]
+```
+
+If output does not pass, report the actual result and do not claim completion.

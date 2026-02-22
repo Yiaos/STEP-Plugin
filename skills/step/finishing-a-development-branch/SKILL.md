@@ -149,6 +149,16 @@ git worktree remove <worktree-path>
 
 **For Option 3:** Keep worktree.
 
+## STEP Archive Hook
+
+If this development maps to a STEP change, run archive after branch completion:
+
+```bash
+bash ${OPENCODE_PLUGIN_ROOT:-$HOME/.config/opencode/tools/step}/scripts/step-archive.sh <change-name>
+```
+
+Archive only when all tasks in that change are `done`.
+
 ## Quick Reference
 
 | Option | Merge | Push | Keep Worktree | Cleanup Branch |

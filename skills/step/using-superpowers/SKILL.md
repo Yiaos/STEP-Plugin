@@ -93,3 +93,13 @@ The skill itself tells you which.
 ## User Instructions
 
 Instructions say WHAT, not HOW. "Add X" or "Fix Y" doesn't mean skip workflows.
+
+## STEP Routing Overlay
+
+When running under STEP, map skill choice by phase:
+
+- `phase-0/1` -> `step:brainstorming`
+- `phase-2/3` -> `step:writing-plans`
+- `phase-4/5` -> `step:executing-plans`
+
+Before declaring completion, run STEP evidence checks (`gate.sh` + `scenario-check.sh`).

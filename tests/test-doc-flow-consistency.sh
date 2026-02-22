@@ -23,7 +23,7 @@ assert "[S-doc-flow-01] WORKFLOW uses review->commit->archive(optional)" bash -c
 
 assert "[S-doc-flow-02] command docs avoid archive-before-commit" bash -c "
   set -e
-  grep -q 'review + commit/push（完成后可归档）' '$SCRIPT_DIR/commands/step.md'
+  grep -Eq 'review \+ commit/push（完成后可归档）|review \+ commit/push \(archive optional after completion\)' '$SCRIPT_DIR/commands/step.md'
   ! grep -qi 'review.*archive.*commit' '$SCRIPT_DIR/commands/step.md'
 "
 

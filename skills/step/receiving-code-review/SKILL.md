@@ -211,3 +211,12 @@ When replying to inline review comments on GitHub, reply in the comment thread (
 Verify. Question. Then implement.
 
 No performative agreement. Technical rigor always.
+
+## STEP Review Overlay
+
+In STEP, handle review feedback in this two-stage order:
+
+1. Spec Compliance (blocking)
+2. Code Quality (only after stage 1 passes)
+
+After fixes, re-run `gate.sh` and `scenario-check.sh` to refresh evidence.
