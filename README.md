@@ -32,6 +32,27 @@ STEP 提供 6 阶段生命周期：
 - baseline 活快照 + 变更审计链防漂移
 - Post-MVP 流程（新增功能、Hotfix、约束变更）同样遵循 STEP
 
+### Skill 分层与定位（superpowers-based 改造后）
+
+STEP 现在采用「协议层 + 能力层」分离：脚本负责硬约束，skill 负责工作法与编排。
+
+| 层级 | Skill | 定位 | 是否 phase 入口 |
+| --- | --- | --- | --- |
+| 主链路（强绑定） | `using-superpowers` / `brainstorming` / `writing-plans` / `executing-plans` | 按 phase 路由，驱动 0-5 主流程 | 是 |
+| 流程支撑（条件触发） | `test-driven-development` / `requesting-code-review` / `receiving-code-review` / `verification-before-completion` / `using-git-worktrees` / `finishing-a-development-branch` / `subagent-driven-development` | 执行链中的关键子流程 | 否 |
+| 通用能力（工具箱） | `systematic-debugging` / `dispatching-parallel-agents` / `writing-skills` | 按场景调用（调试、并行排查、文档产能） | 否 |
+
+说明：不是每个 skill 都需要直接对应某个 phase。只要主链路可达、脚本门禁有效、证据链闭环即可。
+
+### 与改造前的差异
+
+- 改造前：以 STEP 单体流程文档为中心，skill 使用边界不够清晰。
+- 改造后：以 superpowers 风格 skill 编排承载工作法，以 STEP 脚本（gate/scenario/state）承载硬约束。
+- 结果：
+  - 主流程入口更清楚（`/step` -> 总控守门 -> phase 路由）
+  - 非 phase 入口 skill 有稳定定位（支撑子流程 / 通用工具箱）
+  - 质量与完成判定仍由脚本硬门禁决定，不依赖口头声明
+
 ## 3. 整体架构（Architecture）
 
 ### 执行流程
